@@ -1188,10 +1188,8 @@ return (function()
 		local frameAbs = self.Frame.AbsolutePosition
 		local frameSiz = self.Frame.AbsoluteSize
 		local px = frameAbs.X + frameSiz.X
-		local py = frameAbs.Y
-		local panelH = frameSiz.Y
-		local vs = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-		if py + panelH > vs.Y then panelH = vs.Y - py - 4 end
+		local py = frameAbs.Y + theme.TopbarHeight + 6
+		local panelH = frameSiz.Y - theme.TopbarHeight - 10
 
 		-- Create popup with 0 width → tween to slide in from right
 		local popup = U.Create("Frame", {
@@ -1210,15 +1208,36 @@ return (function()
 			Transparency = 0.25,
 			Parent = popup,
 		})
+		-- Content wrapper (avoids UIListLayout affecting SideLine)
+		local content = U.Create("Frame", {
+			Name = "Content",
+			Size = UDim2.new(1, 0, 1, 0),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ZIndex = 10001,
+			Parent = popup,
+		})
 		U.Create("UIPadding", {
 			PaddingTop = UDim.new(0, 4),
 			PaddingLeft = UDim.new(0, 4),
 			PaddingRight = UDim.new(0, 4),
-			Parent = popup,
+			Parent = content,
 		})
 		U.Create("UIListLayout", {
 			Padding = UDim.new(0, 2),
 			SortOrder = Enum.SortOrder.LayoutOrder,
+			Parent = content,
+		})
+
+		-- Separator line on the left, matching SidebarLine position
+		U.Create("Frame", {
+			Name = "SideLine",
+			Size = UDim2.new(0, 1, 1, -12),
+			Position = UDim2.fromOffset(0, 6),
+			BackgroundColor3 = theme.Border,
+			BorderSizePixel = 0,
+			BackgroundTransparency = 0.3,
+			ZIndex = 10001,
 			Parent = popup,
 		})
 
@@ -1233,7 +1252,7 @@ return (function()
 				BackgroundTransparency = sel and 0.15 or 1,
 				AutoButtonColor = false,
 				ZIndex = 10001,
-				Parent = popup,
+				Parent = content,
 			})
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = btn })
 			U.Create("TextLabel", {
@@ -1468,7 +1487,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.4.9", Theme = Theme }
+	local FyyUI = { Version = "0.5.0", Theme = Theme }
 
 	function FyyUI.Menu(options)
 		options = options or {}
