@@ -1223,8 +1223,8 @@ return (function()
 			local btn = U.Create("ImageButton", {
 				Name = "Option",
 				Size = UDim2.new(1, 0, 0, 30),
-				BackgroundColor3 = self.Theme.Accent,
-				BackgroundTransparency = sel and 0.25 or 1,
+				BackgroundColor3 = sel and self.Theme.Accent or self.Theme.Element,
+				BackgroundTransparency = sel and 0.15 or 0.3,
 				AutoButtonColor = false,
 				Parent = flyout,
 			})
@@ -1237,7 +1237,7 @@ return (function()
 				Text = tostring(opt),
 				Font = self.Theme.Font,
 				TextSize = self.Theme.FontSize,
-				TextColor3 = sel and self.Theme.TextPrimary or self.Theme.TextSecondary,
+				TextColor3 = self.Theme.TextPrimary,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Parent = btn,
 			})
@@ -1246,10 +1246,10 @@ return (function()
 				self:HideFlyout()
 			end)
 			btn.MouseEnter:Connect(function()
-				if not sel then btn.BackgroundTransparency = 0.4 end
+				if not sel then btn.BackgroundTransparency = 0.15 end
 			end)
 			btn.MouseLeave:Connect(function()
-				if not sel then btn.BackgroundTransparency = 1 end
+				if not sel then btn.BackgroundTransparency = 0.3 end
 			end)
 		end
 		-- Animate in
