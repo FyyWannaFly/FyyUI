@@ -1096,25 +1096,9 @@ return (function()
 			Parent = self.Frame,
 		})
 
-		-- Container for dropdown popups (screen-level, above everything)
-		self._popupContainer = U.Create("Frame", {
-			Name = "DropdownPopup",
-			Size = UDim2.new(1, 0, 1, 0),
-			BackgroundTransparency = 1,
-			ZIndex = 1000,
-			Visible = false,
-			Parent = self.Gui,
-		})
-		self._popupOverlay = U.Create("ImageButton", {
-			Name = "Overlay",
-			Size = UDim2.new(1, 0, 1, 0),
-			BackgroundTransparency = 1,
-			ImageTransparency = 1,
-			Parent = self._popupContainer,
-		})
-		self._popupOverlay.MouseButton1Click:Connect(function()
-			self:HideDropdownPopup()
-		end)
+		-- Track active dropdown popup (created/destroyed on demand)
+		self._activePopupFrame = nil
+		self._popupUISCon = nil
 
 		-- Separator line between sidebar and content
 		U.Create("Frame", {
@@ -1195,12 +1179,10 @@ return (function()
 	end
 
 	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick)
-		local container = self._popupContainer
-		if not container then return end
-		-- Clear old popup
-		local oldPopup = container:FindFirstChild("Popup")
-		if oldPopup then oldPopup:Destroy() end
+		-- Destroy any existing popup first
+		self:HideDropdownPopup()
 
+		local uis = game:GetService("UserInputService")
 		local itemH = 28
 		local pad = 4
 		local count = #opts
@@ -1209,23 +1191,21 @@ return (function()
 		local w = math.max(atSize.X, 130)
 		local vs = game:GetService("GuiService"):GetViewportSize()
 
-		-- Position to the RIGHT of the SelectBtn (flyout-style)
-		local popupX = atPos.X + atSize.X + 4
-		local popupY = atPos.Y
-		if popupX + w > vs.X then
-			popupX = atPos.X
-			popupY = atPos.Y + atSize.Y
-		end
-		if popupY + panelH > vs.Y then popupY = vs.Y - panelH - 4 end
+		-- Position to the RIGHT of the SelectBtn
+		local px = atPos.X + atSize.X + 4
+		local py = atPos.Y
+		if px + w > vs.X then px = atPos.X; py = atPos.Y + atSize.Y end
+		if py + panelH > vs.Y then py = vs.Y - panelH - 4 end
 
+		-- Create popup Frame DIRECTLY in ScreenGui
 		local popup = U.Create("Frame", {
-			Name = "Popup",
+			Name = "DropdownPopup",
 			Size = UDim2.fromOffset(w, panelH),
-			Position = UDim2.fromOffset(popupX, popupY),
+			Position = UDim2.fromOffset(px, py),
 			BackgroundColor3 = self.Theme.Element,
 			BorderSizePixel = 0,
-			ZIndex = 1001,
-			Parent = container,
+			ZIndex = 10000,
+			Parent = self.Gui,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = popup })
 		U.Create("UIStroke", {
@@ -1234,11 +1214,12 @@ return (function()
 			Transparency = 0.4,
 			Parent = popup,
 		})
-		local list = U.Create("UIListLayout", {
+		U.Create("UIListLayout", {
 			Padding = UDim.new(0, 2),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Parent = popup,
 		})
+
 		for i, opt in ipairs(opts) do
 			local sel = i == selectedIdx
 			local btn = U.Create("TextButton", {
@@ -1249,7 +1230,7 @@ return (function()
 				BackgroundColor3 = sel and self.Theme.Accent or self.Theme.ElementHover,
 				BackgroundTransparency = 0,
 				AutoButtonColor = false,
-				ZIndex = 1002,
+				ZIndex = 10001,
 				Parent = popup,
 			})
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = btn })
@@ -1263,27 +1244,35 @@ return (function()
 				TextSize = self.Theme.FontSize,
 				TextColor3 = self.Theme.TextPrimary,
 				TextXAlignment = Enum.TextXAlignment.Left,
-				ZIndex = 1003,
+				ZIndex = 10002,
 				Parent = btn,
 			})
 			btn.MouseButton1Click:Connect(function()
 				onClick(i, opt)
 				self:HideDropdownPopup()
 			end)
-			btn.MouseEnter:Connect(function()
-				if not sel then btn.BackgroundColor3 = self.Theme.Element end
-			end)
-			btn.MouseLeave:Connect(function()
-				if not sel then btn.BackgroundColor3 = self.Theme.ElementHover end
-			end)
 		end
-		container.Visible = true
+
+		self._activePopupFrame = popup
+		-- Close on click outside
+		self._popupUISCon = uis.InputBegan:Connect(function(input, gpe)
+			if gpe then return end
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				task.wait()
+				self:HideDropdownPopup()
+			end
+		end)
 	end
 
 	function Menu:HideDropdownPopup()
-		local container = self._popupContainer
-		if not container or not container.Visible then return end
-		container.Visible = false
+		if self._popupUISCon then
+			self._popupUISCon:Disconnect()
+			self._popupUISCon = nil
+		end
+		if self._activePopupFrame then
+			self._activePopupFrame:Destroy()
+			self._activePopupFrame = nil
+		end
 		if self._activeDropdown then
 			self._activeDropdown.Open = false
 			self._activeDropdown = nil
@@ -1467,7 +1456,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.4.1", Theme = Theme }
+	local FyyUI = { Version = "0.4.2", Theme = Theme }
 
 	function FyyUI.Menu(options)
 		options = options or {}
