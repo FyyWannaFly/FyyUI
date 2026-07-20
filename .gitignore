@@ -2,4 +2,4 @@
 .DS_Store
 Thumbs.db
 *.log
-*.Hub.lua
+*Hub.lua

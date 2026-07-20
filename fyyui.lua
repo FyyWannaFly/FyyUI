@@ -496,16 +496,19 @@ return (function()
 				-- Close any other open dropdown first
 				if self._menu._activeDropdown and self._menu._activeDropdown ~= self then
 					self._menu._activeDropdown.Open = false
+					self._menu:HideDropdownPopup()
 				end
 				self._menu._activeDropdown = self
-				self._menu:ShowFlyout(self.Options, selectedIdx, function(idx, val)
+				local pos = self.SelectBtn.AbsolutePosition
+				local siz = self.SelectBtn.AbsoluteSize
+				self._menu:ShowDropdownPopup(pos, siz, self.Options, selectedIdx, function(idx, val)
 					self:SetValue(val)
 				end)
 			else
 				if self._menu._activeDropdown == self then
 					self._menu._activeDropdown = nil
 				end
-				self._menu:HideFlyout()
+				self._menu:HideDropdownPopup()
 			end
 		end)
 
@@ -533,7 +536,7 @@ return (function()
 			self.Open = false
 			if self._menu._activeDropdown == self then
 				self._menu._activeDropdown = nil
-				self._menu:HideFlyout()
+				self._menu:HideDropdownPopup()
 			end
 			return
 		end
@@ -542,6 +545,7 @@ return (function()
 		self.Open = false
 		if self._menu._activeDropdown == self then
 			self._menu._activeDropdown = nil
+			self._menu:HideDropdownPopup()
 		end
 		task.spawn(function() self.Callback(v) end)
 	end
@@ -1092,42 +1096,24 @@ return (function()
 			Parent = self.Frame,
 		})
 
-		-- Flyout (right-side panel for dropdowns)
-		self._flyout = U.Create("Frame", {
-			Name = "Flyout",
-			Size = UDim2.new(0, 150, 1, -(theme.TopbarHeight + 6)),
-			Position = UDim2.new(1, 0, 0, theme.TopbarHeight + 4),
-			BackgroundColor3 = theme.Sidebar,
-			BorderSizePixel = 0,
-			ZIndex = 50,
-			ClipsDescendants = true,
+		-- Container for dropdown popups (screen-level, above everything)
+		self._popupContainer = U.Create("Frame", {
+			Name = "DropdownPopup",
+			Size = UDim2.new(1, 0, 1, 0),
+			BackgroundTransparency = 1,
+			ZIndex = 1000,
 			Visible = false,
-			Parent = self.Frame,
+			Parent = self.Gui,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self._flyout })
-		self._flyoutList = U.Create("UIListLayout", {
-			Padding = UDim.new(0, 2),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Parent = self._flyout,
-		})
-		U.Create("UIPadding", {
-			PaddingTop = UDim.new(0, 4),
-			PaddingLeft = UDim.new(0, 4),
-			PaddingRight = UDim.new(0, 4),
-			Parent = self._flyout,
-		})
-		-- Overlay behind flyout to catch outside clicks
-		self._flyoutOverlay = U.Create("ImageButton", {
-			Name = "FlyoutOverlay",
+		self._popupOverlay = U.Create("ImageButton", {
+			Name = "Overlay",
 			Size = UDim2.new(1, 0, 1, 0),
 			BackgroundTransparency = 1,
 			ImageTransparency = 1,
-			ZIndex = 49,
-			Visible = false,
-			Parent = self.Frame,
+			Parent = self._popupContainer,
 		})
-		self._flyoutOverlay.MouseButton1Click:Connect(function()
-			self:HideFlyout()
+		self._popupOverlay.MouseButton1Click:Connect(function()
+			self:HideDropdownPopup()
 		end)
 
 		-- Separator line between sidebar and content
@@ -1178,7 +1164,7 @@ return (function()
 
 	function Menu:SelectTab(tab)
 		if self.ActiveTab == tab then return end
-		self:HideFlyout()
+		self:HideDropdownPopup()
 		local ts = game:GetService("TweenService")
 		local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		if self.ActiveTab then
@@ -1208,72 +1194,86 @@ return (function()
 		end
 	end
 
-	function Menu:ShowFlyout(opts, selectedIdx, onClick)
-		local flyout = self._flyout
-		if not flyout then return end
-		-- Clear old items
-		for _, child in ipairs(flyout:GetChildren()) do
-			if child:IsA("ImageButton") or child:IsA("TextButton") then
-				child:Destroy()
-			end
-		end
-		-- Populate
+	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick)
+		local container = self._popupContainer
+		if not container then return end
+		-- Clear old popup
+		local oldPopup = container:FindFirstChild("Popup")
+		if oldPopup then oldPopup:Destroy() end
+
+		local itemH = 28
+		local pad = 4
+		local count = #opts
+		local maxH = 160
+		local panelH = math.min(count * itemH + pad, maxH)
+		local w = atSize.X
+
+		local popup = U.Create("Frame", {
+			Name = "Popup",
+			Size = UDim2.fromOffset(w, panelH),
+			Position = UDim2.fromOffset(atPos.X, atPos.Y + atSize.Y),
+			BackgroundColor3 = self.Theme.Element,
+			BorderSizePixel = 0,
+			ZIndex = 1001,
+			Parent = container,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = popup })
+		U.Create("UIStroke", {
+			Color = self.Theme.Border,
+			Thickness = 1,
+			Transparency = 0.4,
+			Parent = popup,
+		})
+		local list = U.Create("UIListLayout", {
+			Padding = UDim.new(0, 2),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Parent = popup,
+		})
 		for i, opt in ipairs(opts) do
 			local sel = i == selectedIdx
-			local btn = U.Create("ImageButton", {
+			local btn = U.Create("TextButton", {
 				Name = "Option",
-				Size = UDim2.new(1, 0, 0, 30),
-				BackgroundColor3 = sel and self.Theme.Accent or self.Theme.Element,
-				BackgroundTransparency = sel and 0.15 or 0.3,
+				Size = UDim2.new(1, -pad * 2, 0, itemH),
+				Position = UDim2.fromOffset(pad, 0),
+				Text = "",
+				BackgroundColor3 = sel and self.Theme.Accent or self.Theme.ElementHover,
+				BackgroundTransparency = 0,
 				AutoButtonColor = false,
-				Parent = flyout,
+				ZIndex = 1002,
+				Parent = popup,
 			})
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = btn })
 			U.Create("TextLabel", {
 				Name = "Label",
-				Size = UDim2.new(1, -10, 1, 0),
-				Position = UDim2.fromOffset(6, 0),
+				Size = UDim2.new(1, -12, 1, 0),
+				Position = UDim2.fromOffset(8, 0),
 				BackgroundTransparency = 1,
 				Text = tostring(opt),
 				Font = self.Theme.Font,
 				TextSize = self.Theme.FontSize,
 				TextColor3 = self.Theme.TextPrimary,
 				TextXAlignment = Enum.TextXAlignment.Left,
+				ZIndex = 1003,
 				Parent = btn,
 			})
 			btn.MouseButton1Click:Connect(function()
 				onClick(i, opt)
-				self:HideFlyout()
+				self:HideDropdownPopup()
 			end)
 			btn.MouseEnter:Connect(function()
-				if not sel then btn.BackgroundTransparency = 0.15 end
+				if not sel then btn.BackgroundColor3 = self.Theme.Element end
 			end)
 			btn.MouseLeave:Connect(function()
-				if not sel then btn.BackgroundTransparency = 0.3 end
+				if not sel then btn.BackgroundColor3 = self.Theme.ElementHover end
 			end)
 		end
-		-- Animate in: slide from right
-		flyout.Position = UDim2.new(1, 0, 0, self.Theme.TopbarHeight + 4)
-		flyout.Visible = true
-		self._flyoutOverlay.Visible = true
-		local ts = game:GetService("TweenService")
-		local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		ts:Create(flyout, ti, { Position = UDim2.new(1, -150, 0, self.Theme.TopbarHeight + 4) }):Play()
+		container.Visible = true
 	end
 
-	function Menu:HideFlyout()
-		local flyout = self._flyout
-		if not flyout or not flyout.Visible then return end
-		local ts = game:GetService("TweenService")
-		local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		ts:Create(flyout, ti, { Position = UDim2.new(1, 0, 0, self.Theme.TopbarHeight + 4) }):Play()
-		task.delay(0.2, function()
-			flyout.Visible = false
-			if self._flyoutOverlay then
-				self._flyoutOverlay.Visible = false
-			end
-		end)
-		-- Close any open dropdown
+	function Menu:HideDropdownPopup()
+		local container = self._popupContainer
+		if not container or not container.Visible then return end
+		container.Visible = false
 		if self._activeDropdown then
 			self._activeDropdown.Open = false
 			self._activeDropdown = nil
@@ -1457,7 +1457,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.3.2", Theme = Theme }
+	local FyyUI = { Version = "0.4.0", Theme = Theme }
 
 	function FyyUI.Menu(options)
 		options = options or {}
