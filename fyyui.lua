@@ -604,7 +604,7 @@ return (function()
 		self.Components = {}
 		local theme = self.Theme
 
-		self.Button = U.Create("ImageButton", {
+		self.TabButton = U.Create("ImageButton", {
 			Name = "TabButton",
 			Size = UDim2.new(1, -6, 0, 34),
 			Position = UDim2.fromOffset(3, 0),
@@ -612,7 +612,7 @@ return (function()
 			AutoButtonColor = false,
 			Parent = menu.SidebarList,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Button })
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.TabButton })
 		self._activeBar = U.Create("Frame", {
 			Name = "ActiveBar",
 			Size = UDim2.fromOffset(3, 18),
@@ -620,7 +620,7 @@ return (function()
 			BackgroundTransparency = 1,
 			BackgroundColor3 = theme.Accent,
 			BorderSizePixel = 0,
-			Parent = self.Button,
+			Parent = self.TabButton,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = self._activeBar })
 		U.Create("TextLabel", {
@@ -633,7 +633,7 @@ return (function()
 			TextSize = theme.FontSize,
 			TextColor3 = theme.SidebarText,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Parent = self.Button,
+			Parent = self.TabButton,
 		})
 		U.Create("Frame", {
 			Name = "Line",
@@ -642,7 +642,7 @@ return (function()
 			BackgroundColor3 = theme.Border,
 			BackgroundTransparency = 0.5,
 			BorderSizePixel = 0,
-			Parent = self.Button,
+			Parent = self.TabButton,
 		})
 
 		self.Container = U.Create("ScrollingFrame", {
@@ -669,18 +669,18 @@ return (function()
 			end
 		end)
 
-		self.Button.MouseButton1Click:Connect(function()
+		self.TabButton.MouseButton1Click:Connect(function()
 			menu:SelectTab(self)
 		end)
-		self.Button.MouseEnter:Connect(function()
+		self.TabButton.MouseEnter:Connect(function()
 			if menu.ActiveTab ~= self then
-				self.Button.BackgroundTransparency = 0
-				self.Button.BackgroundColor3 = theme.TabHover
+				self.TabButton.BackgroundTransparency = 0
+				self.TabButton.BackgroundColor3 = theme.TabHover
 			end
 		end)
-		self.Button.MouseLeave:Connect(function()
+		self.TabButton.MouseLeave:Connect(function()
 			if menu.ActiveTab ~= self then
-				self.Button.BackgroundTransparency = 1
+				self.TabButton.BackgroundTransparency = 1
 			end
 		end)
 
@@ -864,7 +864,7 @@ return (function()
 		end
 		self.Components = {}
 		if self.Container then self.Container:Destroy() end
-		if self.Button then self.Button:Destroy() end
+		if self.TabButton then self.TabButton:Destroy() end
 	end
 
 	--[[ Menu ]]
@@ -1184,20 +1184,20 @@ return (function()
 		if self.ActiveTab == tab then return end
 		if self.ActiveTab then
 			self.ActiveTab.Container.Visible = false
-			self.ActiveTab.Button.BackgroundTransparency = 1
-			local lbl = self.ActiveTab.Button:FindFirstChild("Label")
+			self.ActiveTab.TabButton.BackgroundTransparency = 1
+			local lbl = self.ActiveTab.TabButton:FindFirstChild("Label")
 			if lbl then lbl.TextColor3 = self.Theme.SidebarText end
-			local bar = self.ActiveTab.Button:FindFirstChild("ActiveBar")
+			local bar = self.ActiveTab.TabButton:FindFirstChild("ActiveBar")
 			if bar then bar.BackgroundTransparency = 1 end
 		end
 		self.ActiveTab = tab
 		if tab then
 			tab.Container.Visible = true
-			tab.Button.BackgroundTransparency = 0
-			tab.Button.BackgroundColor3 = self.Theme.TabActive
-			local lbl = tab.Button:FindFirstChild("Label")
+			tab.TabButton.BackgroundTransparency = 0
+			tab.TabButton.BackgroundColor3 = self.Theme.TabActive
+			local lbl = tab.TabButton:FindFirstChild("Label")
 			if lbl then lbl.TextColor3 = self.Theme.SidebarTextActive end
-			local bar = tab.Button:FindFirstChild("ActiveBar")
+			local bar = tab.TabButton:FindFirstChild("ActiveBar")
 			if bar then bar.BackgroundTransparency = 0 end
 		end
 	end
