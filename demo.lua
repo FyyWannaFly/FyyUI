@@ -76,7 +76,7 @@ settingsTab:Dropdown({
 local infoTab = menu:Tab({ Text = "Info" })
 
 infoTab:Label({
-	Text = "FyyUI v0.2.6",
+	Text = "FyyUI v0.3.0",
 	Description = "Roblox UI Library",
 })
 
