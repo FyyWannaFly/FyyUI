@@ -3,9 +3,6 @@ local FyyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/FyyWann
 
 local menu = FyyUI.Menu({
 	Title = "FyyUI Hub",
-	Size = UDim2.fromOffset(420, 360),
-	MinSize = Vector2.new(300, 250),
-	MaxSize = Vector2.new(800, 560),
 	Resizable = true,
 	HasOutline = true,
 })
