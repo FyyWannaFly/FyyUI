@@ -480,16 +480,20 @@ return (function()
 			ScrollBarImageColor3 = theme.ScrollBar,
 			ScrollBarImageTransparency = 0.4,
 			CanvasSize = UDim2.new(0, 0, 0, 0),
-			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			Visible = false,
 			ZIndex = 10,
 			Parent = self.Container,
 		})
-		U.Create("UIListLayout", {
+		local panelList = U.Create("UIListLayout", {
 			Padding = UDim.new(0, 2),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Parent = self.Panel,
 		})
+		panelList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			if self.Panel then
+				self.Panel.CanvasSize = UDim2.new(0, 0, 0, panelList.AbsoluteContentSize.Y)
+			end
+		end)
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Panel })
 
 		self.Buttons = {}
@@ -650,16 +654,20 @@ return (function()
 			ScrollBarImageColor3 = theme.ScrollBar,
 			ScrollBarImageTransparency = 0.4,
 			CanvasSize = UDim2.new(0, 0, 0, 0),
-			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			ScrollingDirection = Enum.ScrollingDirection.Y,
 			Visible = false,
 			Parent = menu.ContentArea,
 		})
-		U.Create("UIListLayout", {
+		local listLayout = U.Create("UIListLayout", {
 			Padding = UDim.new(0, theme.Spacing),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Parent = self.Container,
 		})
+		listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			if self.Container then
+				self.Container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+			end
+		end)
 
 		self.Button.MouseButton1Click:Connect(function()
 			menu:SelectTab(self)
@@ -1101,15 +1109,19 @@ return (function()
 			BorderSizePixel = 0,
 			ScrollBarThickness = 0,
 			CanvasSize = UDim2.new(0, 0, 0, 0),
-			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			ScrollingDirection = Enum.ScrollingDirection.Y,
 			Parent = self.Sidebar,
 		})
-		U.Create("UIListLayout", {
+		local sidebarListLayout = U.Create("UIListLayout", {
 			Padding = UDim.new(0, 2),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Parent = self.SidebarList,
 		})
+		sidebarListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			if self.SidebarList then
+				self.SidebarList.CanvasSize = UDim2.new(0, 0, 0, sidebarListLayout.AbsoluteContentSize.Y)
+			end
+		end)
 
 		-- Content Area
 		self.ContentArea = U.Create("Frame", {
