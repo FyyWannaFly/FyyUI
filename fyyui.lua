@@ -1206,12 +1206,21 @@ return (function()
 		local count = #opts
 		local maxH = 160
 		local panelH = math.min(count * itemH + pad, maxH)
-		local w = atSize.X
+		local w = math.max(atSize.X, 130)
+		local vs = game:GetService("GuiService"):GetViewportSize()
+
+		-- Position at Frame's right edge (flyout-style)
+		local framePos = self.Frame.AbsolutePosition
+		local frameSiz = self.Frame.AbsoluteSize
+		local popupX = framePos.X + frameSiz.X - w
+		local popupY = atPos.Y
+		if popupX + w > vs.X then popupX = vs.X - w - 4 end
+		if popupY + panelH > vs.Y then popupY = vs.Y - panelH - 4 end
 
 		local popup = U.Create("Frame", {
 			Name = "Popup",
 			Size = UDim2.fromOffset(w, panelH),
-			Position = UDim2.fromOffset(atPos.X, atPos.Y + atSize.Y),
+			Position = UDim2.fromOffset(popupX, popupY),
 			BackgroundColor3 = self.Theme.Element,
 			BorderSizePixel = 0,
 			ZIndex = 1001,
