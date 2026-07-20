@@ -1179,29 +1179,24 @@ return (function()
 	end
 
 	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick)
-		-- Destroy any existing popup first
 		self:HideDropdownPopup()
 
 		local uis = game:GetService("UserInputService")
-		local pad = 4
-		local count = #opts
+		local ts = game:GetService("TweenService")
 		local w = 150
 		local theme = self.Theme
-
-		-- Full height like a tab content panel
 		local frameAbs = self.Frame.AbsolutePosition
 		local frameSiz = self.Frame.AbsoluteSize
-		local px = frameAbs.X + frameSiz.X + 4
+		local px = frameAbs.X + frameSiz.X
 		local py = frameAbs.Y + theme.TopbarHeight + 4
-		local panelH = frameSiz.Y - (theme.TopbarHeight + 8)
+		local panelH = frameSiz.Y - (theme.TopbarHeight + 6)
 		local vs = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-		if px + w > vs.X then px = vs.X - w - 4 end
 		if py + panelH > vs.Y then panelH = vs.Y - py - 4 end
 
-		-- Create popup — FULL HEIGHT kaya tab content
+		-- Create popup with 0 width → tween to slide in from right
 		local popup = U.Create("Frame", {
 			Name = "DropdownPopup",
-			Size = UDim2.fromOffset(w, panelH),
+			Size = UDim2.fromOffset(0, panelH),
 			Position = UDim2.fromOffset(px, py),
 			BackgroundColor3 = theme.Sidebar,
 			BorderSizePixel = 0,
@@ -1209,21 +1204,27 @@ return (function()
 			Parent = self.Gui,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = popup })
-		-- Left border line (like sidebar separator)
+		U.Create("UIStroke", {
+			Color = theme.Border,
+			Thickness = 1,
+			Transparency = 0.3,
+			Parent = popup,
+		})
+		U.Create("UIPadding", {
+			PaddingTop = UDim.new(0, 6),
+			PaddingLeft = UDim.new(0, 4),
+			PaddingRight = UDim.new(0, 4),
+			Parent = popup,
+		})
+		-- Separator line on the left
 		U.Create("Frame", {
 			Name = "SideLine",
 			Size = UDim2.new(0, 1, 1, -16),
 			Position = UDim2.fromOffset(0, 8),
-			BackgroundColor3 = self.Theme.Border,
+			BackgroundColor3 = theme.Border,
 			BorderSizePixel = 0,
-			BackgroundTransparency = 0.4,
+			BackgroundTransparency = 0.3,
 			ZIndex = 10001,
-			Parent = popup,
-		})
-		U.Create("UIPadding", {
-			PaddingTop = UDim.new(0, 8),
-			PaddingLeft = UDim.new(0, 4),
-			PaddingRight = UDim.new(0, 4),
 			Parent = popup,
 		})
 		U.Create("UIListLayout", {
@@ -1231,6 +1232,21 @@ return (function()
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Parent = popup,
 		})
+		-- Header showing current value
+		U.Create("TextLabel", {
+			Name = "Header",
+			Size = UDim2.new(1, -8, 0, 28),
+			BackgroundTransparency = 1,
+			Text = opts[selectedIdx] and tostring(opts[selectedIdx]) or "",
+			Font = theme.FontBold,
+			TextSize = theme.FontSizeSmall,
+			TextColor3 = theme.TextMuted,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			ZIndex = 10001,
+			Parent = popup,
+		})
+
+		-- Create option buttons
 		for i, opt in ipairs(opts) do
 			local sel = i == selectedIdx
 			local btn = U.Create("TextButton", {
@@ -1270,6 +1286,10 @@ return (function()
 		end
 
 		self._activePopupFrame = popup
+		-- Tween: slide in from right
+		local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		ts:Create(popup, ti, { Size = UDim2.fromOffset(w, panelH) }):Play()
+
 		-- Close on click outside
 		self._popupUISCon = uis.InputBegan:Connect(function(input, gpe)
 			if gpe then return end
@@ -1472,7 +1492,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.4.7", Theme = Theme }
+	local FyyUI = { Version = "0.4.8", Theme = Theme }
 
 	function FyyUI.Menu(options)
 		options = options or {}
