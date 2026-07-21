@@ -564,24 +564,18 @@ return (function()
 			Parent = self.SelectBtn,
 		})
 
-		local _arrowProps = resolveIcon("chevron-right")
+		local ARROW_DOWN = "rbxassetid://134243273101015"
+		local ARROW_RIGHT = "rbxassetid://92473583511724"
 		self._arrow = U.Create("ImageLabel", {
 			Name = "Arrow",
 			Size = UDim2.fromOffset(16, 16),
 			Position = UDim2.new(1, -20, 0.5, -8),
 			BackgroundTransparency = 1,
-			Image = _arrowProps.Image,
-			ImageRectSize = _arrowProps.ImageRectSize,
-			ImageRectOffset = _arrowProps.ImageRectOffset,
+			Image = ARROW_RIGHT,
 			Parent = self.SelectBtn,
 		})
 		local function updateArrow()
-			local props = resolveIcon(self.Open and "chevron-right" or "chevron-down")
-			if props then
-				self._arrow.Image = props.Image
-				self._arrow.ImageRectSize = props.ImageRectSize
-				self._arrow.ImageRectOffset = props.ImageRectOffset
-			end
+			self._arrow.Image = self.Open and ARROW_RIGHT or ARROW_DOWN
 		end
 		self._updateArrow = updateArrow
 
@@ -821,19 +815,14 @@ return (function()
 		end
 
 		-- Right-side icon (mouse-pointer-2)
-		local _pointerProps = resolveIcon("mouse-pointer-2")
-		if _pointerProps then
-			U.Create("ImageLabel", {
-				Name = "Pointer",
-				Size = UDim2.fromOffset(16, 16),
-				Position = UDim2.new(1, -22, 0.5, -8),
-				BackgroundTransparency = 1,
-				Image = _pointerProps.Image,
-				ImageRectSize = _pointerProps.ImageRectSize,
-				ImageRectOffset = _pointerProps.ImageRectOffset,
-				Parent = btn.Container,
-			})
-		end
+		U.Create("ImageLabel", {
+			Name = "Pointer",
+			Size = UDim2.fromOffset(21, 21),
+			Position = UDim2.new(1, -28, 0.5, -10),
+			BackgroundTransparency = 1,
+			Image = "rbxassetid://117093892862228",
+			Parent = btn.Container,
+		})
 
 		if hasDesc then
 			U.Create("TextLabel", {
@@ -1203,40 +1192,75 @@ return (function()
 			leftMargin = rightMargin + 8
 			rightMargin = 10
 		else
-			self.CloseBtn = U.Create("ImageButton", {
-				Name = "Close",
-				Size = UDim2.fromOffset(26, 26),
-				Position = UDim2.new(1, -36, 0.5, -13),
-				BackgroundColor3 = Color3.fromRGB(60, 60, 72),
-				BackgroundTransparency = 0.4,
-				AutoButtonColor = false,
-				Parent = self.Topbar,
-			})
-			self.CloseBtn.MouseEnter:Connect(function()
-				self.CloseBtn.BackgroundTransparency = 0
-				self.CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-			end)
-			self.CloseBtn.MouseLeave:Connect(function()
-				self.CloseBtn.BackgroundTransparency = 0.4
-				self.CloseBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 72)
-			end)
-			U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.CloseBtn })
-			local _xProps = resolveIcon("x")
-			if _xProps then
-				U.Create("ImageLabel", {
-					Name = "Icon",
-					Size = UDim2.fromOffset(14, 14),
-					Position = UDim2.fromScale(0.5, 0.5),
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					BackgroundTransparency = 1,
-					ImageColor3 = Color3.fromRGB(180, 180, 195),
-					Image = _xProps.Image,
-					ImageRectSize = _xProps.ImageRectSize,
-					ImageRectOffset = _xProps.ImageRectOffset,
-					Parent = self.CloseBtn,
+			local BTN_ICONS = {
+				Minimize = "rbxassetid://118026365011536",
+				Maximize = "rbxassetid://123104789658180",
+				Close = "rbxassetid://110786993356448",
+			}
+			local BGR = Color3.fromRGB(60, 60, 72)
+			local function winBtn(name, action, xOff, hoverColor)
+				local b = U.Create("ImageButton", {
+					Name = name,
+					Size = UDim2.fromOffset(26, 26),
+					Position = UDim2.new(1, xOff, 0.5, -13),
+					BackgroundColor3 = BGR,
+					BackgroundTransparency = 0.4,
+					AutoButtonColor = false,
+					Parent = self.Topbar,
 				})
+				b.MouseEnter:Connect(function()
+					b.BackgroundTransparency = 0
+					if hoverColor then b.BackgroundColor3 = hoverColor end
+				end)
+				b.MouseLeave:Connect(function()
+					b.BackgroundTransparency = 0.4
+					b.BackgroundColor3 = BGR
+				end)
+				U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = b })
+				local iconId = BTN_ICONS[name]
+				if iconId then
+					U.Create("ImageLabel", {
+						Name = "Icon",
+						Size = UDim2.fromOffset(14, 14),
+						Position = UDim2.fromScale(0.5, 0.5),
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						BackgroundTransparency = 1,
+						ImageColor3 = Color3.fromRGB(180, 180, 195),
+						Image = iconId,
+						Parent = b,
+					})
+				end
+				b.MouseButton1Click:Connect(action)
+				return b
 			end
-			self.CloseBtn.MouseButton1Click:Connect(function() self:SetVisible(false) end)
+			winBtn("Close", function() self:SetVisible(false) end, -36, Color3.fromRGB(200, 60, 60))
+			winBtn("Maximize", function()
+				self.Maximized = not self.Maximized
+				if self.Maximized then
+					self._prevPos = self.Frame.Position
+					self._prevSize = self.Frame.Size
+					local vs = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+					self.Frame.Size = UDim2.fromOffset(vs.X - 40, vs.Y - 40)
+					self.Frame.Position = UDim2.fromOffset(20, 20)
+				else
+					self.Frame.Position = self._prevPos or pos
+					self.Frame.Size = self._prevSize or UDim2.fromOffset(size.X, size.Y)
+				end
+				if self._updateShadow then self._updateShadow() end
+			end, -66)
+			winBtn("Minimize", function()
+				self.Minimized = not self.Minimized
+				if self.Minimized then
+					self._prevSize = self.Frame.Size
+					self.Frame.Size = UDim2.fromOffset(self.Frame.Size.X.Offset, theme.TopbarHeight + 8)
+					self.Sidebar.Visible = false
+					self.ContentArea.Visible = false
+				else
+					self.Frame.Size = self._prevSize or UDim2.fromOffset(size.X, size.Y)
+					self.Sidebar.Visible = true
+					self.ContentArea.Visible = true
+				end
+			end, -96)
 		end
 
 		-- Logo
@@ -1839,7 +1863,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.4", Theme = Theme }
+	local FyyUI = { Version = "0.9.5", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
