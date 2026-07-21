@@ -7,8 +7,8 @@ local menu = FyyUI.Menu({
 	Theme = "Amoled",
 })
 
--- Icon strings: "lucide:iconname" — auto-loaded from GitHub
-local mainTab = menu:Tab({ Text = "Main", Icon = "lucide:zap" })
+-- Icon names auto-loaded from Lucide GitHub — just use the name
+local mainTab = menu:Tab({ Text = "Main", Icon = "zap" })
 
 mainTab:Toggle({
 	Text = "Auto Farm",
@@ -36,12 +36,12 @@ mainTab:Button({
 	Text = "Stop",
 	Description = "Stops all automation",
 	Color = Color3.fromRGB(255, 80, 80),
-	Icon = "lucide:square",
+	Icon = "square",
 	Callback = function() print("Stopped!") end,
 })
 
 -- Tab 2: Settings
-local settingsTab = menu:Tab({ Text = "Settings", Icon = "lucide:settings" })
+local settingsTab = menu:Tab({ Text = "Settings", Icon = "settings" })
 
 settingsTab:Slider({
 	Text = "Speed",
@@ -75,7 +75,7 @@ settingsTab:Dropdown({
 })
 
 -- Tab 3: Info
-local infoTab = menu:Tab({ Text = "Info", Icon = "lucide:info" })
+local infoTab = menu:Tab({ Text = "Info", Icon = "info" })
 
 infoTab:BoldLabel({
 	Text = "FyyUI v" .. FyyUI.Version,

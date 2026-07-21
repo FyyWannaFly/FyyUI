@@ -162,27 +162,37 @@ return (function()
 	end
 
 	local function resolveIcon(icon)
-		if not icon then return nil end
+		if not icon or type(icon) ~= "string" then return nil end
 		-- Direct rbxassetid:// (no resolution needed)
-		if type(icon) == "string" and icon:find("^rbxassetid://") then
+		if icon:find("^rbxassetid://") then
 			return { Image = icon }
 		end
-		-- Icon module format "pack:name" (e.g. "lucide:home")
-		if type(icon) == "string" and IconModule then
-			local ok, result = pcall(IconModule.Icon2, IconModule, icon)
-			if ok and result then
-				return {
-					Image = result[1],
-					ImageRectSize = result[2].ImageRectSize,
-					ImageRectOffset = result[2].ImageRectPosition,
-				}
+		-- Icon module available
+		if IconModule then
+			-- Class format (has Icon2 method) — from manual SetIconModule()
+			if IconModule.Icon2 then
+				local ok, result = pcall(IconModule.Icon2, IconModule, icon)
+				if ok and result then
+					return {
+						Image = result[1],
+						ImageRectSize = result[2].ImageRectSize,
+						ImageRectOffset = result[2].ImageRectPosition,
+					}
+				end
+			-- Flat table format (name → assetId) — from auto-load
+			elseif type(IconModule) == "table" then
+				-- Parse "lucide:zap" → "zap", or just "zap"
+				local name = icon
+				local colon = icon:find(":")
+				if colon then name = icon:sub(colon + 1) end
+				local assetId = IconModule[name]
+				if assetId then
+					return { Image = assetId }
+				end
 			end
 		end
 		-- Fallback: treat as raw asset ID
-		if type(icon) == "string" then
-			return { Image = icon }
-		end
-		return nil
+		return { Image = icon }
 	end
 
 	--[[ Toggle ]]
@@ -1699,7 +1709,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.7.5", Theme = Theme }
+	local FyyUI = { Version = "0.7.6", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
