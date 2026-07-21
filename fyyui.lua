@@ -147,13 +147,17 @@ return (function()
 	local IconModule = nil
 	do
 		local iconUrl = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"
-		local ok, raw = pcall(game.HttpGet, game, iconUrl)
-		if not ok then
-			ok, raw = pcall(function()
-				return game:GetService("HttpService"):GetAsync(iconUrl)
-			end)
+		local raw
+		-- Try multiple HTTP methods
+		local httpMethods = {
+			function() return game:HttpGet(iconUrl) end,
+			function() return game:GetService("HttpService"):GetAsync(iconUrl) end,
+		}
+		for _, method in ipairs(httpMethods) do
+			local ok, result = pcall(method)
+			if ok and result then raw = result; break end
 		end
-		if ok and raw then
+		if raw then
 			local ok2, mod = pcall(loadstring, raw)
 			if ok2 and mod then
 				IconModule = mod()
@@ -1227,6 +1231,7 @@ return (function()
 				return b
 			end
 			winBtn("Close", function() self:SetVisible(false) end, -36)
+			winBtn("Maximize", function()
 				self.Maximized = not self.Maximized
 				if self.Maximized then
 					self._prevPos = self.Frame.Position
@@ -1855,7 +1860,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.6", Theme = Theme }
+	local FyyUI = { Version = "0.9.7", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod

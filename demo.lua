@@ -1,4 +1,14 @@
-local FyyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua"))()
+local FyyUI = (function()
+	local ok, result = pcall(function()
+		return loadstring(game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua"))()
+	end)
+	if ok then return result end
+	ok, result = pcall(function()
+		return loadstring(game:GetService("HttpService"):GetAsync("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua"))()
+	end)
+	if ok then return result end
+	error("Failed to load FyyUI")
+end)()
 
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
