@@ -1233,7 +1233,7 @@ return (function()
 
 		-- MS / FPS display (right after TitleSep) — enabled via options.Stats = true
 		if options.Stats then
-			local statsX = sepX + 8
+			local statsX = sepX + 18
 			self.StatusLabel = U.Create("TextLabel", {
 				Name = "Status",
 				Size = UDim2.new(1, -(statsX + 50), 1, 0),
@@ -1281,7 +1281,7 @@ return (function()
 				end
 				-- Build text
 				local fpsColor = _currentFps >= 50 and _green or _currentFps >= 40 and _yellow or _red
-				local pingColor = _currentPing > 0 and (_currentPing < 50 and _green or _currentPing < 100 and _yellow or _red)
+				local pingColor = _currentPing > 0 and (_currentPing < 80 and _green or _currentPing < 120 and _yellow or _red)
 				self.StatusLabel.Text = ("<font color='#%s'>%s FPS</font>"):format(_hex(fpsColor), _currentFps)
 				if _currentPing > 0 then
 					self.StatusLabel.Text = self.StatusLabel.Text .. (" • <font color='#%s'>%s MS</font>"):format(_hex(pingColor), _currentPing)
@@ -1788,7 +1788,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.2", Theme = Theme }
+	local FyyUI = { Version = "0.9.3", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
