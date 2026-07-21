@@ -586,23 +586,21 @@ return (function()
 			if opt == self.Value then selectedIdx = i; break end
 		end
 
-		-- Dropdown toggle — langsung set arrow text, no function indirection
-		local uis = game:GetService("UserInputService")
-		self.SelectBtn.InputBegan:Connect(function(input)
+		-- Dropdown toggle — arrow ▼=closed ▶=open
+		self.Container.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				if self._menu._activePopupFrame then
-					-- Popup is open → close it
 					self.Open = false
-					self._arrow.Text = "▼"
+					self.SelectBtn.BackgroundColor3 = theme.ElementHover
+					if self._arrow then self._arrow.Text = "▼" end
 					if self._menu._activeDropdown == self then
 						self._menu._activeDropdown = nil
 					end
 					self._menu:HideDropdownPopup()
 				else
-					-- Popup is closed → open it
 					self.Open = true
-					self._arrow.Text = "▶"
-					-- Close any other open dropdown first
+					self.SelectBtn.BackgroundColor3 = theme.Accent
+					if self._arrow then self._arrow.Text = "▶" end
 					if self._menu._activeDropdown and self._menu._activeDropdown ~= self then
 						self._menu._activeDropdown.Open = false
 						if self._menu._activeDropdown._arrow then
@@ -1868,7 +1866,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.11", Theme = Theme }
+	local FyyUI = { Version = "0.9.12", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
