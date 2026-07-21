@@ -1264,6 +1264,7 @@ return (function()
 		local offsetY = 36
 
 		-- Hide old tab content immediately (no glitchy slide-out)
+		local hadPrevTab = self.ActiveTab ~= nil
 		if self.ActiveTab then
 			local old = self.ActiveTab
 			old.Container.Visible = false
@@ -1288,7 +1289,11 @@ return (function()
 				end
 				local targetY = (tabIdx - 1) * 36 + 8 -- (34 height + 2 padding) + bar center offset
 				self.ActiveBar.BackgroundTransparency = 0
-				ts:Create(self.ActiveBar, ti, { Position = UDim2.fromOffset(5, targetY) }):Play()
+				if hadPrevTab then
+					ts:Create(self.ActiveBar, ti, { Position = UDim2.fromOffset(5, targetY) }):Play()
+				else
+					self.ActiveBar.Position = UDim2.fromOffset(5, targetY)
+				end
 			end
 
 			-- Tab button visual
