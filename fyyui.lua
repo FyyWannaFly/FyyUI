@@ -1183,7 +1183,7 @@ return (function()
 			end
 		end)
 
-		-- Shared ActiveBar — slides vertically between tabs
+		-- Shared ActiveBar — slides vertically between tabs (parented to Sidebar, NOT SidebarList, to avoid UIListLayout interference)
 		self.ActiveBar = U.Create("Frame", {
 			Name = "ActiveBar",
 			Size = UDim2.fromOffset(3, 18),
@@ -1192,7 +1192,7 @@ return (function()
 			BackgroundColor3 = theme.Accent,
 			BorderSizePixel = 0,
 			ZIndex = 2,
-			Parent = self.SidebarList,
+			Parent = self.Sidebar,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = self.ActiveBar })
 
