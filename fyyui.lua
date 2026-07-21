@@ -215,11 +215,12 @@ return (function()
 			Size = UDim2.new(1, -12, 0, h + 6),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
-			BackgroundTransparency = 0.4,
+			BackgroundTransparency = 0,
 			BorderSizePixel = 0,
 			Parent = parent,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Container })
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
@@ -336,11 +337,12 @@ return (function()
 			Size = UDim2.new(1, -12, 0, h + 8),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
-			BackgroundTransparency = 0.4,
+			BackgroundTransparency = 0,
 			BorderSizePixel = 0,
 			Parent = parent,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Container })
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
@@ -518,11 +520,12 @@ return (function()
 			Size = UDim2.new(1, -12, 0, h + 8),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
-			BackgroundTransparency = 0.4,
+			BackgroundTransparency = 0,
 			BorderSizePixel = 0,
 			Parent = parent,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Container })
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		U.Create("TextLabel", {
 			Name = "Label",
@@ -781,12 +784,13 @@ return (function()
 			Size = UDim2.new(1, -12, 0, h + 8),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
-			BackgroundTransparency = 0.4,
+			BackgroundTransparency = 0,
 			AutoButtonColor = false,
 			BorderSizePixel = 0,
 			Parent = self.Container,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = btn.Container })
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
 
 		-- Icon (optional, rbxassetid://... or "lucide:name")
 		local btnIconProps = resolveIcon(options.Icon)
@@ -1712,7 +1716,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.7.8", Theme = Theme }
+	local FyyUI = { Version = "0.7.9", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
