@@ -685,20 +685,12 @@ return (function()
 			menu:SelectTab(self)
 		end)
 		self.TabButton.MouseEnter:Connect(function()
-			menu._hoveredTabCount = menu._hoveredTabCount + 1
-			if menu.SidebarLine then
-				menu.SidebarLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			end
 			if menu.ActiveTab ~= self then
 				self.TabButton.BackgroundTransparency = 0
 				self.TabButton.BackgroundColor3 = theme.TabHover
 			end
 		end)
 		self.TabButton.MouseLeave:Connect(function()
-			menu._hoveredTabCount = math.max(0, menu._hoveredTabCount - 1)
-			if menu._hoveredTabCount == 0 and menu.SidebarLine then
-				menu.SidebarLine.BackgroundColor3 = theme.Border
-			end
 			if menu.ActiveTab ~= self then
 				self.TabButton.BackgroundTransparency = 1
 			end
@@ -813,6 +805,57 @@ return (function()
 			Font = self.Theme.Font,
 			TextSize = options.TextSize or self.Theme.FontSize,
 			TextColor3 = options.Color or self.Theme.TextSecondary,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			RichText = true,
+			Parent = lbl.Container,
+		})
+
+		if hasDesc then
+			U.Create("TextLabel", {
+				Name = "Description",
+				Size = UDim2.new(1, 0, 0, 16),
+				Position = UDim2.fromOffset(0, 24),
+				BackgroundTransparency = 1,
+				Text = options.Description,
+				Font = self.Theme.Font,
+				TextSize = self.Theme.FontSizeSmall,
+				TextColor3 = self.Theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				RichText = true,
+				Parent = lbl.Container,
+			})
+		end
+
+		lbl.SetText = function(text) lbl.TextLabel.Text = text end
+		lbl.SetColor = function(c) lbl.TextLabel.TextColor3 = c end
+		lbl.Destroy = function() if lbl.Container then lbl.Container:Destroy() end end
+
+		table.insert(self.Components, lbl)
+		return lbl
+	end
+
+	function Tab:BoldLabel(options)
+		options = options or {}
+		local hasDesc = options.Description ~= nil and options.Description ~= ""
+		local h = hasDesc and self.Theme.DescHeight or self.Theme.ElementHeight
+		local lbl = {}
+
+		lbl.Container = U.Create("Frame", {
+			Name = "BoldLabel",
+			Size = UDim2.new(1, 0, 0, h),
+			BackgroundTransparency = 1,
+			Parent = self.Container,
+		})
+
+		lbl.TextLabel = U.Create("TextLabel", {
+			Name = "Text",
+			Size = UDim2.new(1, 0, 0, hasDesc and 20 or h),
+			Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 20) / 2 + 1),
+			BackgroundTransparency = 1,
+			Text = options.Text or "",
+			Font = self.Theme.FontBold,
+			TextSize = options.TextSize or self.Theme.FontSize,
+			TextColor3 = options.Color or self.Theme.TextPrimary,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			RichText = true,
 			Parent = lbl.Container,
@@ -1162,7 +1205,6 @@ return (function()
 		-- Track active dropdown popup (created/destroyed on demand)
 		self._activePopupFrame = nil
 		self._popupUISCon = nil
-		self._hoveredTabCount = 0
 
 		-- Separator line between sidebar and content
 		self.SidebarLine = U.Create("Frame", {
@@ -1562,7 +1604,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.6.3", Theme = Theme }
+	local FyyUI = { Version = "0.6.4", Theme = Theme }
 
 	function FyyUI.Menu(options)
 		options = options or {}
