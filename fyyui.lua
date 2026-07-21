@@ -578,11 +578,9 @@ return (function()
 			Image = ARROW_DOWN,
 			Parent = self.SelectBtn,
 		})
-		-- Arrow sync: closed = ▼ down, open = ▶ right
-		local function setArrowIcon()
-			self._arrow.Image = self.Open and ARROW_RIGHT or ARROW_DOWN
-		end
-		self._setArrow = setArrowIcon
+		-- Arrow: closed=▼down, open=▶right
+		local function arrowDown() self._arrow.Image = ARROW_DOWN end
+		local function arrowRight() self._arrow.Image = ARROW_RIGHT end
 
 		-- Find selected index
 		local selectedIdx = 0
@@ -590,15 +588,11 @@ return (function()
 			if opt == self.Value then selectedIdx = i; break end
 		end
 
-		local function onDropdownToggle()
-			self._arrow.Image = self.Open and ARROW_RIGHT or ARROW_DOWN
-		end
-
 		self.SelectBtn.MouseButton1Click:Connect(function()
 			if self._menu._activePopupFrame then
 				-- Popup is open → close it
 				self.Open = false
-				onDropdownToggle()
+				arrowDown()
 				if self._menu._activeDropdown == self then
 					self._menu._activeDropdown = nil
 				end
@@ -606,11 +600,13 @@ return (function()
 			else
 				-- Popup is closed → open it
 				self.Open = true
-				onDropdownToggle()
+				arrowRight()
 				-- Close any other open dropdown first
 				if self._menu._activeDropdown and self._menu._activeDropdown ~= self then
 					self._menu._activeDropdown.Open = false
-					if self._menu._activeDropdown._setArrow then self._menu._activeDropdown._setArrow() end
+					if self._menu._activeDropdown._arrow then
+						self._menu._activeDropdown._arrow.Image = "rbxassetid://134243273101015"
+					end
 					self._menu:HideDropdownPopup()
 				end
 				self._menu._activeDropdown = self
@@ -1686,7 +1682,9 @@ return (function()
 		end
 		if self._activeDropdown then
 			self._activeDropdown.Open = false
-			if self._activeDropdown._setArrow then self._activeDropdown._setArrow() end
+			if self._activeDropdown._arrow then
+				self._activeDropdown._arrow.Image = "rbxassetid://134243273101015"
+			end
 			self._activeDropdown = nil
 		end
 	end
@@ -1869,7 +1867,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.8", Theme = Theme }
+	local FyyUI = { Version = "0.9.9", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
