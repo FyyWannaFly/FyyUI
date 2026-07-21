@@ -624,10 +624,23 @@ return (function()
 			Parent = menu.SidebarList,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.TabButton })
+		-- Icon (optional, rbxassetid://...)
+		if options.Icon then
+			U.Create("ImageLabel", {
+				Name = "Icon",
+				Size = UDim2.fromOffset(18, 18),
+				Position = UDim2.fromOffset(12, 8),
+				BackgroundTransparency = 1,
+				Image = options.Icon,
+				Parent = self.TabButton,
+			})
+		end
+		local textX = options.Icon and 36 or 14
+		local textW = options.Icon and -40 or -18
 		U.Create("TextLabel", {
 			Name = "Label",
-			Size = UDim2.new(1, -14, 1, 0),
-			Position = UDim2.fromOffset(10, 0),
+			Size = UDim2.new(1, textW, 1, 0),
+			Position = UDim2.fromOffset(textX, 0),
 			BackgroundTransparency = 1,
 			Text = self.Text,
 			Font = theme.Font,
@@ -719,11 +732,25 @@ return (function()
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = btn.Container })
 
+		-- Icon (optional, rbxassetid://...)
+		local btnIconX = options.Icon and 34 or 10
+		local btnIconW = options.Icon and -44 or -20
+		if options.Icon then
+			U.Create("ImageLabel", {
+				Name = "Icon",
+				Size = UDim2.fromOffset(18, 18),
+				Position = UDim2.fromOffset(10, (h + 8 - 18) / 2),
+				BackgroundTransparency = 1,
+				Image = options.Icon,
+				Parent = btn.Container,
+			})
+		end
+
 		if hasDesc then
 			U.Create("TextLabel", {
 				Name = "Text",
-				Size = UDim2.new(1, -20, 0, 20),
-				Position = UDim2.fromOffset(10, 5),
+				Size = UDim2.new(1, btnIconW, 0, 20),
+				Position = UDim2.fromOffset(btnIconX, 5),
 				BackgroundTransparency = 1,
 				Text = options.Text or "Button",
 				Font = theme.Font,
@@ -734,8 +761,8 @@ return (function()
 			})
 			U.Create("TextLabel", {
 				Name = "Description",
-				Size = UDim2.new(1, -20, 0, 16),
-				Position = UDim2.fromOffset(10, 27),
+				Size = UDim2.new(1, btnIconW, 0, 16),
+				Position = UDim2.fromOffset(btnIconX, 27),
 				BackgroundTransparency = 1,
 				Text = options.Description,
 				Font = theme.Font,
@@ -747,8 +774,8 @@ return (function()
 		else
 			U.Create("TextLabel", {
 				Name = "Text",
-				Size = UDim2.new(1, -20, 0, 20),
-				Position = UDim2.fromOffset(10, (h + 8 - 20) / 2),
+				Size = UDim2.new(1, btnIconW, 0, 20),
+				Position = UDim2.fromOffset(btnIconX, (h + 8 - 20) / 2),
 				BackgroundTransparency = 1,
 				Text = options.Text or "Button",
 				Font = theme.Font,
@@ -1624,7 +1651,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.7.2", Theme = Theme }
+	local FyyUI = { Version = "0.7.3", Theme = Theme }
 
 	function FyyUI.Menu(options)
 		options = options or {}

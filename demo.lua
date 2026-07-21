@@ -7,7 +7,7 @@ local menu = FyyUI.Menu({
 	Theme = "Amoled",
 })
 
--- Tab 1: Main
+-- Tab 1: Main (add Icon = "rbxassetid://..." for Lucide icons)
 local mainTab = menu:Tab({ Text = "Main" })
 
 mainTab:Toggle({
