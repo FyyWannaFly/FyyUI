@@ -1231,18 +1231,19 @@ return (function()
 			Parent = self.Topbar,
 		})
 
-		-- MS / FPS display (right side of TitleSep) — enabled via options.Stats = true
+		-- MS / FPS display (right after TitleSep) — enabled via options.Stats = true
 		if options.Stats then
+			local statsX = sepX + 8
 			self.StatusLabel = U.Create("TextLabel", {
 				Name = "Status",
-				Size = UDim2.fromOffset(110, 20),
-				Position = UDim2.new(1, -150, 0.5, -10),
+				Size = UDim2.new(1, -(statsX + 50), 1, 0),
+				Position = UDim2.fromOffset(statsX, 0),
 				BackgroundTransparency = 1,
 				Text = "---",
 				Font = theme.Font,
 				TextSize = theme.FontSizeSmall,
 				TextColor3 = theme.TextPrimary,
-				TextXAlignment = Enum.TextXAlignment.Right,
+				TextXAlignment = Enum.TextXAlignment.Left,
 				Parent = self.Topbar,
 			})
 			self._heartbeatCon = game:GetService("RunService").Heartbeat:Connect(function()
@@ -1762,7 +1763,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.8.7", Theme = Theme }
+	local FyyUI = { Version = "0.8.9", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
