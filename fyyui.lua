@@ -568,19 +568,20 @@ return (function()
 			Parent = self.SelectBtn,
 		})
 
-		local ARROW_DOWN = "rbxassetid://134243273101015"
-		local ARROW_RIGHT = "rbxassetid://92473583511724"
-		self._arrow = U.Create("ImageLabel", {
+		self._arrow = U.Create("TextLabel", {
 			Name = "Arrow",
 			Size = UDim2.fromOffset(16, 16),
 			Position = UDim2.new(1, -20, 0.5, -8),
 			BackgroundTransparency = 1,
-			Image = ARROW_DOWN,
+			Text = "▼",
+			Font = theme.FontBold,
+			TextSize = 14,
+			TextColor3 = theme.TextMuted,
 			Parent = self.SelectBtn,
 		})
-		-- Arrow: closed=▼down, open=▶right
-		local function arrowDown() self._arrow.Image = ARROW_DOWN end
-		local function arrowRight() self._arrow.Image = ARROW_RIGHT end
+		-- Arrow: closed=▼, open=▶
+		local function arrowDown() self._arrow.Text = "▼" end
+		local function arrowRight() self._arrow.Text = "▶" end
 
 		-- Find selected index
 		local selectedIdx = 0
@@ -605,7 +606,7 @@ return (function()
 				if self._menu._activeDropdown and self._menu._activeDropdown ~= self then
 					self._menu._activeDropdown.Open = false
 					if self._menu._activeDropdown._arrow then
-						self._menu._activeDropdown._arrow.Image = "rbxassetid://134243273101015"
+						self._menu._activeDropdown._arrow.Text = "▼"
 					end
 					self._menu:HideDropdownPopup()
 				end
@@ -1683,7 +1684,7 @@ return (function()
 		if self._activeDropdown then
 			self._activeDropdown.Open = false
 			if self._activeDropdown._arrow then
-				self._activeDropdown._arrow.Image = "rbxassetid://134243273101015"
+				self._activeDropdown._arrow.Text = "▼"
 			end
 			self._activeDropdown = nil
 		end
@@ -1867,7 +1868,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.9", Theme = Theme }
+	local FyyUI = { Version = "0.9.10", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
