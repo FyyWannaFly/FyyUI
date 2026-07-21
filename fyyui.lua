@@ -1229,11 +1229,11 @@ return (function()
 			Parent = content,
 		})
 
-		-- Separator line on the left, matching SidebarLine position
+		-- Separator line on the left, full height
 		U.Create("Frame", {
 			Name = "SideLine",
-			Size = UDim2.new(0, 1, 1, -(theme.TopbarHeight + 10)),
-			Position = UDim2.fromOffset(0, theme.TopbarHeight + 6),
+			Size = UDim2.new(0, 1, 1, 0),
+			Position = UDim2.fromOffset(0, 0),
 			BackgroundColor3 = theme.Border,
 			BorderSizePixel = 0,
 			BackgroundTransparency = 0.3,
@@ -1487,7 +1487,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.5.4", Theme = Theme }
+	local FyyUI = { Version = "0.5.5", Theme = Theme }
 
 	function FyyUI.Menu(options)
 		options = options or {}
