@@ -1210,7 +1210,7 @@ return (function()
 			Name = "TitleSep",
 			Size = UDim2.fromOffset(2, theme.TopbarHeight),
 			Position = UDim2.fromOffset(sepX, 0),
-			BackgroundColor3 = theme.Border,
+			BackgroundColor3 = Color3.fromRGB(140, 80, 255),
 			BorderSizePixel = 0,
 			ZIndex = 1,
 			Parent = self.Topbar,
@@ -1220,7 +1220,7 @@ return (function()
 		self.Title = U.Create("TextLabel", {
 			Name = "Title",
 			Size = UDim2.new(1, -(leftMargin + 50), 1, 0),
-			Position = UDim2.fromOffset(leftMargin + 8, 0),
+			Position = UDim2.fromOffset(leftMargin + 18, 0),
 			BackgroundTransparency = 1,
 			Text = options.Title or "FyyUI",
 			Font = theme.FontBold,
@@ -1728,7 +1728,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.8.2", Theme = Theme }
+	local FyyUI = { Version = "0.8.3", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
