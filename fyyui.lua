@@ -575,9 +575,10 @@ return (function()
 			Parent = self.SelectBtn,
 		})
 		local function updateArrow()
-			self._arrow.Image = self.Open and ARROW_RIGHT or ARROW_DOWN
+			self._arrow.Image = self.Open and ARROW_DOWN or ARROW_RIGHT
 		end
 		self._updateArrow = updateArrow
+		updateArrow() -- ensure correct initial state (collapsed = right)
 
 			-- Find selected index
 		local selectedIdx = 0
@@ -1197,44 +1198,35 @@ return (function()
 				Maximize = "rbxassetid://123104789658180",
 				Close = "rbxassetid://110786993356448",
 			}
-			local BGR = Color3.fromRGB(60, 60, 72)
 			local function winBtn(name, action, xOff, hoverColor)
 				local b = U.Create("ImageButton", {
 					Name = name,
 					Size = UDim2.fromOffset(26, 26),
 					Position = UDim2.new(1, xOff, 0.5, -13),
-					BackgroundColor3 = BGR,
-					BackgroundTransparency = 0.4,
+					BackgroundTransparency = 1,
 					AutoButtonColor = false,
 					Parent = self.Topbar,
 				})
+				local icon = U.Create("ImageLabel", {
+					Name = "Icon",
+					Size = UDim2.fromOffset(14, 14),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundTransparency = 1,
+					ImageColor3 = Color3.fromRGB(150, 150, 165),
+					Image = BTN_ICONS[name],
+					Parent = b,
+				})
 				b.MouseEnter:Connect(function()
-					b.BackgroundTransparency = 0
-					if hoverColor then b.BackgroundColor3 = hoverColor end
+					icon.ImageColor3 = Color3.fromRGB(225, 225, 235)
 				end)
 				b.MouseLeave:Connect(function()
-					b.BackgroundTransparency = 0.4
-					b.BackgroundColor3 = BGR
+					icon.ImageColor3 = Color3.fromRGB(150, 150, 165)
 				end)
-				U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = b })
-				local iconId = BTN_ICONS[name]
-				if iconId then
-					U.Create("ImageLabel", {
-						Name = "Icon",
-						Size = UDim2.fromOffset(14, 14),
-						Position = UDim2.fromScale(0.5, 0.5),
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundTransparency = 1,
-						ImageColor3 = Color3.fromRGB(180, 180, 195),
-						Image = iconId,
-						Parent = b,
-					})
-				end
 				b.MouseButton1Click:Connect(action)
 				return b
 			end
-			winBtn("Close", function() self:SetVisible(false) end, -36, Color3.fromRGB(200, 60, 60))
-			winBtn("Maximize", function()
+			winBtn("Close", function() self:SetVisible(false) end, -36)
 				self.Maximized = not self.Maximized
 				if self.Maximized then
 					self._prevPos = self.Frame.Position
@@ -1863,7 +1855,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.5", Theme = Theme }
+	local FyyUI = { Version = "0.9.6", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
