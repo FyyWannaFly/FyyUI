@@ -44,8 +44,8 @@ return (function()
 			Padding = 10,
 			CornerRadius = 8,
 			TopbarHeight = 44,
-			ElementHeight = 34,
-			DescHeight = 52,
+			ElementHeight = 30,
+			DescHeight = 46,
 			Spacing = 6,
 			SidebarWidth = 150,
 		},
@@ -81,8 +81,8 @@ return (function()
 			Padding = 10,
 			CornerRadius = 8,
 			TopbarHeight = 44,
-			ElementHeight = 34,
-			DescHeight = 52,
+			ElementHeight = 30,
+			DescHeight = 46,
 			Spacing = 6,
 			SidebarWidth = 150,
 		},
@@ -118,8 +118,8 @@ return (function()
 			Padding = 10,
 			CornerRadius = 8,
 			TopbarHeight = 44,
-			ElementHeight = 34,
-			DescHeight = 52,
+			ElementHeight = 30,
+			DescHeight = 46,
 			Spacing = 6,
 			SidebarWidth = 150,
 		},
@@ -1866,7 +1866,7 @@ return (function()
 				Size = UDim2.new(1, -8, 0, 32),
 				Text = "",
 				BackgroundColor3 = sel and theme.Accent or theme.Element,
-				BackgroundTransparency = sel and 0.15 or 0.8,
+				BackgroundTransparency = sel and 0.15 or 0.6,
 				AutoButtonColor = false,
 				ZIndex = 10001,
 				Parent = content,
@@ -1893,7 +1893,7 @@ return (function()
 						dd:SetValue(opt)
 						local isSel = dd._selected[opt]
 						btn.BackgroundColor3 = isSel and theme.Accent or theme.Element
-						btn.BackgroundTransparency = isSel and 0.15 or 0.8
+						btn.BackgroundTransparency = isSel and 0.15 or 0.6
 					end
 				else
 					onClick(i, opt)
@@ -1910,7 +1910,7 @@ return (function()
 					btn.BackgroundTransparency = 0.15  -- back to normal selected
 				else
 					btn.BackgroundColor3 = theme.Element
-					btn.BackgroundTransparency = 0.8
+					btn.BackgroundTransparency = 0.6
 				end
 			end)
 			options[#options + 1] = btn
@@ -2137,7 +2137,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.34", Theme = Theme }
+	local FyyUI = { Version = "0.9.35", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
