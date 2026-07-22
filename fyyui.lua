@@ -44,8 +44,8 @@ return (function()
 			Padding = 10,
 			CornerRadius = 8,
 			TopbarHeight = 44,
-			ElementHeight = 30,
-			DescHeight = 46,
+			ElementHeight = 32,
+			DescHeight = 48,
 			Spacing = 6,
 			SidebarWidth = 150,
 		},
@@ -81,8 +81,8 @@ return (function()
 			Padding = 10,
 			CornerRadius = 8,
 			TopbarHeight = 44,
-			ElementHeight = 30,
-			DescHeight = 46,
+			ElementHeight = 32,
+			DescHeight = 48,
 			Spacing = 6,
 			SidebarWidth = 150,
 		},
@@ -118,8 +118,8 @@ return (function()
 			Padding = 10,
 			CornerRadius = 8,
 			TopbarHeight = 44,
-			ElementHeight = 30,
-			DescHeight = 46,
+			ElementHeight = 32,
+			DescHeight = 48,
 			Spacing = 6,
 			SidebarWidth = 150,
 		},
@@ -1866,13 +1866,13 @@ return (function()
 				Size = UDim2.new(1, -8, 0, 32),
 				Text = "",
 				BackgroundColor3 = sel and theme.Accent or theme.Element,
-				BackgroundTransparency = sel and 0.15 or 0.6,
+				BackgroundTransparency = sel and 0.25 or 0.6,
 				AutoButtonColor = false,
 				ZIndex = 10001,
 				Parent = content,
 			})
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = btn })
-			U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.7, Thickness = 1, Parent = btn })
+			U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.5, Thickness = 1, Parent = btn })
 			local textOffset = isMulti and 28 or 10
 			U.Create("TextLabel", {
 				Name = "Label",
@@ -1893,7 +1893,7 @@ return (function()
 						dd:SetValue(opt)
 						local isSel = dd._selected[opt]
 						btn.BackgroundColor3 = isSel and theme.Accent or theme.Element
-						btn.BackgroundTransparency = isSel and 0.15 or 0.6
+						btn.BackgroundTransparency = isSel and 0.25 or 0.6
 					end
 				else
 					onClick(i, opt)
@@ -1902,12 +1902,12 @@ return (function()
 			end)
 			btn.MouseEnter:Connect(function()
 				btn.BackgroundColor3 = theme.Accent
-				btn.BackgroundTransparency = 0.45
+				btn.BackgroundTransparency = 0.55
 			end)
 			btn.MouseLeave:Connect(function()
 				local curSel = isMulti and (dd and dd._selected[opt]) or (not isMulti and dd and tostring(opt) == tostring(dd.Value))
 				if curSel then
-					btn.BackgroundTransparency = 0.15  -- back to normal selected
+					btn.BackgroundTransparency = 0.3  -- back to normal selected
 				else
 					btn.BackgroundColor3 = theme.Element
 					btn.BackgroundTransparency = 0.6
@@ -2137,7 +2137,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.35", Theme = Theme }
+	local FyyUI = { Version = "0.9.36", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
