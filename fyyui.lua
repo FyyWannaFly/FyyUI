@@ -799,38 +799,23 @@ return (function()
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
 
-		-- Icon (optional, rbxassetid://... or "lucide:name")
-		local btnIconProps = resolveIcon(options.Icon)
-		local btnIconX = btnIconProps and 34 or 10
-		local btnIconW = btnIconProps and -44 or -20
-		if btnIconProps then
-			U.Create("ImageLabel", {
-				Name = "Icon",
-				Size = UDim2.fromOffset(18, 18),
-				Position = UDim2.fromOffset(10, (h + 8 - 18) / 2),
-				BackgroundTransparency = 1,
-				Image = btnIconProps.Image,
-				ImageRectSize = btnIconProps.ImageRectSize,
-				ImageRectOffset = btnIconProps.ImageRectOffset,
-				Parent = btn.Container,
-			})
-		end
-
-		-- Right-side pointer icon (fixed: mouse-pointer-2, 42x42 semi-transparent)
-		local _ptr = resolveIcon("mouse-pointer-2")
-		if _ptr then
+		-- Right-side icon (default: mouse-pointer-2, customizable via Icon option)
+		local _rightIcon = resolveIcon(options.Icon or "mouse-pointer-2")
+		if _rightIcon then
 			U.Create("ImageLabel", {
 				Name = "Pointer",
 				Size = UDim2.fromOffset(42, 42),
 				Position = UDim2.new(1, -48, 0.5, -21),
 				BackgroundTransparency = 1,
 				ImageTransparency = 0.3,
-				Image = _ptr.Image,
-				ImageRectSize = _ptr.ImageRectSize,
-				ImageRectOffset = _ptr.ImageRectOffset,
+				Image = _rightIcon.Image,
+				ImageRectSize = _rightIcon.ImageRectSize,
+				ImageRectOffset = _rightIcon.ImageRectOffset,
 				Parent = btn.Container,
 			})
 		end
+		local btnIconX = 10
+		local btnIconW = -20
 
 		if hasDesc then
 			U.Create("TextLabel", {

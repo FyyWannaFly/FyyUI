@@ -30,6 +30,7 @@ mainTab:Divider()
 mainTab:Button({
 	Text = "Toggle All",
 	Description = "Enable or disable all features",
+	-- Icon gak di-set → default mouse-pointer-2
 	Callback = function() print("Toggle All!") end,
 })
 
@@ -37,6 +38,7 @@ mainTab:Button({
 	Text = "Stop",
 	Description = "Stops all automation",
 	Color = Color3.fromRGB(255, 80, 80),
+	Icon = "square",
 	Callback = function() print("Stopped!") end,
 })
 
