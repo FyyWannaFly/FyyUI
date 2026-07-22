@@ -579,6 +579,12 @@ return (function()
 			Parent = self.Container,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.SelectBtn })
+		self._selectStroke = U.Create("UIStroke", {
+			Color = theme.Accent,
+			Thickness = 1,
+			Transparency = self.Value and (self.Value ~= "" and self.Value ~= (self.Options[1] or "")) and 0.5 or 0.8,
+			Parent = self.SelectBtn,
+		})
 
 		self.SelectText = U.Create("TextLabel", {
 			Name = "Text",
@@ -698,6 +704,7 @@ return (function()
 		end
 		self.Value = v
 		self.SelectText.Text = tostring(v)
+		if self._selectStroke then self._selectStroke.Transparency = 0.5 end
 		self.Open = false
 		if self._arrow then self._arrow.Image = self._arrowDown end
 		if self._menu._activeDropdown == self then
@@ -2091,7 +2098,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.26", Theme = Theme }
+	local FyyUI = { Version = "0.9.27", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
