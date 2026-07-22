@@ -816,18 +816,18 @@ return (function()
 			})
 		end
 
-		-- Right-side icon (default: mouse-pointer-2, customizable via options.Pointer)
-		local _ptrProps = resolveIcon(options.Pointer or "mouse-pointer-2")
-		if _ptrProps then
+		-- Right-side pointer icon (fixed: mouse-pointer-2, 42x42 semi-transparent)
+		local _ptr = resolveIcon("mouse-pointer-2")
+		if _ptr then
 			U.Create("ImageLabel", {
 				Name = "Pointer",
 				Size = UDim2.fromOffset(42, 42),
 				Position = UDim2.new(1, -48, 0.5, -21),
 				BackgroundTransparency = 1,
 				ImageTransparency = 0.3,
-				Image = _ptrProps.Image,
-				ImageRectSize = _ptrProps.ImageRectSize,
-				ImageRectOffset = _ptrProps.ImageRectOffset,
+				Image = _ptr.Image,
+				ImageRectSize = _ptr.ImageRectSize,
+				ImageRectOffset = _ptr.ImageRectOffset,
 				Parent = btn.Container,
 			})
 		end

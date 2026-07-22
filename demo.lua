@@ -30,7 +30,6 @@ mainTab:Divider()
 mainTab:Button({
 	Text = "Toggle All",
 	Description = "Enable or disable all features",
-	Pointer = "toggle-right",
 	Callback = function() print("Toggle All!") end,
 })
 
@@ -38,7 +37,6 @@ mainTab:Button({
 	Text = "Stop",
 	Description = "Stops all automation",
 	Color = Color3.fromRGB(255, 80, 80),
-	Pointer = "square",
 	Callback = function() print("Stopped!") end,
 })
 
