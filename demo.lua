@@ -85,6 +85,18 @@ settingsTab:Dropdown({
 	Callback = function(v) print("[Mode]", v) end,
 })
 
+-- Collapsible Section demo
+local combat = settingsTab:Collapsible("Combat", { DefaultOpen = true })
+combat:Toggle({ Text = "Silent Aim", Description = "Automatically aims at targets", Default = true })
+combat:Checkbox({ Text = "Draw FOV", Default = true })
+combat:Slider({ Text = "FOV", Min = 1, Max = 200, Default = 100, Suffix = "" })
+combat:Dropdown({ Text = "Hit Part", Options = { "Head", "Torso", "Random" }, Default = "Head" })
+
+local visual = settingsTab:Collapsible("Visual")
+visual:Toggle({ Text = "ESP", Description = "Enables ESP rendering", Default = false })
+visual:Checkbox({ Text = "Tracers", Default = true })
+visual:Slider({ Text = "Transparency", Min = 0, Max = 1, Default = 0.5, Suffix = "", Step = 0.1 })
+
 -- Tab 3: Info
 local infoTab = menu:Tab({ Text = "Info", Icon = "info" })
 

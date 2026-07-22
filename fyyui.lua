@@ -1127,6 +1127,336 @@ return (function()
 		return dd
 	end
 
+	--[[ Checkbox ]]
+	local Checkbox = {}
+	Checkbox.__index = Checkbox
+
+	function Checkbox.new(parent, options, theme)
+		local self = setmetatable({}, Checkbox)
+		self.Text = options.Text or "Checkbox"
+		self.Value = options.Default or false
+		self.Callback = options.Callback or function() end
+		self.Theme = theme
+		self.HasDesc = options.Description ~= nil and options.Description ~= ""
+		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
+
+		self.Container = U.Create("Frame", {
+			Name = "Checkbox",
+			Size = UDim2.new(1, -12, 0, h + 6),
+			Position = UDim2.fromOffset(6, 0),
+			BackgroundColor3 = theme.Element,
+			BackgroundTransparency = 0,
+			BorderSizePixel = 0,
+			Parent = parent,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+
+		-- Box
+		local boxSize = 20
+		self.Box = U.Create("ImageButton", {
+			Name = "Box",
+			Size = UDim2.fromOffset(boxSize, boxSize),
+			Position = UDim2.new(1, -(boxSize + 12), 0.5, -boxSize / 2),
+			BackgroundColor3 = self.Value and theme.Accent or theme.ElementHover,
+			BackgroundTransparency = 0,
+			AutoButtonColor = false,
+			Parent = self.Container,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = self.Box })
+		self.Check = U.Create("TextLabel", {
+			Name = "Check",
+			Size = UDim2.new(1, 0, 1, 0),
+			BackgroundTransparency = 1,
+			Text = self.Value and "✓" or "",
+			Font = theme.FontBold,
+			TextSize = 16,
+			TextColor3 = Color3.fromRGB(255,255,255),
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Parent = self.Box,
+		})
+
+		-- Label
+		self.Label = U.Create("TextLabel", {
+			Name = "Label",
+			Size = UDim2.new(1, -(boxSize + 24), 0, 20),
+			Position = UDim2.fromOffset(10, self.HasDesc and 6 or (h + 6 - 20) / 2 + 1),
+			BackgroundTransparency = 1,
+			Text = self.Text,
+			Font = theme.Font,
+			TextSize = theme.FontSize,
+			TextColor3 = theme.TextPrimary,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			RichText = true,
+			Parent = self.Container,
+		})
+		if self.HasDesc then
+			U.Create("TextLabel", {
+				Name = "Description",
+				Size = UDim2.new(1, -(boxSize + 24), 0, 16),
+				Position = UDim2.fromOffset(10, 28),
+				BackgroundTransparency = 1,
+				Text = options.Description,
+				Font = theme.Font,
+				TextSize = theme.FontSizeSmall,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				RichText = true,
+				Parent = self.Container,
+			})
+		end
+
+		-- Hover + Click
+		self.Box.MouseEnter:Connect(function()
+			self.Box.BackgroundColor3 = self.Value and theme.Accent or theme.Element
+		end)
+		self.Box.MouseLeave:Connect(function()
+			self.Box.BackgroundColor3 = self.Value and theme.Accent or theme.ElementHover
+		end)
+		self.Box.MouseButton1Click:Connect(function()
+			self:SetValue(not self.Value)
+		end)
+
+		return self
+	end
+
+	function Checkbox:SetValue(v, instant)
+		if self.Value == v then return end
+		self.Value = v
+		local ts = game:GetService("TweenService")
+		local ti = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		if instant then
+			self.Box.BackgroundColor3 = v and self.Theme.Accent or self.Theme.ElementHover
+			self.Check.Text = v and "✓" or ""
+		else
+			ts:Create(self.Box, ti, { BackgroundColor3 = v and self.Theme.Accent or self.Theme.ElementHover }):Play()
+			task.spawn(function()
+				if v then
+					self.Check.Text = ""
+					task.wait(0.05)
+					self.Check.Text = "✓"
+				else
+					self.Check.Text = ""
+				end
+			end)
+		end
+		task.spawn(function() self.Callback(v) end)
+	end
+	function Checkbox:GetValue() return self.Value end
+	function Checkbox:Destroy() if self.Container then self.Container:Destroy() end end
+
+	--[[ Collapsible Section ]]
+	local Collapsible = {}
+	Collapsible.__index = Collapsible
+
+	function Collapsible.new(parent, title, options, theme)
+		local self = setmetatable({}, Collapsible)
+		self.Theme = theme
+		self.Components = {}
+		self.Open = options and options.DefaultOpen ~= false
+		self._tween = nil
+
+		-- Container
+		self.Container = U.Create("Frame", {
+			Name = "Collapsible",
+			Size = UDim2.new(1, -12, 0, 0),
+			Position = UDim2.fromOffset(6, 0),
+			BackgroundColor3 = theme.Element,
+			BackgroundTransparency = 0,
+			BorderSizePixel = 0,
+			ClipsDescendants = true,
+			Parent = parent,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+
+		-- Header button
+		self.Header = U.Create("ImageButton", {
+			Name = "Header",
+			Size = UDim2.new(1, 0, 0, 34),
+			BackgroundColor3 = theme.ElementHover,
+			BackgroundTransparency = 0.3,
+			AutoButtonColor = false,
+			Parent = self.Container,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Header })
+		-- Arrow
+		self.Arrow = U.Create("TextLabel", {
+			Name = "Arrow",
+			Size = UDim2.fromOffset(16, 16),
+			Position = UDim2.fromOffset(10, 9),
+			BackgroundTransparency = 1,
+			Text = self.Open and "▼" or "▶",
+			Font = theme.FontBold,
+			TextSize = 12,
+			TextColor3 = theme.TextSecondary,
+			Parent = self.Header,
+		})
+		-- Title
+		self.Title = U.Create("TextLabel", {
+			Name = "Title",
+			Size = UDim2.new(1, -40, 1, 0),
+			Position = UDim2.fromOffset(30, 0),
+			BackgroundTransparency = 1,
+			Text = title,
+			Font = theme.FontBold,
+			TextSize = theme.FontSize,
+			TextColor3 = theme.TextPrimary,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = self.Header,
+		})
+
+		-- Content area (children go here)
+		self.Content = U.Create("Frame", {
+			Name = "Content",
+			Size = UDim2.new(1, 0, 0, 0),
+			Position = UDim2.fromOffset(0, 34),
+			BackgroundTransparency = 1,
+			Parent = self.Container,
+		})
+		local layout = U.Create("UIListLayout", {
+			Padding = UDim.new(0, theme.Spacing),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Parent = self.Content,
+		})
+		self._layout = layout
+
+		-- Track content height changes to resize container
+		self._layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			self:_updateSize()
+		end)
+		-- Also update size after any children changes
+		self._updateSize()
+
+		-- Click header to toggle
+		self.Header.MouseEnter:Connect(function()
+			self.Header.BackgroundColor3 = theme.TabHover
+			self.Header.BackgroundTransparency = 0
+		end)
+		self.Header.MouseLeave:Connect(function()
+			self.Header.BackgroundColor3 = theme.ElementHover
+			self.Header.BackgroundTransparency = 0.3
+		end)
+		self.Header.MouseButton1Click:Connect(function()
+			self:Toggle()
+		end)
+
+		-- Initialize height based on open state
+		-- Wait one frame for layout to process
+		task.spawn(function()
+			task.wait()
+			self:_updateSize(true)
+		end)
+
+		return self
+	end
+
+	function Collapsible:Toggle()
+		self.Open = not self.Open
+		self.Arrow.Text = self.Open and "▼" or "▶"
+		if self._tween then self._tween:Cancel() end
+		local ts = game:GetService("TweenService")
+		local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		local contentH = self._layout.AbsoluteContentSize.Y
+		local targetH = self.Open and (34 + contentH) or 34
+		self._tween = ts:Create(self.Container, ti, { Size = UDim2.new(1, -12, 0, targetH) }):Play()
+	end
+
+	function Collapsible:Open()
+		if not self.Open then self:Toggle() end
+	end
+
+	function Collapsible:Close()
+		if self.Open then self:Toggle() end
+	end
+
+	function Collapsible:_updateSize(instant)
+		if self._tween then self._tween:Cancel() end
+		local contentH = self._layout.AbsoluteContentSize.Y
+		local targetH = self.Open and (34 + contentH) or 34
+		if instant then
+			self.Container.Size = UDim2.new(1, -12, 0, targetH)
+		else
+			local ts = game:GetService("TweenService")
+			self._tween = ts:Create(self.Container, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, -12, 0, targetH) }):Play()
+		end
+	end
+
+	-- Pass-through methods for all component types
+	function Collapsible:Toggle(opts) local c = Toggle.new(self.Content, opts, self.Theme); table.insert(self.Components, c); self:_updateSize(); return c end
+	function Collapsible:Checkbox(opts) local c = Checkbox.new(self.Content, opts, self.Theme); table.insert(self.Components, c); self:_updateSize(); return c end
+	function Collapsible:Slider(opts) local c = Slider.new(self.Content, opts, self.Theme); table.insert(self.Components, c); self:_updateSize(); return c end
+	function Collapsible:Dropdown(opts) local c = Dropdown.new(self.Content, opts, self.Theme, self._menu or nil); table.insert(self.Components, c); self:_updateSize(); return c end
+	function Collapsible:Button(opts)
+		opts = opts or {}
+		local theme = self.Theme
+		local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+		local h = hasDesc and theme.DescHeight or theme.ElementHeight
+		local btn = {}
+		btn.Container = U.Create("ImageButton", { Name = "Button", Size = UDim2.new(1, -12, 0, h + 8), Position = UDim2.fromOffset(6, 0), BackgroundColor3 = theme.Element, BackgroundTransparency = 0, AutoButtonColor = false, BorderSizePixel = 0, Parent = self.Content })
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
+		local _ri = resolveIcon(opts.Icon or "mouse-pointer-2")
+		if _ri then U.Create("ImageLabel", { Name = "Pointer", Size = UDim2.fromOffset(42, 42), Position = UDim2.new(1, -48, 0.5, -16), BackgroundTransparency = 1, ImageTransparency = 0.5, Image = _ri.Image, ImageRectSize = _ri.ImageRectSize, ImageRectOffset = _ri.ImageRectOffset, Parent = btn.Container }) end
+		local ix = 10
+		if hasDesc then
+			U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(ix, 5), BackgroundTransparency = 1, Text = opts.Text or "Button", Font = theme.Font, TextSize = theme.FontSize, TextColor3 = opts.Color or theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left, Parent = btn.Container })
+			U.Create("TextLabel", { Name = "Description", Size = UDim2.new(1, -20, 0, 16), Position = UDim2.fromOffset(ix, 27), BackgroundTransparency = 1, Text = opts.Description, Font = theme.Font, TextSize = theme.FontSizeSmall, TextColor3 = theme.TextMuted, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = btn.Container })
+		else
+			U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(ix, (h + 8 - 20) / 2), BackgroundTransparency = 1, Text = opts.Text or "Button", Font = theme.Font, TextSize = theme.FontSize, TextColor3 = opts.Color or theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left, Parent = btn.Container })
+		end
+		local _sc = U.Create("UIScale", { Parent = btn.Container })
+		btn.Container.MouseEnter:Connect(function() btn.Container.BackgroundColor3 = theme.ElementHover; btn.Container.BackgroundTransparency = 0 end)
+		btn.Container.MouseLeave:Connect(function() btn.Container.BackgroundColor3 = theme.Element; btn.Container.BackgroundTransparency = 0 end)
+		btn.Container.MouseButton1Down:Connect(function() game:GetService("TweenService"):Create(_sc, TweenInfo.new(0.05), { Scale = 0.97 }):Play() end)
+		btn.Container.MouseButton1Up:Connect(function() game:GetService("TweenService"):Create(_sc, TweenInfo.new(0.08), { Scale = 1 }):Play() end)
+		btn.Container.MouseButton1Click:Connect(function() if opts.Callback then opts.Callback() end end)
+		btn.Destroy = function() if btn.Container then btn.Container:Destroy() end end
+		table.insert(self.Components, btn); self:_updateSize(); return btn
+	end
+	function Collapsible:Label(opts)
+		opts = opts or {}
+		local theme = self.Theme
+		local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+		local h = hasDesc and theme.DescHeight or theme.ElementHeight
+		local lbl = {}
+		lbl.Container = U.Create("Frame", { Name = "Label", Size = UDim2.new(1, 0, 0, h), BackgroundTransparency = 1, Parent = self.Content })
+		lbl.TextLabel = U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, 0, 0, hasDesc and 20 or h), Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 20) / 2 + 1), BackgroundTransparency = 1, Text = opts.Text or "", Font = theme.Font, TextSize = opts.TextSize or theme.FontSize, TextColor3 = opts.Color or theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = lbl.Container })
+		if hasDesc then U.Create("TextLabel", { Name = "Description", Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 24), BackgroundTransparency = 1, Text = opts.Description, Font = theme.Font, TextSize = theme.FontSizeSmall, TextColor3 = theme.TextMuted, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = lbl.Container }) end
+		lbl.Destroy = function() if lbl.Container then lbl.Container:Destroy() end end
+		table.insert(self.Components, lbl); self:_updateSize(); return lbl
+	end
+	function Collapsible:BoldLabel(opts)
+		opts = opts or {}
+		local theme = self.Theme
+		local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+		local h = hasDesc and theme.DescHeight or theme.ElementHeight
+		local lbl = {}
+		lbl.Container = U.Create("Frame", { Name = "BoldLabel", Size = UDim2.new(1, 0, 0, h), BackgroundTransparency = 1, Parent = self.Content })
+		lbl.TextLabel = U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, 0, 0, hasDesc and 22 or h), Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 22) / 2 + 1), BackgroundTransparency = 1, Text = opts.Text or "", Font = theme.FontBold, TextSize = opts.TextSize or theme.FontSizeTitle, TextColor3 = opts.Color or theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = lbl.Container })
+		if hasDesc then U.Create("TextLabel", { Name = "Description", Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 24), BackgroundTransparency = 1, Text = opts.Description, Font = theme.Font, TextSize = theme.FontSizeSmall, TextColor3 = theme.TextMuted, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = lbl.Container }) end
+		lbl.Destroy = function() if lbl.Container then lbl.Container:Destroy() end end
+		table.insert(self.Components, lbl); self:_updateSize(); return lbl
+	end
+	function Collapsible:Divider() local div = {}; div.Container = U.Create("Frame", { Name = "Divider", Size = UDim2.new(1, -20, 0, 1), Position = UDim2.fromOffset(10, 0), BackgroundColor3 = self.Theme.Border, BackgroundTransparency = 0.5, BorderSizePixel = 0, Parent = self.Content }); table.insert(self.Components, div); self:_updateSize(); return div end
+	function Collapsible:Destroy()
+		for _, c in ipairs(self.Components) do if c.Destroy then c:Destroy() end end
+		self.Components = {}
+		if self.Container then self.Container:Destroy() end
+	end
+
+	--[[ Tab methods ]]
+	function Tab:Checkbox(options)
+		local c = Checkbox.new(self.Container, options, self.Theme)
+		table.insert(self.Components, c)
+		return c
+	end
+	function Tab:Collapsible(title, options)
+		local c = Collapsible.new(self.Container, title, options, self.Theme)
+		c._menu = self.Menu
+		table.insert(self.Components, c)
+		return c
+	end
 	function Tab:Destroy()
 		for _, c in ipairs(self.Components) do
 			if c.Destroy then c:Destroy() end
