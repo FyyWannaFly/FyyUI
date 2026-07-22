@@ -2132,9 +2132,9 @@ return (function()
 		local theme = self.Theme
 		local ts = game:GetService("TweenService")
 		local frame = self.Frame
-		local fadeTime = 0.2
+		local fadeTime = 0.25
 
-		-- Modal overlay (blocks all clicks behind it)
+		-- Blocking overlay
 		local overlay = U.Create("ImageButton", {
 			Name = "ConfirmOverlay",
 			Size = UDim2.new(1, 0, 1, 0),
@@ -2146,29 +2146,38 @@ return (function()
 			Parent = frame,
 		})
 
-		-- Dialog (fully laid out before any animation)
-		local popup = U.Create("Frame", {
-			Name = "ConfirmClose",
+		-- CanvasGroup = single fade for ALL children
+		local canvas = U.Create("CanvasGroup", {
 			Size = UDim2.fromOffset(260, 130),
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			BackgroundColor3 = theme.Sidebar,
-			BackgroundTransparency = 0.1,
-			BorderSizePixel = 0,
+			BackgroundTransparency = 1,
+			GroupTransparency = 1,
 			ZIndex = 999,
 			Parent = frame,
 		})
+
+		-- Dialog card inside canvas
+		local popup = U.Create("Frame", {
+			Name = "ConfirmClose",
+			Size = UDim2.new(1, 0, 1, 0),
+			BackgroundColor3 = theme.Sidebar,
+			BackgroundTransparency = 0.1,
+			BorderSizePixel = 0,
+			Parent = canvas,
+		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = popup })
 		U.Create("UIStroke", { Color = Color3.fromRGB(255,255,255), Transparency = 0.88, Thickness = 1, Parent = popup })
-		-- Shadow
+		-- Shadow behind canvas
 		local shadow = U.Create("Frame", {
-			Size = UDim2.new(1, 8, 1, 8),
-			Position = UDim2.fromOffset(-4, -4),
+			Size = UDim2.fromOffset(268, 138),
+			Position = UDim2.fromScale(0.5, 0.5),
+			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = Color3.fromRGB(0,0,0),
-			BackgroundTransparency = 0.6,
+			BackgroundTransparency = 0.65,
 			BorderSizePixel = 0,
 			ZIndex = 998,
-			Parent = popup,
+			Parent = frame,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 14), Parent = shadow })
 
@@ -2183,7 +2192,6 @@ return (function()
 			TextSize = 20,
 			TextColor3 = theme.TextPrimary,
 			TextXAlignment = Enum.TextXAlignment.Center,
-			ZIndex = 1000,
 			Parent = popup,
 		})
 		U.Create("TextLabel", {
@@ -2196,7 +2204,6 @@ return (function()
 			TextSize = 14,
 			TextColor3 = theme.TextMuted,
 			TextXAlignment = Enum.TextXAlignment.Center,
-			ZIndex = 1000,
 			Parent = popup,
 		})
 
@@ -2211,7 +2218,6 @@ return (function()
 				BackgroundColor3 = defColor,
 				BackgroundTransparency = 0.25,
 				AutoButtonColor = false,
-				ZIndex = 1000,
 				Parent = popup,
 			})
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = b })
@@ -2223,7 +2229,6 @@ return (function()
 				Font = theme.FontBold,
 				TextSize = 15,
 				TextColor3 = Color3.fromRGB(255,255,255),
-				ZIndex = 1001,
 				Parent = b,
 			})
 			b.MouseEnter:Connect(function()
@@ -2242,32 +2247,31 @@ return (function()
 			return b
 		end
 
-		self._confirmPopup = popup
+		self._confirmPopup = canvas
 
-		-- Fade in (overlay + popup)
+		-- Fade in: overlay + canvas group together
 		overlay.BackgroundTransparency = 1
-		popup.BackgroundTransparency = 1
-		ts:Create(overlay, TweenInfo.new(fadeTime), { BackgroundTransparency = 0.5 }):Play()
-		ts:Create(popup, TweenInfo.new(fadeTime), { BackgroundTransparency = 0.1 }):Play()
+		shadow.BackgroundTransparency = 0.65
+		canvas.GroupTransparency = 1
+		ts:Create(overlay, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.5 }):Play()
+		ts:Create(canvas, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { GroupTransparency = 0 }):Play()
 
 		local function closePopup(cb)
-			-- Fade out: overlay dims, popup fades, then destroy
-			ts:Create(overlay, TweenInfo.new(fadeTime), { BackgroundTransparency = 1 }):Play()
-			ts:Create(popup, TweenInfo.new(fadeTime), { BackgroundTransparency = 1 }):Play()
+			-- Fade out: everything fades together, then destroy
+			ts:Create(overlay, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
+			ts:Create(shadow, TweenInfo.new(fadeTime), { BackgroundTransparency = 1 }):Play()
+			ts:Create(canvas, TweenInfo.new(fadeTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { GroupTransparency = 1 }):Play()
 			task.delay(fadeTime + 0.05, function()
 				if overlay then overlay:Destroy() end
-				if popup then popup:Destroy() end
-				if self._confirmPopup then self._confirmPopup = nil end
+				if shadow then shadow:Destroy() end
+				if canvas then canvas:Destroy() end
+				self._confirmPopup = nil
 				if cb then cb() end
 			end)
 		end
 
-		makeBtn("No", 20, Color3.fromRGB(55, 55, 68), Color3.fromRGB(75, 75, 90), function()
-			closePopup(nil)
-		end)
-		makeBtn("Yes", 140, Color3.fromRGB(170, 45, 45), Color3.fromRGB(210, 60, 60), function()
-			closePopup(function() self:SetVisible(false) end)
-		end)
+		makeBtn("No", 20, Color3.fromRGB(55, 55, 68), Color3.fromRGB(75, 75, 90), function() closePopup(nil) end)
+		makeBtn("Yes", 140, Color3.fromRGB(170, 45, 45), Color3.fromRGB(210, 60, 60), function() closePopup(function() self:SetVisible(false) end) end)
 	end
 
 	function Menu:Destroy()
