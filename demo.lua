@@ -6,6 +6,7 @@ local menu = FyyUI.Menu({
 	HasOutline = true,
 	Theme = "Amoled",
 	Stats = true,
+	Logo = true,
 })
 
 -- Icon names auto-loaded from Lucide GitHub — just use the name
