@@ -1326,7 +1326,7 @@ return (function()
 			self:_updateSize()
 		end)
 		-- Also update size after any children changes
-		self._updateSize()
+		self:_updateSize()
 
 		-- Click header to toggle
 		self.Header.MouseEnter:Connect(function()
