@@ -643,7 +643,7 @@ return (function()
 				end
 				self._menu:ShowDropdownPopup(pos, siz, self.Options, self._selIdx, function(idx, val)
 					self:SetValue(val)
-				end, self.Multi)
+				end, self.Multi, self)
 				self._menu._activeDropdown = self
 			end
 		end)
@@ -1756,7 +1756,7 @@ return (function()
 		end
 	end
 
-	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMulti)
+	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMulti, dd)
 		self:HideDropdownPopup()
 
 		local uis = game:GetService("UserInputService")
@@ -1769,6 +1769,7 @@ return (function()
 		local py = 0
 		local panelH = frameSiz.Y
 		isMulti = isMulti or false
+		dd = dd or self._activeDropdown  -- fallback to _activeDropdown if not passed
 
 		-- Create popup with 0 width → tween to slide in from right
 		local popup = U.Create("Frame", {
@@ -1820,14 +1821,14 @@ return (function()
 			Parent = popup,
 		})
 
-		-- Create option buttons
+		-- Create option buttons with direct dropdown reference
 		local options = {}
 		for i, opt in ipairs(opts) do
 			local sel = false
 			if isMulti then
-				sel = self._activeDropdown and self._activeDropdown._selected[opt] or false
+				sel = dd and dd._selected[opt] or false
 			else
-				sel = i == selectedIdx
+				sel = dd and tostring(opt) == tostring(dd.Value) or false
 			end
 			local btn = U.Create("TextButton", {
 				Name = "Option",
@@ -1856,9 +1857,9 @@ return (function()
 			})
 			btn.MouseButton1Click:Connect(function()
 				if isMulti then
-					if self._activeDropdown then
-						self._activeDropdown:SetValue(opt)
-						local isSel = self._activeDropdown._selected[opt]
+					if dd then
+						dd:SetValue(opt)
+						local isSel = dd._selected[opt]
 						btn.BackgroundColor3 = isSel and theme.Accent or Color3.new(0,0,0)
 						btn.BackgroundTransparency = isSel and 0.15 or 1
 					end
@@ -1868,14 +1869,14 @@ return (function()
 				end
 			end)
 			btn.MouseEnter:Connect(function()
-				local curSel = isMulti and (self._activeDropdown and self._activeDropdown._selected[opt]) or sel
+				local curSel = isMulti and (dd and dd._selected[opt]) or sel
 				if not curSel then
 					btn.BackgroundColor3 = theme.Accent
 					btn.BackgroundTransparency = 0.65
 				end
 			end)
 			btn.MouseLeave:Connect(function()
-				local curSel = isMulti and (self._activeDropdown and self._activeDropdown._selected[opt]) or sel
+				local curSel = isMulti and (dd and dd._selected[opt]) or sel
 				if not curSel then
 					btn.BackgroundTransparency = 1
 				end
@@ -2102,7 +2103,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.28", Theme = Theme }
+	local FyyUI = { Version = "0.9.29", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
