@@ -2244,23 +2244,16 @@ return (function()
 
 		self._confirmPopup = popup
 
-		-- Fade in (overlay + popup transparency)
+		-- Fade in (overlay + popup)
 		overlay.BackgroundTransparency = 1
 		popup.BackgroundTransparency = 1
-		local g = U.Create("UIGroup", { Parent = popup })
-		g.GroupTransparency = 1
 		ts:Create(overlay, TweenInfo.new(fadeTime), { BackgroundTransparency = 0.5 }):Play()
-		ts:Create(g, TweenInfo.new(fadeTime), { GroupTransparency = 0 }):Play()
-		task.delay(fadeTime, function()
-			if g then g.GroupTransparency = 0 end
-		end)
+		ts:Create(popup, TweenInfo.new(fadeTime), { BackgroundTransparency = 0.1 }):Play()
 
 		local function closePopup(cb)
-			-- Simple fade out: overlay + popup as single unit
+			-- Fade out: overlay dims, popup fades, then destroy
 			ts:Create(overlay, TweenInfo.new(fadeTime), { BackgroundTransparency = 1 }):Play()
-			if g then
-				ts:Create(g, TweenInfo.new(fadeTime), { GroupTransparency = 1 }):Play()
-			end
+			ts:Create(popup, TweenInfo.new(fadeTime), { BackgroundTransparency = 1 }):Play()
 			task.delay(fadeTime + 0.05, function()
 				if overlay then overlay:Destroy() end
 				if popup then popup:Destroy() end
