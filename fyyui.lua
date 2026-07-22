@@ -2130,9 +2130,10 @@ return (function()
 	function Menu:_confirmClose()
 		if self._confirmPopup then return end
 		local theme = self.Theme
+		local ts = game:GetService("TweenService")
 		local popup = U.Create("Frame", {
 			Name = "ConfirmClose",
-			Size = UDim2.fromOffset(240, 120),
+			Size = UDim2.fromOffset(280, 140),
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = theme.Sidebar,
@@ -2140,12 +2141,12 @@ return (function()
 			ZIndex = 999,
 			Parent = self.Frame,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = popup })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Thickness = 1, Transparency = 0.4, Parent = popup })
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = popup })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Thickness = 1, Transparency = 0.3, Parent = popup })
 		U.Create("TextLabel", {
 			Name = "Msg",
 			Size = UDim2.new(1, -20, 0, 50),
-			Position = UDim2.fromOffset(10, 15),
+			Position = UDim2.fromOffset(10, 20),
 			BackgroundTransparency = 1,
 			Text = "Close FyyUI?",
 			Font = theme.FontBold,
@@ -2155,11 +2156,16 @@ return (function()
 			ZIndex = 1000,
 			Parent = popup,
 		})
-		local function btn(text, color, cb)
+		-- Tween in
+		popup.Size = UDim2.fromOffset(0, 0)
+		local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		ts:Create(popup, ti, { Size = UDim2.fromOffset(280, 140) }):Play()
+
+		local function makeBtn(text, defColor, hoverColor)
 			local b = U.Create("TextButton", {
-				Size = UDim2.new(0.5, -6, 0, 32),
-				Position = UDim2.fromScale(text == "Yes" and 0 or 0.5, 0.7),
-				BackgroundColor3 = color,
+				Size = UDim2.new(0.5, -8, 0, 34),
+				Position = UDim2.fromScale(text == "Yes" and 0.5 or 0, 0.65),
+				BackgroundColor3 = defColor,
 				BackgroundTransparency = 0.2,
 				Text = text,
 				Font = theme.FontBold,
@@ -2170,18 +2176,36 @@ return (function()
 				Parent = popup,
 			})
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = b })
-			b.MouseButton1Click:Connect(cb)
+			b.MouseEnter:Connect(function()
+				b.BackgroundColor3 = hoverColor
+				b.BackgroundTransparency = 0
+			end)
+			b.MouseLeave:Connect(function()
+				b.BackgroundColor3 = defColor
+				b.BackgroundTransparency = 0.2
+			end)
 			return b
 		end
+
 		self._confirmPopup = popup
-		btn("Yes", Color3.fromRGB(200, 60, 60), function()
-			self._confirmPopup = nil
-			popup:Destroy()
-			self:SetVisible(false)
+		local noBtn = makeBtn("No", Color3.fromRGB(60, 60, 72), Color3.fromRGB(85, 85, 100))
+		noBtn.MouseButton1Click:Connect(function()
+			local it = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			ts:Create(popup, it, { Size = UDim2.fromOffset(0, 0) }):Play()
+			task.delay(0.15, function()
+				if popup then popup:Destroy() end
+				if self._confirmPopup then self._confirmPopup = nil end
+			end)
 		end)
-		btn("No", Color3.fromRGB(60, 60, 72), function()
-			self._confirmPopup = nil
-			popup:Destroy()
+		local yesBtn = makeBtn("Yes", Color3.fromRGB(180, 50, 50), Color3.fromRGB(220, 70, 70))
+		yesBtn.MouseButton1Click:Connect(function()
+			local it = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			ts:Create(popup, it, { Size = UDim2.fromOffset(0, 0) }):Play()
+			task.delay(0.15, function()
+				if popup then popup:Destroy() end
+				if self._confirmPopup then self._confirmPopup = nil end
+				self:SetVisible(false)
+			end)
 		end)
 	end
 
@@ -2195,7 +2219,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.38", Theme = Theme }
+	local FyyUI = { Version = "0.9.39", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
