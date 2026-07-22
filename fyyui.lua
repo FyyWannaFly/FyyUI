@@ -537,8 +537,14 @@ return (function()
 		self.Placeholder = options.Placeholder or "Not selected"
 		self._selected = {}  -- set of selected values (multi mode)
 		self._selectedCount = 0
-		if self.Multi and type(options.Default) == "table" then
-			for _, v in ipairs(options.Default) do
+		if self.Multi then
+			local defaults = {}
+			if type(options.Default) == "table" then
+				defaults = options.Default
+			elseif options.Default ~= nil then
+				defaults = { options.Default }
+			end
+			for _, v in ipairs(defaults) do
 				self._selected[v] = true
 				self._selectedCount = self._selectedCount + 1
 			end
@@ -592,14 +598,31 @@ return (function()
 			Parent = self.SelectBtn,
 		})
 
-		local defaultOption = self.Options[1] or ""
+		local function initSelectText()
+			if self.Multi then
+				if self._selectedCount == 0 then return self.Placeholder end
+				if self._selectedCount <= 2 then
+					local p = {}
+					for _, o in ipairs(self.Options) do
+						if self._selected[o] then table.insert(p, o) end
+					end
+					return table.concat(p, ", ")
+				end
+				return self._selectedCount .. " selected"
+			end
+			return (self.Value and self.Value ~= "") and tostring(self.Value) or self.Placeholder
+		end
+		local function initSelectColor()
+			if self.Multi then return self._selectedCount > 0 and theme.TextPrimary or theme.TextMuted end
+			return (self.Value and self.Value ~= "") and theme.TextPrimary or theme.TextMuted
+		end
 		self.SelectText = U.Create("TextLabel", {
 			Name = "Text",
 			Size = UDim2.new(1, -26, 1, 0),
 			Position = UDim2.fromOffset(10, 0),
 			BackgroundTransparency = 1,
-			Text = (self.Value and self.Value ~= "") and tostring(self.Value) or self.Placeholder,
-			TextColor3 = (self.Value and self.Value ~= "") and theme.TextPrimary or theme.TextMuted,
+			Text = initSelectText(),
+			TextColor3 = initSelectColor(),
 			Font = theme.Font,
 			TextSize = theme.FontSize,
 			TextColor3 = theme.TextPrimary,
@@ -2115,7 +2138,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.31", Theme = Theme }
+	local FyyUI = { Version = "0.9.32", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
