@@ -2132,8 +2132,7 @@ return (function()
 		local theme = self.Theme
 		local ts = game:GetService("TweenService")
 		local frame = self.Frame
-		local tiOpen = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-		local tiClose = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		local fadeTime = 0.2
 
 		-- Modal overlay (blocks all clicks behind it)
 		local overlay = U.Create("ImageButton", {
@@ -2147,7 +2146,7 @@ return (function()
 			Parent = frame,
 		})
 
-		-- Dialog
+		-- Dialog (fully laid out before any animation)
 		local popup = U.Create("Frame", {
 			Name = "ConfirmClose",
 			Size = UDim2.fromOffset(260, 130),
@@ -2201,7 +2200,7 @@ return (function()
 			Parent = popup,
 		})
 
-		-- Buttons with UIScale for clean press effect
+		-- Buttons
 		local btnW, btnH = 100, 30
 		local btnY = 85
 
@@ -2227,19 +2226,17 @@ return (function()
 				ZIndex = 1001,
 				Parent = b,
 			})
-			-- Hover
 			b.MouseEnter:Connect(function()
-				ts:Create(b, TweenInfo.new(0.15), { BackgroundColor3 = hovColor, BackgroundTransparency = 0.05 }):Play()
+				ts:Create(b, TweenInfo.new(0.12), { BackgroundColor3 = hovColor, BackgroundTransparency = 0.05 }):Play()
 			end)
 			b.MouseLeave:Connect(function()
-				ts:Create(b, TweenInfo.new(0.15), { BackgroundColor3 = defColor, BackgroundTransparency = 0.25 }):Play()
+				ts:Create(b, TweenInfo.new(0.12), { BackgroundColor3 = defColor, BackgroundTransparency = 0.25 }):Play()
 			end)
-			-- Press via UIScale (doesn't affect layout)
 			b.MouseButton1Down:Connect(function()
-				ts:Create(bScale, TweenInfo.new(0.06), { Scale = 0.95 }):Play()
+				ts:Create(bScale, TweenInfo.new(0.05), { Scale = 0.95 }):Play()
 			end)
 			b.MouseButton1Up:Connect(function()
-				ts:Create(bScale, TweenInfo.new(0.1), { Scale = 1 }):Play()
+				ts:Create(bScale, TweenInfo.new(0.08), { Scale = 1 }):Play()
 			end)
 			b.MouseButton1Click:Connect(clickCb)
 			return b
@@ -2247,26 +2244,24 @@ return (function()
 
 		self._confirmPopup = popup
 
-		-- Animate in
+		-- Fade in (overlay + popup transparency)
 		overlay.BackgroundTransparency = 1
-		popup.Size = UDim2.fromOffset(200, 100)
-		popup.BackgroundTransparency = 0.5
-		local popupScale = U.Create("UIScale", { Parent = popup, Scale = 0.8 })
-		ts:Create(overlay, tiOpen, { BackgroundTransparency = 0.5 }):Play()
-		ts:Create(popupScale, tiOpen, { Scale = 1 }):Play()
-		ts:Create(popup, tiOpen, {
-			Size = UDim2.fromOffset(260, 130),
-			BackgroundTransparency = 0.1,
-		}):Play()
+		popup.BackgroundTransparency = 1
+		local g = U.Create("UIGroup", { Parent = popup })
+		g.GroupTransparency = 1
+		ts:Create(overlay, TweenInfo.new(fadeTime), { BackgroundTransparency = 0.5 }):Play()
+		ts:Create(g, TweenInfo.new(fadeTime), { GroupTransparency = 0 }):Play()
+		task.delay(fadeTime, function()
+			if g then g.GroupTransparency = 0 end
+		end)
 
 		local function closePopup(cb)
-			ts:Create(popupScale, tiClose, { Scale = 0.85 }):Play()
-			ts:Create(overlay, tiClose, { BackgroundTransparency = 1 }):Play()
-			ts:Create(popup, tiClose, {
-				Size = UDim2.fromOffset(200, 100),
-				BackgroundTransparency = 1,
-			}):Play()
-			task.delay(0.2, function()
+			-- Simple fade out: overlay + popup as single unit
+			ts:Create(overlay, TweenInfo.new(fadeTime), { BackgroundTransparency = 1 }):Play()
+			if g then
+				ts:Create(g, TweenInfo.new(fadeTime), { GroupTransparency = 1 }):Play()
+			end
+			task.delay(fadeTime + 0.05, function()
 				if overlay then overlay:Destroy() end
 				if popup then popup:Destroy() end
 				if self._confirmPopup then self._confirmPopup = nil end
@@ -2292,7 +2287,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.41", Theme = Theme }
+	local FyyUI = { Version = "0.9.42", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
