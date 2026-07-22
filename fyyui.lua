@@ -349,7 +349,7 @@ return (function()
 		self.Theme = theme
 		self.HasDesc = self.Description ~= nil and self.Description ~= ""
 		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
-		local trackY = self.HasDesc and 30 or 26
+		local trackY = self.HasDesc and 30 or 28
 
 		self.Container = U.Create("Frame", {
 			Name = "Slider",
@@ -1371,7 +1371,7 @@ return (function()
 	end
 
 	function Collapsible:_updateSize(instant)
-		if self._closed or not self._layout or not self.Container then return end
+		if self._closed or not self._layout or not self.Container or not self.Container.Parent then return end
 		if self._tween then self._tween:Cancel() end
 		local contentH = self._layout.AbsoluteContentSize.Y
 		local targetH = self.Open and (34 + contentH) or 34
