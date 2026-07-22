@@ -558,7 +558,7 @@ return (function()
 
 		self.Container = U.Create("Frame", {
 			Name = "Dropdown",
-			Size = UDim2.new(1, -12, 0, h + 8),
+			Size = UDim2.new(1, -12, 0, h + 16),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
 			BackgroundTransparency = 0,
@@ -1274,7 +1274,7 @@ return (function()
 				return b
 			end
 
-			macBtn("Close", btnColors.Close, function() self:SetVisible(false) end)
+			macBtn("Close", btnColors.Close, function() self:_confirmClose() end)
 			macBtn("Minimize", btnColors.Minimize, function()
 				self.Minimized = not self.Minimized
 				local ts = game:GetService("TweenService")
@@ -1383,7 +1383,7 @@ return (function()
 					end
 				end
 			end
-			winBtn("Close", function() self:SetVisible(false) end, -36, Color3.fromRGB(200, 60, 60))
+			winBtn("Close", function() self:_confirmClose() end, -36, Color3.fromRGB(200, 60, 60))
 			winBtn("Maximize", function()
 				self.Maximized = not self.Maximized
 				self.Gui.Enabled = true
@@ -2127,6 +2127,64 @@ return (function()
 	function Menu:GetVisible() return self.Visible end
 	function Menu:SetTitle(t) self.Title.Text = t end
 
+	function Menu:_confirmClose()
+		if self._confirmPopup then return end
+		local theme = self.Theme
+		local popup = U.Create("Frame", {
+			Name = "ConfirmClose",
+			Size = UDim2.fromOffset(240, 120),
+			Position = UDim2.fromScale(0.5, 0.5),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			BackgroundColor3 = theme.Sidebar,
+			BorderSizePixel = 0,
+			ZIndex = 999,
+			Parent = self.Frame,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = popup })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Thickness = 1, Transparency = 0.4, Parent = popup })
+		U.Create("TextLabel", {
+			Name = "Msg",
+			Size = UDim2.new(1, -20, 0, 50),
+			Position = UDim2.fromOffset(10, 15),
+			BackgroundTransparency = 1,
+			Text = "Close FyyUI?",
+			Font = theme.FontBold,
+			TextSize = theme.FontSizeTitle,
+			TextColor3 = theme.TextPrimary,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			ZIndex = 1000,
+			Parent = popup,
+		})
+		local function btn(text, color, cb)
+			local b = U.Create("TextButton", {
+				Size = UDim2.new(0.5, -6, 0, 32),
+				Position = UDim2.fromScale(text == "Yes" and 0 or 0.5, 0.7),
+				BackgroundColor3 = color,
+				BackgroundTransparency = 0.2,
+				Text = text,
+				Font = theme.FontBold,
+				TextSize = theme.FontSize,
+				TextColor3 = Color3.fromRGB(255,255,255),
+				AutoButtonColor = false,
+				ZIndex = 1000,
+				Parent = popup,
+			})
+			U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = b })
+			b.MouseButton1Click:Connect(cb)
+			return b
+		end
+		self._confirmPopup = popup
+		btn("Yes", Color3.fromRGB(200, 60, 60), function()
+			self._confirmPopup = nil
+			popup:Destroy()
+			self:SetVisible(false)
+		end)
+		btn("No", Color3.fromRGB(60, 60, 72), function()
+			self._confirmPopup = nil
+			popup:Destroy()
+		end)
+	end
+
 	function Menu:Destroy()
 		if self._heartbeatCon then self._heartbeatCon:Disconnect() end
 		for _, tab in ipairs(self.Tabs) do
@@ -2137,7 +2195,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.37", Theme = Theme }
+	local FyyUI = { Version = "0.9.38", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
