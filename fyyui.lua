@@ -256,10 +256,12 @@ return (function()
 			})
 		end
 
+		self._tweenTrack = nil
+		self._tweenKnob = nil
 		self.Track = U.Create("ImageButton", {
 			Name = "Track",
-			Size = UDim2.fromOffset(46, 24),
-			Position = UDim2.new(1, -56, 0.5, -12),
+			Size = UDim2.fromOffset(48, 26),
+			Position = UDim2.new(1, -58, 0.5, -13),
 			BackgroundColor3 = self.Value and theme.ToggleOn or theme.ToggleOff,
 			AutoButtonColor = false,
 			Parent = self.Container,
@@ -268,13 +270,22 @@ return (function()
 
 		self.Knob = U.Create("Frame", {
 			Name = "Knob",
-			Size = UDim2.fromOffset(18, 18),
+			Size = UDim2.fromOffset(20, 20),
 			Position = UDim2.fromOffset(self.Value and 26 or 2, 3),
 			BackgroundColor3 = theme.ToggleKnob,
 			Parent = self.Track,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = self.Knob })
+		U.Create("UIStroke", { Color = Color3.fromRGB(0,0,0), Transparency = 0.8, Thickness = 1, Parent = self.Knob })
 
+		self.Track.MouseEnter:Connect(function()
+			if not self.Enabled then return end
+			self.Track.BackgroundColor3 = self.Value and theme.ToggleOn or theme.ElementHover
+		end)
+		self.Track.MouseLeave:Connect(function()
+			if not self.Enabled then return end
+			self.Track.BackgroundColor3 = self.Value and theme.ToggleOn or theme.ToggleOff
+		end)
 		self.Track.MouseButton1Click:Connect(function()
 			if not self.Enabled then return end
 			self:SetValue(not self.Value)
@@ -283,22 +294,26 @@ return (function()
 		return self
 	end
 
-	function Toggle:_animate(value)
+	function Toggle:_animate(value, instant)
+		if self._tweenTrack then self._tweenTrack:Cancel() end
+		if self._tweenKnob then self._tweenKnob:Cancel() end
 		local ts = game:GetService("TweenService")
-		local ti = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		ts:Create(self.Track, ti, { BackgroundColor3 = value and self.Theme.ToggleOn or self.Theme.ToggleOff }):Play()
-		ts:Create(self.Knob, ti, { Position = UDim2.fromOffset(value and 26 or 2, 3) }):Play()
+		if instant then
+			self.Track.BackgroundColor3 = value and self.Theme.ToggleOn or self.Theme.ToggleOff
+			self.Knob.Position = UDim2.fromOffset(value and 26 or 2, 3)
+		else
+			local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			self._tweenTrack = ts:Create(self.Track, ti, { BackgroundColor3 = value and self.Theme.ToggleOn or self.Theme.ToggleOff })
+			self._tweenTrack:Play()
+			self._tweenKnob = ts:Create(self.Knob, ti, { Position = UDim2.fromOffset(value and 26 or 2, 3) })
+			self._tweenKnob:Play()
+		end
 	end
 
 	function Toggle:SetValue(value, instant)
 		if self.Value == value then return end
 		self.Value = value
-		if instant then
-			self.Track.BackgroundColor3 = value and self.Theme.ToggleOn or self.Theme.ToggleOff
-			self.Knob.Position = UDim2.fromOffset(value and 26 or 2, 3)
-		else
-			self:_animate(value)
-		end
+		self:_animate(value, instant)
 		task.spawn(function() self.Callback(value) end)
 	end
 
@@ -857,13 +872,21 @@ return (function()
 			})
 		end
 
-		btn.Container.MouseEnter:Connect(function() btn.Container.BackgroundColor3 = theme.ElementHover end)
-		btn.Container.MouseLeave:Connect(function() btn.Container.BackgroundColor3 = theme.Element end)
+		btn.Container.MouseEnter:Connect(function()
+			btn.Container.BackgroundColor3 = theme.ElementHover
+			btn.Container.BackgroundTransparency = 0
+		end)
+		btn.Container.MouseLeave:Connect(function()
+			btn.Container.BackgroundColor3 = theme.Element
+			btn.Container.BackgroundTransparency = 0
+		end)
 		btn.Container.MouseButton1Down:Connect(function()
 			btn.Container.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+			btn.Container:TweenSize(UDim2.new(1, -14, 0, (h + 8) - 2), Enum.EasingDirection.Out, 0.05, true)
 		end)
 		btn.Container.MouseButton1Up:Connect(function()
 			btn.Container.BackgroundColor3 = theme.ElementHover
+			btn.Container:TweenSize(UDim2.new(1, -12, 0, h + 8), Enum.EasingDirection.Out, 0.08, true)
 		end)
 		btn.Container.MouseButton1Click:Connect(function() if options.Callback then options.Callback() end end)
 		btn.SetText = function(text)
@@ -1992,7 +2015,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.21", Theme = Theme }
+	local FyyUI = { Version = "0.9.22", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
