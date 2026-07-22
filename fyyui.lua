@@ -2282,7 +2282,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.42", Theme = Theme }
+	local FyyUI = { Version = "0.9.45", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
