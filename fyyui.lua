@@ -414,7 +414,7 @@ return (function()
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = self.Fill })
 
-		local knobSize = 18
+		local knobSize = 14
 		self.Knob = U.Create("ImageButton", {
 			Name = "Knob",
 			Size = UDim2.fromOffset(knobSize, knobSize),
@@ -494,7 +494,7 @@ return (function()
 	function Slider:_updateKnobPos()
 		local pct = (self.Max ~= self.Min) and (self.Value - self.Min) / (self.Max - self.Min) or 0
 		pct = math.clamp(pct, 0, 1)
-		self.Knob.Position = UDim2.new(pct, -9, 0.5, -9)
+		self.Knob.Position = UDim2.new(pct, -7, 0.5, -7)
 	end
 
 	function Slider:SetValue(v, noCallback)
@@ -504,7 +504,7 @@ return (function()
 		local pct = (self.Max ~= self.Min) and (v - self.Min) / (self.Max - self.Min) or 0
 		pct = math.clamp(pct, 0, 1)
 		self.Fill.Size = UDim2.new(pct, 0, 1, 0)
-		self.Knob.Position = UDim2.new(pct, -9, 0.5, -9)
+		self.Knob.Position = UDim2.new(pct, -7, 0.5, -7)
 		self.ValueLabel.Text = tostring(v) .. self.Suffix
 		if not noCallback then
 			task.spawn(function() self.Callback(v) end)
@@ -586,12 +586,14 @@ return (function()
 			Parent = self.SelectBtn,
 		})
 
+		local defaultOption = self.Options[1] or ""
 		self.SelectText = U.Create("TextLabel", {
 			Name = "Text",
 			Size = UDim2.new(1, -26, 1, 0),
 			Position = UDim2.fromOffset(10, 0),
 			BackgroundTransparency = 1,
-			Text = tostring(self.Value),
+			Text = (self.Value and self.Value ~= "") and tostring(self.Value) or "Not selected",
+			TextColor3 = (self.Value and self.Value ~= "") and theme.TextPrimary or theme.TextMuted,
 			Font = theme.Font,
 			TextSize = theme.FontSize,
 			TextColor3 = theme.TextPrimary,
@@ -1834,13 +1836,14 @@ return (function()
 				Name = "Option",
 				Size = UDim2.new(1, -8, 0, 32),
 				Text = "",
-				BackgroundColor3 = sel and theme.Accent or Color3.new(0, 0, 0),
-				BackgroundTransparency = sel and 0.15 or 1,
+				BackgroundColor3 = sel and theme.Accent or theme.Element,
+				BackgroundTransparency = sel and 0.15 or 0.6,
 				AutoButtonColor = false,
 				ZIndex = 10001,
 				Parent = content,
 			})
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = btn })
+			U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.7, Thickness = 1, Parent = btn })
 			local textOffset = isMulti and 28 or 10
 			U.Create("TextLabel", {
 				Name = "Label",
@@ -1869,16 +1872,17 @@ return (function()
 				end
 			end)
 			btn.MouseEnter:Connect(function()
-				local curSel = isMulti and (dd and dd._selected[opt]) or sel
+				local curSel = isMulti and (dd and dd._selected[opt]) or (dd and tostring(opt) == tostring(dd.Value))
 				if not curSel then
 					btn.BackgroundColor3 = theme.Accent
-					btn.BackgroundTransparency = 0.65
+					btn.BackgroundTransparency = 0.5
 				end
 			end)
 			btn.MouseLeave:Connect(function()
-				local curSel = isMulti and (dd and dd._selected[opt]) or sel
+				local curSel = isMulti and (dd and dd._selected[opt]) or (dd and tostring(opt) == tostring(dd.Value))
 				if not curSel then
-					btn.BackgroundTransparency = 1
+					btn.BackgroundColor3 = theme.Element
+					btn.BackgroundTransparency = 0.6
 				end
 			end)
 			options[#options + 1] = btn
@@ -2002,6 +2006,7 @@ return (function()
 		local frame = self.Frame
 		local shadow = self._shadow
 		local dragging, ds, sp
+		local uis = game:GetService("UserInputService")
 
 		topbar.InputBegan:Connect(function(input)
 			local t = input.UserInputType
@@ -2011,8 +2016,9 @@ return (function()
 				sp = frame.Position
 			end
 		end)
-		topbar.InputChanged:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+		uis.InputChanged:Connect(function(input, gpe)
+			if gpe then return end
+			if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
 				local delta = input.Position - ds
 				frame.Position = UDim2.new(
 					sp.X.Scale, sp.X.Offset + delta.X,
@@ -2103,7 +2109,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.29", Theme = Theme }
+	local FyyUI = { Version = "0.9.30", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
