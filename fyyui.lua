@@ -349,7 +349,7 @@ return (function()
 		self.Theme = theme
 		self.HasDesc = self.Description ~= nil and self.Description ~= ""
 		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
-		local trackY = self.HasDesc and 30 or 18
+		local trackY = self.HasDesc and 30 or 26
 
 		self.Container = U.Create("Frame", {
 			Name = "Slider",
@@ -1281,7 +1281,7 @@ return (function()
 			Parent = self.Container,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Header })
-		-- Arrow (far right)
+		-- Arrow (far right, Active=false so clicks pass through to Header)
 		self.Arrow = U.Create("TextLabel", {
 			Name = "Arrow",
 			Size = UDim2.fromOffset(16, 16),
@@ -1291,9 +1291,10 @@ return (function()
 			Font = theme.FontBold,
 			TextSize = 12,
 			TextColor3 = theme.TextSecondary,
+			Active = false,
 			Parent = self.Header,
 		})
-		-- Title (left, with room for arrow)
+		-- Title (left, Active=false so clicks pass through to Header)
 		self.Title = U.Create("TextLabel", {
 			Name = "Title",
 			Size = UDim2.new(1, -40, 1, 0),
@@ -1304,6 +1305,7 @@ return (function()
 			TextSize = theme.FontSize,
 			TextColor3 = theme.TextPrimary,
 			TextXAlignment = Enum.TextXAlignment.Left,
+			Active = false,
 			Parent = self.Header,
 		})
 
