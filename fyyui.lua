@@ -1,5 +1,5 @@
 --[[
-	FyyUI v0.10.6
+	FyyUI v0.10.7
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -770,8 +770,10 @@ return (function()
 			else
 				self.SelectText.Text = self._selectedCount .. " selected"
 			end
+			self.SelectText.TextColor3 = (self._selectedCount > 0) and self.Theme.TextPrimary or self.Theme.TextMuted
 		else
 			self.SelectText.Text = (self.Value ~= "") and tostring(self.Value) or self.Placeholder
+			self.SelectText.TextColor3 = (self.Value ~= "") and self.Theme.TextPrimary or self.Theme.TextMuted
 		end
 	end
 
@@ -798,6 +800,7 @@ return (function()
 			else
 				self.SelectText.Text = self._selectedCount .. " selected"
 			end
+			self.SelectText.TextColor3 = (self._selectedCount > 0) and self.Theme.TextPrimary or self.Theme.TextMuted
 			task.spawn(function() self.Callback(self._selected) end)
 			return
 		end
@@ -821,8 +824,11 @@ return (function()
 			return
 		end
 		self.Value = v
-		self.SelectText.Text = tostring(v)
-		if self._selectStroke then self._selectStroke.Transparency = 0.5 end
+		self.SelectText.Text = (self.Value ~= "") and tostring(self.Value) or self.Placeholder
+		self.SelectText.TextColor3 = (self.Value ~= "") and self.Theme.TextPrimary or self.Theme.TextMuted
+		if self._selectStroke then
+			self._selectStroke.Transparency = (self.Value ~= "") and 0.5 or 0.8
+		end
 		self._selIdx = 0
 		for i, opt in ipairs(self.Options) do
 			if opt == v then self._selIdx = i; break end
@@ -3041,20 +3047,54 @@ return (function()
 
 		local uis = game:GetService("UserInputService")
 		local ts = game:GetService("TweenService")
-		local w = 150
 		local theme = self.Theme
 		local frameAbs = self.Frame.AbsolutePosition
 		local frameSiz = self.Frame.AbsoluteSize
-		local px = frameSiz.X
 		local py = 0
-		local panelH = math.max(frameSiz.Y, 60)  -- guard against zero/invalid height while resizing
 		isMulti = isMulti or false
 		dd = dd or self._activeDropdown  -- fallback to _activeDropdown if not passed
+
+		-- Determine panel width and position based on available viewport space
+		local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+		local PREF_W = 220           -- preferred side-panel width
+		local COMFORT_W = 140        -- minimum width for a comfortable panel
+		local USABLE_W = 80          -- absolute minimum; below this the panel has negative/zero inner content
+		local rightEdge = frameAbs.X + frameSiz.X
+		local rightRoom = viewport.X - rightEdge - 4  -- 4px margin from screen edge
+		local leftRoom = frameAbs.X - 4               -- space to the left of the menu
+		local w, px
+		if rightRoom >= COMFORT_W then
+			-- Right side: comfortable space for full panel
+			w = math.min(PREF_W, rightRoom)
+			px = frameSiz.X
+		elseif rightRoom >= USABLE_W then
+			-- Right side constrained but still large enough for valid content
+			w = rightRoom
+			px = frameSiz.X
+		elseif leftRoom >= COMFORT_W then
+			-- Right side insufficient → left fallback with comfortable width
+			w = math.min(PREF_W, leftRoom)
+			px = -w
+		elseif leftRoom >= USABLE_W then
+			-- Left side constrained but still large enough for valid content
+			w = leftRoom
+			px = -w
+		else
+			-- Neither side has room; bail out to avoid creating a broken popup
+			self._activePopupFrame = nil
+			return
+		end
+
+		-- Content-aware height: size to options, clamped to menu bounds
+		local OPT_H = 34  -- 32px button + 2px UIListLayout padding
+		local MIN_H = 60
+		local contentH = 4 + (#opts * OPT_H)  -- 4px top padding + option height total
+		local clampedH = math.max(MIN_H, math.min(contentH, frameSiz.Y))
 
 		-- Create popup with 0 width → tween to slide in from right
 		local popup = U.Create("Frame", {
 			Name = "DropdownPopup",
-			Size = UDim2.fromOffset(0, panelH),
+			Size = UDim2.fromOffset(0, clampedH),
 			Position = UDim2.fromOffset(px, py),
 			BackgroundColor3 = theme.Sidebar,
 			BorderSizePixel = 0,
@@ -3068,7 +3108,7 @@ return (function()
 			Transparency = 0.25,
 			Parent = popup,
 		})
-		-- Content wrapper (avoids UIListLayout affecting SideLine)
+		-- Content wrapper (avoids SideLine interfering with children)
 		local content = U.Create("Frame", {
 			Name = "Content",
 			Size = UDim2.new(1, 0, 1, 0),
@@ -3076,17 +3116,6 @@ return (function()
 			BorderSizePixel = 0,
 			ZIndex = 10001,
 			Parent = popup,
-		})
-		U.Create("UIPadding", {
-			PaddingTop = UDim.new(0, 4),
-			PaddingLeft = UDim.new(0, 4),
-			PaddingRight = UDim.new(0, 4),
-			Parent = content,
-		})
-		local listLayout = U.Create("UIListLayout", {
-			Padding = UDim.new(0, 2),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Parent = content,
 		})
 
 		-- Separator line on the left, full height
@@ -3101,75 +3130,94 @@ return (function()
 			Parent = popup,
 		})
 
-		-- Create option buttons with direct dropdown reference
-		local options = {}
-		for i, opt in ipairs(opts) do
-			local sel = false
-			if isMulti then
-				sel = dd and dd._selected[opt] or false
-			else
-				sel = dd and tostring(opt) == tostring(dd.Value) or false
-			end
-			local btn = U.Create("TextButton", {
-				Name = "Option",
-				Size = UDim2.new(1, -8, 0, 32),
-				Text = "",
-				BackgroundColor3 = sel and theme.Accent or theme.Element,
-				BackgroundTransparency = sel and 0.25 or 0.6,
-				AutoButtonColor = false,
+		if #opts > 0 then
+			-- ScrollingFrame for option list (content-aware)
+			local optionList = U.Create("ScrollingFrame", {
+				Name = "OptionList",
+				Size = UDim2.new(1, -8, 1, -8),
+				Position = UDim2.fromOffset(4, 4),
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				ScrollBarThickness = 3,
+				ScrollBarImageColor3 = theme.ScrollBar,
+				CanvasSize = UDim2.fromOffset(0, #opts * OPT_H),
 				ZIndex = 10001,
 				Parent = content,
 			})
-			U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = btn })
-			U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.5, Thickness = 1, Parent = btn })
-			local textOffset = isMulti and 28 or 10
-			U.Create("TextLabel", {
-				Name = "Label",
-				Size = UDim2.new(1, -(textOffset + 4), 1, 0),
-				Position = UDim2.fromOffset(textOffset, 0),
-				BackgroundTransparency = 1,
-				Text = tostring(opt),
-				Font = theme.Font,
-				TextSize = theme.FontSize,
-				TextColor3 = theme.SidebarTextActive,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				ZIndex = 10002,
-				Parent = btn,
+			U.Create("UIListLayout", {
+				Padding = UDim.new(0, 2),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Parent = optionList,
 			})
-			btn.MouseButton1Click:Connect(function()
-				if isMulti then
-					if dd then
-						dd:SetValue(opt)
-						local isSel = dd._selected[opt]
-						btn.BackgroundColor3 = isSel and theme.Accent or theme.Element
-						btn.BackgroundTransparency = isSel and 0.25 or 0.6
-					end
-				else
-					onClick(i, opt)
-					self:HideDropdownPopup()
-				end
-			end)
-			btn.MouseEnter:Connect(function()
-				btn.BackgroundColor3 = theme.Accent
-				btn.BackgroundTransparency = 0.55
-			end)
-			btn.MouseLeave:Connect(function()
-				local curSel = isMulti and (dd and dd._selected[opt]) or (not isMulti and dd and tostring(opt) == tostring(dd.Value))
-				if curSel then
-					btn.BackgroundTransparency = 0.3  -- back to normal selected
-				else
-					btn.BackgroundColor3 = theme.Element
-					btn.BackgroundTransparency = 0.6
-				end
-			end)
-			options[#options + 1] = btn
-		end
 
-		-- Empty-state label when no options
-		if #opts == 0 then
+			-- Create option buttons with direct dropdown reference
+			for i, opt in ipairs(opts) do
+				local sel = false
+				if isMulti then
+					sel = dd and dd._selected[opt] or false
+				else
+					sel = dd and tostring(opt) == tostring(dd.Value) or false
+				end
+				local btn = U.Create("TextButton", {
+					Name = "Option",
+					Size = UDim2.new(1, -8, 0, 32),
+					Text = "",
+					BackgroundColor3 = sel and theme.Accent or theme.Element,
+					BackgroundTransparency = sel and 0.25 or 0.6,
+					AutoButtonColor = false,
+					ZIndex = 10001,
+					Parent = optionList,
+				})
+				U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = btn })
+				U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.5, Thickness = 1, Parent = btn })
+				local textOffset = isMulti and 28 or 10
+				U.Create("TextLabel", {
+					Name = "Label",
+					Size = UDim2.new(1, -(textOffset + 4), 1, 0),
+					Position = UDim2.fromOffset(textOffset, 0),
+					BackgroundTransparency = 1,
+					Text = tostring(opt),
+					Font = theme.Font,
+					TextSize = theme.FontSize,
+					TextColor3 = theme.SidebarTextActive,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					ZIndex = 10002,
+					Parent = btn,
+				})
+				btn.MouseButton1Click:Connect(function()
+					if isMulti then
+						if dd then
+							dd:SetValue(opt)
+							local isSel = dd._selected[opt]
+							btn.BackgroundColor3 = isSel and theme.Accent or theme.Element
+							btn.BackgroundTransparency = isSel and 0.25 or 0.6
+						end
+					else
+						onClick(i, opt)
+						self:HideDropdownPopup()
+					end
+				end)
+				btn.MouseEnter:Connect(function()
+					btn.BackgroundColor3 = theme.Accent
+					btn.BackgroundTransparency = 0.55
+				end)
+				btn.MouseLeave:Connect(function()
+					local curSel = isMulti and (dd and dd._selected[opt]) or (not isMulti and dd and tostring(opt) == tostring(dd.Value))
+					if curSel then
+						btn.BackgroundColor3 = theme.Accent
+						btn.BackgroundTransparency = 0.25  -- back to normal selected
+					else
+						btn.BackgroundColor3 = theme.Element
+						btn.BackgroundTransparency = 0.6
+					end
+				end)
+			end
+		else
+			-- Empty-state: centered in the panel area
 			U.Create("TextLabel", {
 				Name = "EmptyState",
-				Size = UDim2.new(1, -8, 0, 28),
+				Size = UDim2.new(1, -12, 1, 0),
+				Position = UDim2.fromOffset(6, 0),
 				Text = "No options",
 				Font = theme.Font,
 				TextSize = theme.FontSize,
@@ -3182,9 +3230,9 @@ return (function()
 		end
 
 		self._activePopupFrame = popup
-		-- Tween: slide in from right
+		-- Tween: slide in from right to final clamped width
 		local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		ts:Create(popup, ti, { Size = UDim2.fromOffset(w, panelH) }):Play()
+		ts:Create(popup, ti, { Size = UDim2.fromOffset(w, clampedH) }):Play()
 
 		-- Close on click outside (generation-guarded: stale invocations after a new popup are no-ops)
 		local closeGen = self._popupGen
@@ -3250,7 +3298,7 @@ return (function()
 	function Menu:ExportConfig()
 		local snapshot = {
 			Schema = "FyyUI.Config.v1",
-			Version = "0.10.6",
+			Version = "0.10.7",
 			Values = {},
 		}
 		for flag, ctrl in pairs(self._flagRegistry) do
@@ -4497,7 +4545,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.10.6", Theme = Theme }
+	local FyyUI = { Version = "0.10.7", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
