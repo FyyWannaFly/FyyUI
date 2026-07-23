@@ -2,144 +2,252 @@ local FyyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/FyyWann
 
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
+	Theme = "Amoled",
 	Resizable = true,
 	HasOutline = true,
-	Theme = "Amoled",
 	Stats = true,
 	Logo = true,
-	-- QA: resize Studio/device viewport below 640px and verify the compact sidebar,
-	-- centered long-option dropdown, safe padding, and 44px option targets.
 	Responsive = true,
 	CompactBreakpoint = 640,
 	SafePadding = 12,
 	TouchTargetSize = 44,
-	ReducedMotion = false, -- QA: set true and verify tabs, window transitions, and confirm popups open/close instantly.
+	ReducedMotion = false,
 })
 
--- Accessibility QA: use a gamepad to move between ordered tab/control targets,
--- open/close a dropdown or close confirmation, and confirm focus returns safely.
--- Focus a text input or capture a keybind and verify menu shortcuts/navigation do not steal it.
--- On touch, tap the full checkbox row, each window control, and the lower-right resize grip.
+local function notify(title, content, kind)
+	menu:Notify({
+		Title = title,
+		Content = content,
+		Type = kind or "Info",
+		Duration = 3,
+	})
+end
 
--- Tab 1: Combat
-local combatTab = menu:Tab({ Text = "Combat", Icon = "crosshair" })
+-- 🎯 Combat
+local combatTab = menu:Tab({ Text = "Combat", Icon = "🎯", Tooltip = "Combat controls" })
 
-local aimbot = combatTab:Collapsible("Aimbot", { DefaultOpen = true })
-aimbot:Toggle({ Text = "Silent Aim", Description = "Silent aim at nearest target", Default = true })
-aimbot:Checkbox({ Text = "Wall Check", Default = true })
-aimbot:Slider({ Text = "Smoothness", Min = 1, Max = 100, Default = 50, Suffix = "%" })
-aimbot:Slider({ Text = "FOV Range", Min = 1, Max = 360, Default = 180, Suffix = "°" })
-aimbot:Dropdown({ Text = "Hit Part", Options = { "Head", "Torso", "Legs", "Random" }, Default = "Head" })
-aimbot:Checkbox({ Text = "Draw FOV Circle", Default = false })
+local aimSection = combatTab:Collapsible("Aim Assist", { DefaultOpen = true })
+aimSection:Toggle({
+	Text = "Silent Aim",
+	Description = "Target the nearest visible opponent",
+	Default = true,
+	Flag = "combat_silent_aim",
+	Tooltip = "Main aim-assist switch",
+})
+aimSection:Checkbox({ Text = "Wall Check", Default = true, Flag = "combat_wall_check" })
+aimSection:Slider({ Text = "Smoothness", Min = 1, Max = 100, Default = 45, Suffix = "%", Flag = "combat_smoothness" })
+aimSection:Slider({ Text = "FOV Range", Min = 20, Max = 360, Default = 180, Suffix = "°", Flag = "combat_fov" })
+aimSection:Dropdown({
+	Text = "Hit Part",
+	Options = { "Head", "Upper Torso", "Lower Torso", "Random" },
+	Default = "Head",
+	AllowNone = false,
+	Flag = "combat_hit_part",
+})
+aimSection:Dropdown({
+	Text = "Target Filters",
+	Description = "Multi-select dropdown example",
+	Options = { "Visible", "Enemy", "Alive", "On Screen", "Not Knocked" },
+	Default = { "Visible", "Enemy", "Alive" },
+	Multi = true,
+	Flag = "combat_filters",
+})
 
-local triggerbot = combatTab:Collapsible("Trigger Bot")
-triggerbot:Toggle({ Text = "Trigger Bot", Description = "Auto-shoot when target is in crosshair", Default = false })
-triggerbot:Slider({ Text = "Delay", Min = 0, Max = 500, Default = 50, Suffix = "ms" })
-triggerbot:Checkbox({ Text = "Only Visible", Default = true })
-triggerbot:Dropdown({ Text = "Trigger Key", Options = { "Mouse Left", "Mouse Right", "Shift", "None" }, Default = "Mouse Left" })
+local weaponSection = combatTab:Collapsible("Weapon", { DefaultOpen = false })
+weaponSection:Toggle({ Text = "Trigger Bot", Description = "Fire while a target is under the crosshair", Flag = "combat_trigger" })
+weaponSection:Slider({ Text = "Trigger Delay", Min = 0, Max = 500, Default = 80, Suffix = "ms", Step = 10, Flag = "combat_trigger_delay" })
+weaponSection:Keybind({ Text = "Aim Key", Default = Enum.UserInputType.MouseButton2, Mode = "Hold", Flag = "combat_aim_key" })
 
 combatTab:Divider()
-
-local visuals = combatTab:Collapsible("Visuals", { DefaultOpen = true })
-visuals:Toggle({ Text = "ESP Box", Description = "Draw boxes around players", Default = true })
-visuals:Toggle({ Text = "Tracers", Description = "Draw lines to targets", Default = false })
-visuals:Checkbox({ Text = "Health Bar", Default = true })
-visuals:Checkbox({ Text = "Distance", Default = false })
-visuals:Slider({ Text = "Max Render Distance", Min = 100, Max = 5000, Default = 1500, Suffix = "m", Step = 100 })
-visuals:Dropdown({ Text = "Box Type", Options = { "2D", "Corner", "3D" }, Default = "2D" })
-visuals:Dropdown({ Text = "Tracer Position", Options = { "Bottom", "Middle", "Top" }, Default = "Bottom" })
-
--- Tab 2: Automation
-local autoTab = menu:Tab({ Text = "Auto", Icon = "zap" })
-
-local farming = autoTab:Collapsible("Farming", { DefaultOpen = true })
-farming:Toggle({ Text = "Auto Farm", Description = "Automatically farms ores", Default = true })
-farming:Toggle({ Text = "Auto Collect", Description = "Collect dropped items", Default = true })
-farming:Checkbox({ Text = "Ignore Gold", Default = false })
-farming:Checkbox({ Text = "Auto Sell", Default = true })
-farming:Slider({ Text = "Farm Range", Min = 10, Max = 200, Default = 75, Suffix = "m", Step = 5 })
-farming:Slider({ Text = "Sell Interval", Min = 30, Max = 600, Default = 120, Suffix = "s", Step = 10 })
-
-local movement = autoTab:Collapsible("Movement")
-movement:Toggle({ Text = "Auto Jump", Description = "Auto jump when walking", Default = false })
-movement:Toggle({ Text = "Speed Boost", Description = "Increases movement speed", Default = false })
-movement:Slider({ Text = "Speed Multiplier", Min = 1, Max = 5, Default = 2, Suffix = "x", Step = 0.5 })
-movement:Checkbox({ Text = "Bunny Hop", Default = true })
-
-autoTab:Divider()
-
-autoTab:Button({ Text = "Toggle All", Description = "Enable all automation features", Icon = "toggle-right", Callback = function() print("Toggled all!") end })
-autoTab:Button({ Text = "Stop All", Description = "Disable all automation", Color = Color3.fromRGB(230, 60, 60), Icon = "square", Callback = function() print("Stopped all!") end })
-
--- Tab 3: Settings
-local settingsTab = menu:Tab({ Text = "Settings", Icon = "settings" })
-
-local general = settingsTab:Collapsible("General", { DefaultOpen = true })
-general:Dropdown({
-	Text = "Theme",
-	Options = { "Dark", "Light", "Amoled" },
-	Default = "Amoled",
-	Callback = function(v)
-		local ok, err = menu:SetTheme(v)
-		if not ok then warn("[FyyUI] Theme switch failed:", err) end
+combatTab:Button({
+	Text = "Test Target Lock",
+	Description = "Preview a success notification",
+	Icon = "crosshair",
+	Callback = function()
+		notify("Target Locked", "Aim preview completed successfully.", "Success")
 	end,
 })
-general:Checkbox({ Text = "Show Watermark", Default = true })
-general:Checkbox({ Text = "Auto Update", Default = true })
-general:Dropdown({
-	Text = "Mobile long-label / modal dropdown QA",
-	Options = {
-		"A deliberately long option label that must remain readable on a phone",
-		"Another extended option for testing touch scrolling and selection",
-		"Short fallback",
-	},
-	Placeholder = "Resize to a narrow viewport, then open me",
+
+-- ⚡ Automation
+local automationTab = menu:Tab({ Text = "Automation", Icon = "⚡", Tooltip = "Automation examples" })
+
+local movementSection = automationTab:Collapsible("Movement", { DefaultOpen = true })
+movementSection:Toggle({ Text = "Auto Sprint", Default = true, Flag = "auto_sprint" })
+movementSection:Toggle({ Text = "Auto Jump", Flag = "auto_jump" })
+movementSection:Checkbox({ Text = "Avoid Players", Default = true, Flag = "auto_avoid_players" })
+movementSection:Slider({ Text = "Walk Speed", Min = 16, Max = 100, Default = 24, Suffix = " studs", Flag = "auto_walk_speed" })
+movementSection:Dropdown({
+	Text = "Movement Mode",
+	Options = { "Legit", "Balanced", "Aggressive" },
+	Default = "Balanced",
+	AllowNone = false,
+	Flag = "auto_movement_mode",
 })
-general:Slider({
+
+local farmingSection = automationTab:Collapsible("Farming", { DefaultOpen = false })
+farmingSection:Toggle({ Text = "Auto Farm", Description = "Run the selected farming routine", Flag = "auto_farm" })
+farmingSection:Dropdown({
+	Text = "Farm Targets",
+	Options = { "Coins", "Gems", "Crates", "Quests", "Bosses" },
+	Default = { "Coins", "Gems" },
+	Multi = true,
+	Flag = "auto_targets",
+})
+farmingSection:Dropdown({
+	Text = "Route",
+	Options = { "Nearest", "Safest", "Highest Value" },
+	Default = "Nearest",
+	AllowNone = false,
+	Flag = "auto_route",
+})
+farmingSection:Slider({ Text = "Action Delay", Min = 0.1, Max = 2, Default = 0.5, Suffix = "s", Step = 0.1, Flag = "auto_delay" })
+farmingSection:Input({
+	Text = "Stop After",
+	Description = "Leave blank to run continuously",
+	Placeholder = "Amount",
+	Numeric = true,
+	ClearOnFocus = false,
+	Flag = "auto_stop_after",
+})
+
+automationTab:Divider()
+automationTab:Button({
+	Text = "Start Demo Routine",
+	Description = "Shows how action buttons and notifications work together",
+	Icon = "🚀",
+	Callback = function()
+		notify("Automation Ready", "The demo routine is ready to start.", "Success")
+	end,
+})
+
+-- 🎨 Interface
+local interfaceTab = menu:Tab({ Text = "Interface", Icon = "🎨", Tooltip = "Appearance and input settings" })
+
+local appearanceSection = interfaceTab:Collapsible("Appearance", { DefaultOpen = true })
+appearanceSection:Dropdown({
+	Text = "Theme",
+	Options = { "Amoled", "Dark", "Light" },
+	Default = "Amoled",
+	AllowNone = false,
+	Flag = "ui_theme",
+	Callback = function(value)
+		menu:SetTheme(value)
+	end,
+})
+appearanceSection:Slider({
 	Text = "UI Scale",
 	Min = 0.75,
 	Max = 1.35,
 	Default = 1,
 	Suffix = "x",
-	Step = 0.1,
-	Callback = function(v) menu:SetScale(v) end,
+	Step = 0.05,
+	Flag = "ui_scale",
+	Callback = function(value)
+		menu:SetScale(value)
+	end,
 })
+appearanceSection:Checkbox({ Text = "Show Notifications", Default = true, Flag = "ui_notifications" })
+appearanceSection:Checkbox({ Text = "Compact Labels", Default = false, Flag = "ui_compact_labels" })
 
-local keybinds = settingsTab:Collapsible("Keybinds")
-keybinds:Keybind({
+local inputSection = interfaceTab:Collapsible("Input & Navigation", { DefaultOpen = false })
+inputSection:Keybind({
 	Text = "Toggle Menu",
 	Default = Enum.KeyCode.RightShift,
 	Mode = "Toggle",
-	Callback = function() menu:ToggleVisibility() end,
+	Flag = "ui_toggle_key",
+	Callback = function()
+		menu:ToggleVisibility()
+	end,
 })
-keybinds:Keybind({ Text = "Panic Key", Default = nil, Mode = "Toggle", Callback = function() end })
-keybinds:Checkbox({ Text = "Hold to Aim", Default = false })
+inputSection:Keybind({ Text = "Action Key", Default = Enum.KeyCode.E, Mode = "Hold", Flag = "ui_action_key" })
+inputSection:Input({ Text = "Profile Name", Placeholder = "Fyy profile", ClearOnFocus = false, Flag = "profile_name" })
+inputSection:Dropdown({
+	Text = "Active Modules",
+	Options = { "Combat", "Automation", "Visuals", "Utilities" },
+	Default = { "Combat", "Utilities" },
+	Multi = true,
+	Flag = "active_modules",
+})
 
--- Tab 4: Info
-local infoTab = menu:Tab({ Text = "Info", Icon = "info" })
+interfaceTab:Divider()
+interfaceTab:Button({
+	Text = "Open Command Palette",
+	Description = "Search tabs and available actions",
+	Icon = "🔎",
+	Callback = function()
+		menu:ToggleCommandPalette()
+	end,
+})
 
-infoTab:BoldLabel({ Text = "FyyCommunity v" .. FyyUI.Version, Description = "Roblox UI Library" })
-infoTab:BoldLabel({ Text = "Status: Running", Color = Color3.fromRGB(0, 200, 80) })
+-- 🧪 Components
+local componentsTab = menu:Tab({ Text = "Components", Icon = "🧪", Tooltip = "Full component showcase" })
 
-infoTab:Divider()
+componentsTab:BoldLabel({ Text = "✨ Component Gallery", Description = "A clean preview of the public FyyUI controls" })
+componentsTab:Label({ Text = "Use this tab as a quick API reference while building your own menu." })
+componentsTab:Divider()
 
-infoTab:BoldLabel({ Text = "Components" })
-infoTab:Label({ Text = "Toggle, Checkbox, Button" })
-infoTab:Label({ Text = "Slider, Dropdown, Label" })
-infoTab:Label({ Text = "Collapsible Section" })
+local controlsSection = componentsTab:Collapsible("Controls", { DefaultOpen = true })
+controlsSection:Toggle({ Text = "Toggle", Description = "Animated on/off control", Default = true })
+controlsSection:Checkbox({ Text = "Checkbox", Description = "Accent color indicates the selected state", Default = true })
+controlsSection:Slider({ Text = "Slider", Min = 0, Max = 10, Default = 6, Suffix = "/10" })
+controlsSection:Dropdown({ Text = "Single Dropdown", Options = { "Alpha", "Beta", "Gamma" }, Default = "Beta" })
+controlsSection:Dropdown({
+	Text = "Multi Dropdown",
+	Options = { "Red", "Green", "Blue", "Purple" },
+	Default = { "Blue", "Purple" },
+	Multi = true,
+})
+controlsSection:Input({ Text = "Text Input", Placeholder = "Type something...", ClearOnFocus = false })
+controlsSection:Keybind({ Text = "Keybind", Default = Enum.KeyCode.K, Mode = "Toggle" })
+controlsSection:Button({
+	Text = "Emoji Button",
+	Description = "Literal emoji icons render without an external icon provider",
+	Icon = "😊",
+	Callback = function()
+		notify("Emoji Works", "Named icons and literal emoji can be mixed.", "Info")
+	end,
+})
 
-infoTab:Divider()
+local feedbackSection = componentsTab:Collapsible("Notifications", { DefaultOpen = false })
+feedbackSection:Button({ Text = "Success", Icon = "✅", Callback = function() notify("Success", "Everything completed successfully.", "Success") end })
+feedbackSection:Button({ Text = "Information", Icon = "ℹ️", Callback = function() notify("Information", "This is an informational message.", "Info") end })
+feedbackSection:Button({ Text = "Warning", Icon = "⚠️", Callback = function() notify("Warning", "Review this action before continuing.", "Warning") end })
+feedbackSection:Button({ Text = "Error", Icon = "❌", Callback = function() notify("Error", "The demo error notification is working.", "Error") end })
 
-infoTab:Button({ Text = "Rejoin Game", Description = "Rejoin the current server", Icon = "refresh-cw", Callback = function() print("Rejoining...") end })
+-- ℹ️ About
+local aboutTab = menu:Tab({ Text = "About", Icon = "ℹ️", Tooltip = "Library information" })
 
--- Safe persistence roundtrip: JSON APIs use the local Roblox HttpService only
--- for serialization. Persist `savedConfig` with your own trusted storage layer.
-local savedConfig, saveErr = menu:ExportConfigJSON()
-if savedConfig then
-	local restored, restoreDetails = menu:ImportConfigJSON(savedConfig, { NoCallbacks = true })
-	if not restored then warn("[FyyUI] Config restore failed:", restoreDetails) end
-else
-	warn("[FyyUI] Config export failed:", saveErr)
-end
+aboutTab:BoldLabel({ Text = "FyyCommunity v" .. FyyUI.Version, Description = "Responsive Roblox UI library" })
+aboutTab:BoldLabel({ Text = "● Ready", Color = Color3.fromRGB(70, 220, 120) })
+aboutTab:Divider()
+aboutTab:Label({ Text = "🎯 Named icons and literal emoji" })
+aboutTab:Label({ Text = "📱 Responsive mouse, touch, keyboard, and gamepad navigation" })
+aboutTab:Label({ Text = "💾 Versioned configuration export and import" })
+aboutTab:Label({ Text = "⌨️ Command palette and keybind capture" })
+aboutTab:Divider()
+aboutTab:Button({
+	Text = "Export & Import Config",
+	Description = "Runs a local JSON configuration roundtrip",
+	Icon = "refresh-cw",
+	Callback = function()
+		local json, exportError = menu:ExportConfigJSON()
+		if not json then
+			notify("Export Failed", tostring(exportError), "Error")
+			return
+		end
 
-print("FyyUI v" .. FyyUI.Version .. " loaded successfully!")
+		local ok, details = menu:ImportConfigJSON(json, { NoCallbacks = true })
+		if ok then
+			notify("Config Restored", "Local JSON roundtrip completed.", "Success")
+		else
+			notify("Import Failed", tostring(details), "Error")
+		end
+	end,
+})
+
+menu:Notify({
+	Title = "✨ FyyUI Ready",
+	Content = "Explore the clean component demo and multi-select dropdowns.",
+	Type = "Success",
+	Duration = 4,
+})
