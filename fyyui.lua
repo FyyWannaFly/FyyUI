@@ -144,7 +144,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.13.0"
+	local LIBRARY_VERSION = "0.13.1"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -2666,6 +2666,35 @@ return (function()
 		return camera and camera.ViewportSize or Vector2.new(1920, 1080)
 	end
 
+	-- Frame.Size is expressed in unscaled layout pixels while UIScale changes the
+	-- rendered bounds. Keep a visual centre as the single source of truth so a
+	-- scale change cannot make a centred or dragged window drift across screen.
+	function Menu:_framePositionForVisualTopLeft(desiredX, desiredY)
+		if not self.Frame then return nil end
+		local currentPosition = self.Frame.Position
+		local currentAbsolute = self.Frame.AbsolutePosition
+		return UDim2.new(
+			currentPosition.X.Scale, currentPosition.X.Offset + desiredX - currentAbsolute.X,
+			currentPosition.Y.Scale, currentPosition.Y.Offset + desiredY - currentAbsolute.Y
+		)
+	end
+
+	function Menu:_setFrameVisualCenter(center, logicalSize)
+		if not self.Frame or not center or not logicalSize then return end
+		local scale = self.Scale or 1
+		self.Frame.Position = self:_framePositionForVisualTopLeft(
+			center.X - logicalSize.X.Offset * scale / 2,
+			center.Y - logicalSize.Y.Offset * scale / 2
+		)
+	end
+
+	function Menu:_captureResponsiveBaseCenter()
+		if not self.Frame then return end
+		local position = self.Frame.AbsolutePosition
+		local size = self.Frame.AbsoluteSize
+		self._responsiveBaseCenter = Vector2.new(position.X + size.X / 2, position.Y + size.Y / 2)
+	end
+
 	-- All menu-owned transient UI transitions pass through this helper so reduced
 	-- motion is consistently instant without changing public component APIs.
 	function Menu:_transition(instance, duration, properties, style, direction, onCompleted)
@@ -2729,28 +2758,29 @@ return (function()
 	end
 
 	function Menu:_applyResponsiveLayout()
-		if self._destroyed or not self.Responsive or not self.Frame then return end
+		if self._destroyed or not self.Frame then return end
 		local viewport = self:_viewportSize()
 		local safe = self.SafePadding
 		local scale = self.Scale or 1
 		local usableWidth = math.max(1, (viewport.X - safe * 2) / scale)
 		local usableHeight = math.max(1, (viewport.Y - safe * 2) / scale)
 		local baseSize = self._responsiveBaseSize or self.Frame.Size
-		local needsCompact = viewport.X <= self.CompactBreakpoint
+		local needsCompact = self.Responsive and (viewport.X <= self.CompactBreakpoint
 			or baseSize.X.Offset > usableWidth or baseSize.Y.Offset > usableHeight
-		if self._activePopupFrame then self:HideDropdownPopup() end
+		)
+		if self._activePopupFrame and self.Responsive then self:HideDropdownPopup() end
 
 		if self.Maximized then
 			self.Frame.Size = UDim2.fromOffset(usableWidth, usableHeight)
-			self.Frame.Position = UDim2.fromOffset(safe, safe)
+			self.Frame.Position = self:_framePositionForVisualTopLeft(safe, safe)
 			self._responsiveApplied = true
 		elseif needsCompact then
 			self.Frame.Size = UDim2.fromOffset(math.min(baseSize.X.Offset, usableWidth), math.min(baseSize.Y.Offset, usableHeight))
-			self.Frame.Position = UDim2.fromOffset(safe, safe)
+			self.Frame.Position = self:_framePositionForVisualTopLeft(safe, safe)
 			self._responsiveApplied = true
-		elseif self._responsiveApplied then
+		else
 			self.Frame.Size = baseSize
-			self.Frame.Position = self._responsiveBasePosition or self._initialPos
+			self:_setFrameVisualCenter(self._responsiveBaseCenter, baseSize)
 			self._responsiveApplied = false
 		end
 		local sidebarWidth = needsCompact and math.min(self.Theme.SidebarWidth, 86) or self.Theme.SidebarWidth
@@ -2852,10 +2882,10 @@ return (function()
 		self._tooltipTween = nil
 		self._mousePos = Vector2.new(0, 0)
 
+		local viewport = self:_viewportSize()
 		local size
 		if options.Size then
 			assert(typeof(options.Size) == "UDim2", "FyyUI Menu: Size must be a UDim2")
-			local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
 			size = Vector2.new(
 				options.Size.X.Offset + options.Size.X.Scale * viewport.X,
 				options.Size.Y.Offset + options.Size.Y.Scale * viewport.Y
@@ -2869,6 +2899,10 @@ return (function()
 		self._initialPos = pos
 		self._responsiveBaseSize = self._initialSize
 		self._responsiveBasePosition = pos
+		self._responsiveBaseCenter = Vector2.new(
+			pos.X.Scale * viewport.X + pos.X.Offset + size.X / 2,
+			pos.Y.Scale * viewport.Y + pos.Y.Offset + size.Y / 2
+		)
 
 		self.GuiParent = options.Parent or game:GetService("CoreGui")
 
@@ -2915,12 +2949,15 @@ return (function()
 			U.Create("UICorner", { CornerRadius = UDim.new(0, theme.CornerRadius + 2), Parent = shadowFrame })
 			self._shadow = shadowFrame
 			self._updateShadow = function()
-				if not self._shadow then return end
-				local s = self.Frame.Size
-				self._shadow.Size = UDim2.fromOffset(s.X.Offset + 16, s.Y.Offset + 16)
-				self._shadow.Position = UDim2.fromOffset(
-					self.Frame.Position.X.Offset - 8,
-					self.Frame.Position.Y.Offset - 8
+				if not self._shadow or not self.Frame then return end
+				local position = self.Frame.AbsolutePosition
+				local visualSize = self.Frame.AbsoluteSize
+				self._shadow.Size = UDim2.fromOffset(visualSize.X + 16, visualSize.Y + 16)
+				local shadowPosition = self._shadow.Position
+				local shadowAbsolute = self._shadow.AbsolutePosition
+				self._shadow.Position = UDim2.new(
+					shadowPosition.X.Scale, shadowPosition.X.Offset + (position.X - 8) - shadowAbsolute.X,
+					shadowPosition.Y.Scale, shadowPosition.Y.Offset + (position.Y - 8) - shadowAbsolute.Y
 				)
 			end
 		end
@@ -3432,6 +3469,23 @@ return (function()
 		self:_dragging()
 
 		self.Gui.Parent = self.GuiParent
+		-- ScreenGui coordinates can differ from Camera.ViewportSize (for example,
+		-- when the client reserves space for an inset). Capture the real unscaled
+		-- centre from rendered coordinates rather than reconstructing it from the
+		-- camera viewport.
+		self._responsiveBaseCenter = Vector2.new(
+			self.Frame.AbsolutePosition.X + self._responsiveBaseSize.X.Offset / 2,
+			self.Frame.AbsolutePosition.Y + self._responsiveBaseSize.Y.Offset / 2
+		)
+		self:_applyResponsiveLayout()
+		if self._updateShadow then
+			local syncShadow = function()
+				if not self._destroyed then self:_updateShadow() end
+			end
+			self._shadowPositionCon = self.Frame:GetPropertyChangedSignal("AbsolutePosition"):Connect(syncShadow)
+			self._shadowSizeCon = self.Frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(syncShadow)
+			self:_updateShadow()
+		end
 		self:_bindResponsiveViewport()
 
 		if self.Resizable then
@@ -4225,12 +4279,9 @@ return (function()
 					sp.X.Scale, clampedX - sp.X.Scale * viewport.X,
 					sp.Y.Scale, clampedY - sp.Y.Scale * viewport.Y
 				)
-				if shadow then
-					shadow.Position = UDim2.new(
-						sp.X.Scale, clampedX - sp.X.Scale * viewport.X - 8,
-						sp.Y.Scale, clampedY - sp.Y.Scale * viewport.Y - 8
-					)
-				end
+				self:_captureResponsiveBaseCenter()
+				self._responsiveBasePosition = frame.Position
+				if shadow and self._updateShadow then self._updateShadow() end
 			end
 		end)
 		topbar.InputEnded:Connect(function(input)
@@ -4323,18 +4374,38 @@ return (function()
 		if self.Maximized then
 			self._maxPrevPos = self.Frame.Position
 			self._maxPrevSize = self.Frame.Size
-			targetSize = UDim2.fromOffset(viewport.X - 40, viewport.Y - 40)
-			targetPosition = UDim2.fromOffset(20, 20)
+			local position = self.Frame.AbsolutePosition
+			local visualSize = self.Frame.AbsoluteSize
+			self._maxPrevCenter = Vector2.new(position.X + visualSize.X / 2, position.Y + visualSize.Y / 2)
+			local safe = self.SafePadding
+			local scale = self.Scale or 1
+			targetSize = UDim2.fromOffset(
+				math.max(1, (viewport.X - safe * 2) / scale),
+				math.max(1, (viewport.Y - safe * 2) / scale)
+			)
+			targetPosition = self:_framePositionForVisualTopLeft(safe, safe)
 		else
-			targetSize = self._maxPrevSize or self._initialSize
-			targetPosition = self._maxPrevPos or self._initialPos
+			-- Resolve restoration through the same responsive geometry as normal
+			-- layout. This preserves the pre-maximize visual centre at a new scale
+			-- and prevents a stale desktop size from overflowing a resized viewport.
+			self._responsiveBaseSize = self._maxPrevSize or self._responsiveBaseSize or self._initialSize
+			self._responsiveBaseCenter = self._maxPrevCenter or self._responsiveBaseCenter
+			local currentSize = self.Frame.Size
+			local currentPosition = self.Frame.Position
+			self.Frame.Size = self._responsiveBaseSize
+			self:_applyResponsiveLayout()
+			targetSize = self.Frame.Size
+			targetPosition = self.Frame.Position
+			self.Frame.Size = currentSize
+			self.Frame.Position = currentPosition
 		end
 
 		self._maximizeTween = self:_transition(self.Frame, 0.25, { Size = targetSize, Position = targetPosition }, Enum.EasingStyle.Quart, Enum.EasingDirection.Out, function()
 			if self._destroyed then return end
 			self._maximizing = false
 			self._maximizeTween = nil
-			if self._updateShadow then self._updateShadow() end
+			if not self.Maximized then self:_applyResponsiveLayout()
+			elseif self._updateShadow then self:_updateShadow() end
 		end)
 	end
 
@@ -4378,8 +4449,9 @@ return (function()
 			local t = input.UserInputType
 			if (t == Enum.UserInputType.MouseMovement or t == Enum.UserInputType.Touch) and resizing then
 				local delta = input.Position - rs
-				local nw = math.max(200, rsiz.X.Offset + delta.X)
-				local nh = math.max(140, rsiz.Y.Offset + delta.Y)
+				local scale = self.Scale or 1
+				local nw = math.max(200, rsiz.X.Offset + delta.X / scale)
+				local nh = math.max(140, rsiz.Y.Offset + delta.Y / scale)
 				if self.MinSize then
 					nw = math.max(nw, self.MinSize.X)
 					nh = math.max(nh, self.MinSize.Y)
@@ -4392,10 +4464,9 @@ return (function()
 				if not self._responsiveApplied and not self.Maximized then
 					self._responsiveBaseSize = frame.Size
 					self._responsiveBasePosition = frame.Position
+					self:_captureResponsiveBaseCenter()
 				end
-				if shadow then
-					shadow.Size = UDim2.fromOffset(nw + 16, nh + 16)
-				end
+				if shadow and self._updateShadow then self._updateShadow() end
 			end
 		end)
 		self._resizeEndCon = uis.InputEnded:Connect(function(input, gpe)
@@ -4600,6 +4671,8 @@ return (function()
 		if self._sidebarScrollCon then self._sidebarScrollCon:Disconnect(); self._sidebarScrollCon = nil end
 		if self._resizeInputCon then self._resizeInputCon:Disconnect(); self._resizeInputCon = nil end
 		if self._resizeEndCon then self._resizeEndCon:Disconnect(); self._resizeEndCon = nil end
+		if self._shadowPositionCon then self._shadowPositionCon:Disconnect(); self._shadowPositionCon = nil end
+		if self._shadowSizeCon then self._shadowSizeCon:Disconnect(); self._shadowSizeCon = nil end
 		if self._cameraCon then self._cameraCon:Disconnect(); self._cameraCon = nil end
 		if self._cameraViewportCon then self._cameraViewportCon:Disconnect(); self._cameraViewportCon = nil end
 		if self._keybindInputCon then self._keybindInputCon:Disconnect(); self._keybindInputCon = nil end
@@ -4813,20 +4886,16 @@ return (function()
 		if self._destroyed then return false, "destroyed" end
 		if not isFiniteNumber(value) then return false, "expected finite number" end
 		value = math.clamp(value, 0.75, 1.35)
-		self.Scale = value
-		self:_applyResponsiveLayout()
-		if not self._uiScale then return true end
-		if self._reducedMotion then
-			self._uiScale.Scale = value
-		else
-			if self._scaleTween then self._scaleTween:Cancel() end
-			self._scaleTween = game:GetService("TweenService"):Create(
-				self._uiScale,
-				TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{ Scale = value }
-			)
-			self._scaleTween:Play()
+		if not self._responsiveApplied and not self.Maximized then
+			self:_captureResponsiveBaseCenter()
 		end
+		self.Scale = value
+		if not self._uiScale then return true end
+		-- A slider can call SetScale many times per second. Applying the geometry
+		-- immediately avoids overlapping tweens and keeps pointer feedback exact.
+		if self._scaleTween then self._scaleTween:Cancel(); self._scaleTween = nil end
+		self._uiScale.Scale = value
+		self:_applyResponsiveLayout()
 		return true
 	end
 

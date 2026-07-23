@@ -3,6 +3,7 @@ local FyyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/FyyWann
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
 	Resizable = true,
+	Shadow = true,
 	HasOutline = true,
 	Theme = "Amoled",
 	Stats = true,
