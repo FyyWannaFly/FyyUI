@@ -1,6 +1,6 @@
 # Getting Started with FyyUI
 
-> Applies to FyyUI v0.13.4 · Updated 2026-07-24
+> Applies to FyyUI v0.13.5 · Updated 2026-07-24
 
 This guide gets a local FyyUI menu running in Roblox Studio in a few minutes.
 
