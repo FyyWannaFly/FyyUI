@@ -1,5 +1,5 @@
 --[[
-	FyyUI v0.10.4
+	FyyUI v0.10.5
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -2500,30 +2500,7 @@ return (function()
 				if self.Minimized then self:_restore() else self:_minimize() end
 			end)
 			macBtn("Maximize", btnColors.Maximize, function()
-				self.Maximized = not self.Maximized
-				self.Gui.Enabled = true
-				if self.Minimized then
-					self.Minimized = false
-					if self._minGui then self._minGui.Enabled = false end
-					if self._noLogoRestoreGui then self._noLogoRestoreGui.Enabled = false end
-				end
-				local ts = game:GetService("TweenService")
-				local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-				if self.Maximized then
-					self._maxPrevPos = self.Frame.Position
-					self._maxPrevSize = self.Frame.Size
-		local vs = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-					ts:Create(self.Frame, ti, {
-						Size = UDim2.fromOffset(vs.X - 40, vs.Y - 40),
-						Position = UDim2.fromOffset(20, 20),
-					}):Play()
-				else
-					ts:Create(self.Frame, ti, {
-						Size = self._maxPrevSize or UDim2.fromOffset(size.X, size.Y),
-						Position = self._maxPrevPos or pos,
-					}):Play()
-				end
-				if self._updateShadow then self._updateShadow() end
+				self:_toggleMaximize()
 			end)
 
 			leftMargin = rightMargin + 8
@@ -2578,31 +2555,8 @@ return (function()
 			end
 			winBtn("Close", function() self:_confirmClose() end, -36, Color3.fromRGB(200, 60, 60))
 			winBtn("Maximize", function()
-				self.Maximized = not self.Maximized
-				self.Gui.Enabled = true
 				resetWinHover()
-				if self.Minimized then
-					self.Minimized = false
-					if self._minGui then self._minGui.Enabled = false end
-					if self._noLogoRestoreGui then self._noLogoRestoreGui.Enabled = false end
-				end
-				local ts = game:GetService("TweenService")
-				local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-				if self.Maximized then
-					self._maxPrevPos = self.Frame.Position
-					self._maxPrevSize = self.Frame.Size
-					local vs = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-					ts:Create(self.Frame, ti, {
-						Size = UDim2.fromOffset(vs.X - 40, vs.Y - 40),
-						Position = UDim2.fromOffset(20, 20),
-					}):Play()
-				else
-					ts:Create(self.Frame, ti, {
-						Size = self._maxPrevSize or UDim2.fromOffset(size.X, size.Y),
-						Position = self._maxPrevPos or pos,
-					}):Play()
-				end
-				if self._updateShadow then self._updateShadow() end
+				self:_toggleMaximize()
 			end, -66, Color3.fromRGB(45, 45, 55))
 			winBtn("Minimize", function()
 				if self.Minimized then
@@ -3296,7 +3250,7 @@ return (function()
 	function Menu:ExportConfig()
 		local snapshot = {
 			Schema = "FyyUI.Config.v1",
-			Version = "0.10.0",
+			Version = "0.10.5",
 			Values = {},
 		}
 		for flag, ctrl in pairs(self._flagRegistry) do
@@ -3496,6 +3450,44 @@ return (function()
 
 		if self._minGui then self._minGui.Enabled = false end
 		if self._noLogoRestoreGui then self._noLogoRestoreGui.Enabled = false end
+	end
+
+	function Menu:_toggleMaximize()
+		if self._destroyed or self._maximizing then return end
+		self._maximizing = true
+		self.Maximized = not self.Maximized
+		self.Gui.Enabled = true
+		if self.Minimized then
+			self.Minimized = false
+			if self._minGui then self._minGui.Enabled = false end
+			if self._noLogoRestoreGui then self._noLogoRestoreGui.Enabled = false end
+		end
+
+		if self._maximizeTween then self._maximizeTween:Cancel() end
+		local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+		local targetSize, targetPosition
+		if self.Maximized then
+			self._maxPrevPos = self.Frame.Position
+			self._maxPrevSize = self.Frame.Size
+			targetSize = UDim2.fromOffset(viewport.X - 40, viewport.Y - 40)
+			targetPosition = UDim2.fromOffset(20, 20)
+		else
+			targetSize = self._maxPrevSize or self._initialSize
+			targetPosition = self._maxPrevPos or self._initialPos
+		end
+
+		self._maximizeTween = game:GetService("TweenService"):Create(
+			self.Frame,
+			TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+			{ Size = targetSize, Position = targetPosition }
+		)
+		self._maximizeTween.Completed:Connect(function()
+			if self._destroyed then return end
+			self._maximizing = false
+			self._maximizeTween = nil
+			if self._updateShadow then self._updateShadow() end
+		end)
+		self._maximizeTween:Play()
 	end
 
 	function Menu:_resizable()
@@ -4501,7 +4493,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.10.4", Theme = Theme }
+	local FyyUI = { Version = "0.10.5", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
