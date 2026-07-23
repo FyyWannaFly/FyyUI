@@ -1,5 +1,5 @@
 --[[
-	FyyUI v0.10.9
+	FyyUI v0.11.0
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -20,7 +20,7 @@ return (function()
 			AccentLine = Color3.fromRGB(0, 150, 255),
 			TextPrimary = Color3.fromRGB(225, 225, 235),
 			TextSecondary = Color3.fromRGB(145, 145, 160),
-			TextMuted = Color3.fromRGB(95, 95, 110),
+			TextMuted = Color3.fromRGB(140, 140, 155),
 			Element = Color3.fromRGB(35, 35, 42),
 			ElementHover = Color3.fromRGB(45, 45, 54),
 			ElementBorder = Color3.fromRGB(48, 48, 56),
@@ -32,7 +32,7 @@ return (function()
 			ScrollBar = Color3.fromRGB(65, 65, 78),
 			Shadow = Color3.fromRGB(0, 0, 0),
 			Sidebar = Color3.fromRGB(22, 22, 28),
-			SidebarText = Color3.fromRGB(130, 130, 145),
+			SidebarText = Color3.fromRGB(135, 135, 150),
 			SidebarTextActive = Color3.fromRGB(225, 225, 235),
 			TabActive = Color3.fromRGB(35, 35, 42),
 			TabHover = Color3.fromRGB(45, 45, 54),
@@ -57,7 +57,7 @@ return (function()
 			AccentLine = Color3.fromRGB(0, 130, 245),
 			TextPrimary = Color3.fromRGB(28, 28, 36),
 			TextSecondary = Color3.fromRGB(98, 98, 112),
-			TextMuted = Color3.fromRGB(148, 148, 162),
+			TextMuted = Color3.fromRGB(85, 85, 98),
 			Element = Color3.fromRGB(222, 222, 232),
 			ElementHover = Color3.fromRGB(212, 212, 224),
 			ElementBorder = Color3.fromRGB(208, 208, 218),
@@ -69,7 +69,7 @@ return (function()
 			ScrollBar = Color3.fromRGB(178, 178, 192),
 			Shadow = Color3.fromRGB(0, 0, 0),
 			Sidebar = Color3.fromRGB(235, 235, 242),
-			SidebarText = Color3.fromRGB(130, 130, 145),
+			SidebarText = Color3.fromRGB(105, 105, 120),
 			SidebarTextActive = Color3.fromRGB(28, 28, 36),
 			TabActive = Color3.fromRGB(212, 212, 224),
 			TabHover = Color3.fromRGB(200, 200, 215),
@@ -94,7 +94,7 @@ return (function()
 			AccentLine = Color3.fromRGB(140, 80, 255),
 			TextPrimary = Color3.fromRGB(210, 210, 220),
 			TextSecondary = Color3.fromRGB(130, 130, 145),
-			TextMuted = Color3.fromRGB(75, 75, 92),
+			TextMuted = Color3.fromRGB(125, 125, 142),
 			Element = Color3.fromRGB(13, 13, 18),
 			ElementHover = Color3.fromRGB(22, 22, 30),
 			ElementBorder = Color3.fromRGB(25, 25, 36),
@@ -106,7 +106,7 @@ return (function()
 			ScrollBar = Color3.fromRGB(40, 40, 56),
 			Shadow = Color3.fromRGB(0, 0, 0),
 			Sidebar = Color3.fromRGB(3, 3, 6),
-			SidebarText = Color3.fromRGB(100, 100, 120),
+			SidebarText = Color3.fromRGB(135, 135, 152),
 			SidebarTextActive = Color3.fromRGB(210, 210, 220),
 			TabActive = Color3.fromRGB(13, 13, 18),
 			TabHover = Color3.fromRGB(22, 22, 30),
@@ -762,8 +762,6 @@ return (function()
 				end
 				self._menu:HideDropdownPopup()
 			else
-				self.Open = true
-				if self._arrow then self._arrow.Image = self._arrowRight end
 				if self._menu._activeDropdown and self._menu._activeDropdown ~= self then
 					self._menu._activeDropdown.Open = false
 					if self._menu._activeDropdown._arrow and self._menu._activeDropdown._arrowDown then
@@ -777,10 +775,17 @@ return (function()
 				for i, opt in ipairs(self.Options) do
 					if opt == self.Value then self._selIdx = i; break end
 				end
-				self._menu:ShowDropdownPopup(pos, siz, self.Options, self._selIdx, function(idx, val)
+				local shown = self._menu:ShowDropdownPopup(pos, siz, self.Options, self._selIdx, function(idx, val)
 					self:SetValue(val)
 				end, self.Multi, self)
-				self._menu._activeDropdown = self
+				if shown then
+					self.Open = true
+					if self._arrow then self._arrow.Image = self._arrowRight end
+					self._menu._activeDropdown = self
+				else
+					self.Open = false
+					if self._arrow then self._arrow.Image = self._arrowDown end
+				end
 			end
 		end)
 
@@ -993,10 +998,16 @@ return (function()
 				for i, opt in ipairs(options) do
 					if opt == self.Value then selIdx = i; break end
 				end
-				self._menu:ShowDropdownPopup(pos, siz, options, selIdx, function(idx, val)
+				local shown = self._menu:ShowDropdownPopup(pos, siz, options, selIdx, function(idx, val)
 					self:SetValue(val)
 				end, self.Multi, self)
-				self._menu._activeDropdown = self
+				if shown then
+					self.Open = true
+					self._menu._activeDropdown = self
+				else
+					self.Open = false
+					if self._arrow then self._arrow.Image = self._arrowDown end
+				end
 			end
 		end
 
@@ -2260,12 +2271,14 @@ return (function()
 		self.Arrow.Text = v and "▼" or "▶"
 		if self._tween then self._tween:Cancel() end
 		if not self.Container then return false, "missing container" end
-		local ts = game:GetService("TweenService")
-		local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		local contentH = self._layout and self._layout.AbsoluteContentSize.Y or 0
-		local targetH = v and (34 + contentH) or 34
-		self._tween = ts:Create(self.Container, ti, { Size = UDim2.new(1, -12, 0, targetH) })
-		self._tween:Play()
+			local contentH = self._layout and self._layout.AbsoluteContentSize.Y or 0
+			local targetH = v and (34 + contentH) or 34
+			if self._menu then
+				self._tween = self._menu:_transition(self.Container, 0.25, { Size = UDim2.new(1, -12, 0, targetH) })
+			else
+				self._tween = game:GetService("TweenService"):Create(self.Container, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, -12, 0, targetH) })
+				self._tween:Play()
+			end
 		return true
 	end
 
@@ -2288,9 +2301,12 @@ return (function()
 		if instant then
 			self.Container.Size = UDim2.new(1, -12, 0, targetH)
 		else
-			local ts = game:GetService("TweenService")
-			self._tween = ts:Create(self.Container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, -12, 0, targetH) })
-			self._tween:Play()
+				if self._menu then
+					self._tween = self._menu:_transition(self.Container, 0.15, { Size = UDim2.new(1, -12, 0, targetH) })
+				else
+					self._tween = game:GetService("TweenService"):Create(self.Container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, -12, 0, targetH) })
+					self._tween:Play()
+				end
 		end
 	end
 
@@ -2502,6 +2518,105 @@ return (function()
 	local Menu = {}
 	Menu.__index = Menu
 
+	function Menu:_viewportSize()
+		local camera = workspace.CurrentCamera
+		return camera and camera.ViewportSize or Vector2.new(1920, 1080)
+	end
+
+	-- All menu-owned transient UI transitions pass through this helper so reduced
+	-- motion is consistently instant without changing public component APIs.
+	function Menu:_transition(instance, duration, properties, style, direction, onCompleted)
+		if not instance then return nil end
+		if self._reducedMotion then
+			for property, value in pairs(properties) do instance[property] = value end
+			if onCompleted then onCompleted() end
+			return nil
+		end
+		local tween = game:GetService("TweenService"):Create(
+			instance,
+			TweenInfo.new(duration, style or Enum.EasingStyle.Quad, direction or Enum.EasingDirection.Out),
+			properties
+		)
+		if onCompleted then tween.Completed:Connect(onCompleted) end
+		tween:Play()
+		return tween
+	end
+
+	function Menu:_modalSize(preferredWidth, preferredHeight, minimumWidth, minimumHeight)
+		local viewport = self:_viewportSize()
+		local usableWidth = math.max(1, viewport.X - self.SafePadding * 2)
+		local usableHeight = math.max(1, viewport.Y - self.SafePadding * 2)
+		return math.min(preferredWidth, math.max(math.min(minimumWidth, usableWidth), usableWidth)),
+			math.min(preferredHeight, math.max(math.min(minimumHeight, usableHeight), usableHeight))
+	end
+
+	function Menu:_applyResponsiveLayout()
+		if self._destroyed or not self.Responsive or not self.Frame then return end
+		local viewport = self:_viewportSize()
+		local safe = self.SafePadding
+		local scale = self.Scale or 1
+		local usableWidth = math.max(1, (viewport.X - safe * 2) / scale)
+		local usableHeight = math.max(1, (viewport.Y - safe * 2) / scale)
+		local baseSize = self._responsiveBaseSize or self.Frame.Size
+		local needsCompact = viewport.X <= self.CompactBreakpoint
+			or baseSize.X.Offset > usableWidth or baseSize.Y.Offset > usableHeight
+		if self._activePopupFrame then self:HideDropdownPopup() end
+
+		if self.Maximized then
+			self.Frame.Size = UDim2.fromOffset(usableWidth, usableHeight)
+			self.Frame.Position = UDim2.fromOffset(safe, safe)
+			self._responsiveApplied = true
+		elseif needsCompact then
+			self.Frame.Size = UDim2.fromOffset(math.min(baseSize.X.Offset, usableWidth), math.min(baseSize.Y.Offset, usableHeight))
+			self.Frame.Position = UDim2.fromOffset(safe, safe)
+			self._responsiveApplied = true
+		elseif self._responsiveApplied then
+			self.Frame.Size = baseSize
+			self.Frame.Position = self._responsiveBasePosition or self._initialPos
+			self._responsiveApplied = false
+		end
+		local sidebarWidth = needsCompact and math.min(self.Theme.SidebarWidth, 86) or self.Theme.SidebarWidth
+		if self.Sidebar and self.ContentArea then
+			self.Sidebar.Size = UDim2.new(0, sidebarWidth, 1, -(self.Theme.TopbarHeight + 4))
+			self.ContentArea.Size = UDim2.new(1, -(sidebarWidth + 8), 1, -(self.Theme.TopbarHeight + 6))
+			self.ContentArea.Position = UDim2.new(0, sidebarWidth + 6, 0, self.Theme.TopbarHeight + 4)
+			if self.SidebarLine then self.SidebarLine.Position = UDim2.new(0, sidebarWidth + 4, 0, self.Theme.TopbarHeight + 6) end
+			if self.TitleSep then self.TitleSep.Position = UDim2.fromOffset(sidebarWidth + 4, 0) end
+		end
+		if self.Minimized then
+			self._minPrevSize = self.Frame.Size
+			self._minPrevPos = self.Frame.Position
+		end
+
+		if self._updateShadow then self._updateShadow() end
+		if self._tooltipActive then self:_updateTooltipPosition() end
+		if self.NotifBox then
+			self.NotifBox.Size = UDim2.fromOffset(math.min(320, viewport.X - safe * 2), 0)
+			self.NotifBox.Position = UDim2.new(1, -safe, 1, -safe)
+		end
+		if self._paletteFrame then
+			local palW, palH = self:_modalSize(380, 310, 180, 180)
+			self._paletteFrame.Size = UDim2.fromOffset(palW, palH)
+		end
+	end
+
+	function Menu:_bindResponsiveViewport()
+		if not self.Responsive then return end
+		local function bindCamera(camera)
+			if self._cameraViewportCon then self._cameraViewportCon:Disconnect(); self._cameraViewportCon = nil end
+			if camera then
+				self._cameraViewportCon = camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+					self:_applyResponsiveLayout()
+				end)
+			end
+			self:_applyResponsiveLayout()
+		end
+		self._cameraCon = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+			if not self._destroyed then bindCamera(workspace.CurrentCamera) end
+		end)
+		bindCamera(workspace.CurrentCamera)
+	end
+
 	function Menu.new(options, theme)
 		local self = setmetatable({}, Menu)
 		self.Options = options
@@ -2533,10 +2648,22 @@ return (function()
 		assert(isFiniteNumber(self.MinSize.X) and isFiniteNumber(self.MinSize.Y) and self.MinSize.X > 0 and self.MinSize.Y > 0, "FyyUI Menu: MinSize must be positive")
 		assert(isFiniteNumber(self.MaxSize.X) and isFiniteNumber(self.MaxSize.Y) and self.MaxSize.X >= self.MinSize.X and self.MaxSize.Y >= self.MinSize.Y, "FyyUI Menu: MaxSize must be at least MinSize")
 		self.Resizable = options.Resizable or false
+		assert(options.Responsive == nil or type(options.Responsive) == "boolean", "FyyUI Menu: Responsive must be a boolean")
+		self.Responsive = options.Responsive ~= false
+		local compactBreakpoint = options.CompactBreakpoint == nil and 640 or options.CompactBreakpoint
+		assert(isFiniteNumber(compactBreakpoint) and compactBreakpoint > 0, "FyyUI Menu: CompactBreakpoint must be a positive finite number")
+		self.CompactBreakpoint = math.floor(compactBreakpoint)
+		local safePadding = options.SafePadding == nil and 12 or options.SafePadding
+		assert(isFiniteNumber(safePadding) and safePadding >= 0, "FyyUI Menu: SafePadding must be a non-negative finite number")
+		self.SafePadding = safePadding
+		local touchTargetSize = options.TouchTargetSize == nil and 36 or options.TouchTargetSize
+		assert(isFiniteNumber(touchTargetSize) and touchTargetSize >= 24, "FyyUI Menu: TouchTargetSize must be a finite number of at least 24")
+		self.TouchTargetSize = math.floor(touchTargetSize)
 		local requestedScale = options.Scale == nil and 1 or options.Scale
 		assert(isFiniteNumber(requestedScale), "FyyUI Menu: Scale must be a finite number")
 		self.Scale = math.clamp(requestedScale, 0.75, 1.35)
-		self._reducedMotion = options.ReducedMotion or false
+		assert(options.ReducedMotion == nil or type(options.ReducedMotion) == "boolean", "FyyUI Menu: ReducedMotion must be a boolean")
+		self._reducedMotion = options.ReducedMotion == true
 
 		-- Tooltip state
 		self._tooltips = {}
@@ -2561,6 +2688,8 @@ return (function()
 		local pos = options.Position or UDim2.new(0.5, -size.X / 2, 0.5, -size.Y / 2)
 		self._initialSize = UDim2.fromOffset(size.X, size.Y)
 		self._initialPos = pos
+		self._responsiveBaseSize = self._initialSize
+		self._responsiveBasePosition = pos
 
 		self.GuiParent = options.Parent or game:GetService("CoreGui")
 
@@ -2958,7 +3087,8 @@ return (function()
 		self.NotifBox = U.Create("Frame", {
 			Name = "Notifications",
 			Size = UDim2.new(0, 320, 0, 0),
-			Position = UDim2.new(1, -330, 1, -10),
+			Position = UDim2.new(1, -10, 1, -10),
+			AnchorPoint = Vector2.new(1, 1),
 			BackgroundTransparency = 1,
 			ZIndex = 50,
 			Parent = self._notifGui,
@@ -3111,6 +3241,7 @@ return (function()
 		self:_dragging()
 
 		self.Gui.Parent = self.GuiParent
+		self:_bindResponsiveViewport()
 
 		if self.Resizable then
 			self:_resizable()
@@ -3279,20 +3410,23 @@ return (function()
 	end
 
 	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMulti, dd)
+		if self._destroyed or not self.Gui or not self.Frame then return false, "destroyed" end
+		if type(opts) ~= "table" then return false, "expected options table" end
 		self:HideDropdownPopup()
 		self._popupGen = (self._popupGen or 0) + 1  -- bump generation so stale close handlers bail out
 
 		local uis = game:GetService("UserInputService")
-		local ts = game:GetService("TweenService")
 		local theme = self.Theme
 		local frameAbs = self.Frame.AbsolutePosition
 		local frameSiz = self.Frame.AbsoluteSize
+		atPos = typeof(atPos) == "Vector2" and atPos or frameAbs
+		atSize = typeof(atSize) == "Vector2" and atSize or Vector2.new(0, 0)
 		local py = 0
 		isMulti = isMulti or false
 		dd = dd or self._activeDropdown  -- fallback to _activeDropdown if not passed
 
 		-- Determine panel width and position based on available viewport space
-		local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+		local viewport = self:_viewportSize()
 		local PREF_W = 220           -- preferred side-panel width
 		local COMFORT_W = 140        -- minimum width for a comfortable panel
 		local USABLE_W = 80          -- absolute minimum; below this the panel has negative/zero inner content
@@ -3300,6 +3434,7 @@ return (function()
 		local rightRoom = viewport.X - rightEdge - 4  -- 4px margin from screen edge
 		local leftRoom = frameAbs.X - 4               -- space to the left of the menu
 		local w, px
+		local modal = false
 		if rightRoom >= COMFORT_W then
 			-- Right side: comfortable space for full panel
 			w = math.min(PREF_W, rightRoom)
@@ -3317,26 +3452,48 @@ return (function()
 			w = leftRoom
 			px = -w
 		else
-			-- Neither side has room; bail out to avoid creating a broken popup
-			self._activePopupFrame = nil
-			return
+			-- On narrow/mobile viewports, present a centered modal instead of
+			-- creating an unusable side panel or leaving the dropdown "open".
+			modal = true
+			w = math.min(360, math.max(1, viewport.X - self.SafePadding * 2))
+			px = 0
 		end
 
 		-- Content-aware height: size to options, clamped to menu bounds
-		local OPT_H = 34  -- 32px button + 2px UIListLayout padding
+		local OPT_H = math.max(32, self.TouchTargetSize)
 		local MIN_H = 60
-		local contentH = 4 + (#opts * OPT_H)  -- 4px top padding + option height total
-		local clampedH = math.max(MIN_H, math.min(contentH, frameSiz.Y))
+		local contentH = 8 + (#opts * OPT_H) + math.max(0, #opts - 1) * 2
+		local availableH = modal and math.max(1, viewport.Y - self.SafePadding * 2) or frameSiz.Y
+		local clampedH = math.min(availableH, math.max(MIN_H, math.min(contentH, availableH)))
+		if not modal then
+			py = math.clamp(atPos.Y + atSize.Y - frameAbs.Y, 0, math.max(0, frameSiz.Y - clampedH))
+		end
+		local popupParent = self.Frame
+		if modal then
+			self._activePopupOverlay = U.Create("ImageButton", {
+				Name = "DropdownOverlay",
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+				BackgroundTransparency = 0.48,
+				BorderSizePixel = 0,
+				AutoButtonColor = false,
+				ZIndex = 9999,
+				Parent = self.Gui,
+			})
+			self._activePopupOverlay.MouseButton1Click:Connect(function() self:HideDropdownPopup() end)
+			popupParent = self.Gui
+		end
 
 		-- Create popup with 0 width → tween to slide in from right
 		local popup = U.Create("Frame", {
-			Name = "DropdownPopup",
+			Name = modal and "DropdownModal" or "DropdownPopup",
 			Size = UDim2.fromOffset(0, clampedH),
-			Position = UDim2.fromOffset(px, py),
+			Position = modal and UDim2.fromScale(0.5, 0.5) or UDim2.fromOffset(px, py),
+			AnchorPoint = modal and Vector2.new(0.5, 0.5) or Vector2.new(0, 0),
 			BackgroundColor3 = theme.Sidebar,
 			BorderSizePixel = 0,
 			ZIndex = 10000,
-			Parent = self.Frame,
+			Parent = popupParent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = popup })
 		U.Create("UIStroke", {
@@ -3364,6 +3521,7 @@ return (function()
 			BorderSizePixel = 0,
 			BackgroundTransparency = 0.3,
 			ZIndex = 10001,
+			Visible = not modal,
 			Parent = popup,
 		})
 
@@ -3377,7 +3535,7 @@ return (function()
 				BorderSizePixel = 0,
 				ScrollBarThickness = 3,
 				ScrollBarImageColor3 = theme.ScrollBar,
-				CanvasSize = UDim2.fromOffset(0, #opts * OPT_H),
+				CanvasSize = UDim2.fromOffset(0, (#opts * OPT_H) + math.max(0, #opts - 1) * 2),
 				ZIndex = 10001,
 				Parent = content,
 			})
@@ -3397,7 +3555,7 @@ return (function()
 				end
 				local btn = U.Create("TextButton", {
 					Name = "Option",
-					Size = UDim2.new(1, -8, 0, 32),
+					Size = UDim2.new(1, -8, 0, OPT_H),
 					Text = "",
 					BackgroundColor3 = sel and theme.Accent or theme.Element,
 					BackgroundTransparency = sel and 0.25 or 0.6,
@@ -3467,20 +3625,25 @@ return (function()
 		end
 
 		self._activePopupFrame = popup
-		-- Tween: slide in from right to final clamped width
-		local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		ts:Create(popup, ti, { Size = UDim2.fromOffset(w, clampedH) }):Play()
+		self._activePopupModal = modal
+		self:_transition(popup, 0.25, { Size = UDim2.fromOffset(w, clampedH) })
 
 		-- Close on click outside (generation-guarded: stale invocations after a new popup are no-ops)
 		local closeGen = self._popupGen
 		self._popupUISCon = uis.InputBegan:Connect(function(input, gpe)
 			if gpe then return end
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 				task.wait()
 				if closeGen ~= self._popupGen then return end  -- popup was replaced while yielding
-				self:HideDropdownPopup()
+				local activePopup = self._activePopupFrame
+				if not activePopup then return end
+				local point, popupPos, popupSize = input.Position, activePopup.AbsolutePosition, activePopup.AbsoluteSize
+				local insidePopup = point.X >= popupPos.X and point.X <= popupPos.X + popupSize.X
+					and point.Y >= popupPos.Y and point.Y <= popupPos.Y + popupSize.Y
+				if not insidePopup then self:HideDropdownPopup() end
 			end
 		end)
+		return true
 	end
 
 	function Menu:HideDropdownPopup()
@@ -3491,15 +3654,13 @@ return (function()
 		if self._activePopupFrame then
 			local popup = self._activePopupFrame
 			self._activePopupFrame = nil
-			local ts = game:GetService("TweenService")
-			local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 			local curSize = popup.Size
-			local tw = ts:Create(popup, ti, { Size = UDim2.fromOffset(0, curSize.Y.Offset) })
-			tw.Completed:Connect(function()
+			self:_transition(popup, 0.2, { Size = UDim2.fromOffset(0, curSize.Y.Offset) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
 				pcall(function() popup:Destroy() end)
 			end)
-			tw:Play()
 		end
+		if self._activePopupOverlay then self._activePopupOverlay:Destroy(); self._activePopupOverlay = nil end
+		self._activePopupModal = nil
 		if self._activeDropdown then
 			self._activeDropdown.Open = false
 			if self._activeDropdown._arrow and self._activeDropdown._arrowDown then
@@ -3545,7 +3706,7 @@ return (function()
 		if self._destroyed then return nil, "destroyed" end
 		local snapshot = {
 			Schema = "FyyUI.Config.v1",
-			Version = "0.10.9",
+			Version = "0.11.0",
 			Values = {},
 		}
 		for flag, ctrl in pairs(self._flagRegistry) do
@@ -3742,14 +3903,12 @@ return (function()
 		local function dismiss()
 			if dismissed or not frame.Parent then return false end
 			dismissed = true
-			local fadeOut = ts:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			local fadeOut = self:_transition(frame, 0.3, {
 				Size = UDim2.new(1, 0, 0, 0),
 				BackgroundTransparency = 1,
-			})
-			fadeOut.Completed:Connect(function()
+			}, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
 				if frame then frame:Destroy() end
 			end)
-			fadeOut:Play()
 			return true
 		end
 		local fadeIn
@@ -3763,9 +3922,7 @@ return (function()
 			frame.Size = UDim2.new(1, 0, 0, math.max(32, nextSize.Y + 14))
 			return true
 		end
-		local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		fadeIn = ts:Create(frame, ti, { Size = UDim2.new(1, 0, 0, h) })
-		fadeIn:Play()
+		fadeIn = self:_transition(frame, 0.2, { Size = UDim2.new(1, 0, 0, h) })
 
 		-- Auto dismiss
 		task.delay(duration, function()
@@ -3904,7 +4061,7 @@ return (function()
 		end
 
 		if self._maximizeTween then self._maximizeTween:Cancel() end
-		local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+		local viewport = self:_viewportSize()
 		local targetSize, targetPosition
 		if self.Maximized then
 			self._maxPrevPos = self.Frame.Position
@@ -3972,6 +4129,10 @@ return (function()
 					nh = math.min(nh, self.MaxSize.Y)
 				end
 				frame.Size = UDim2.fromOffset(nw, nh)
+				if not self._responsiveApplied and not self.Maximized then
+					self._responsiveBaseSize = frame.Size
+					self._responsiveBasePosition = frame.Position
+				end
 				if shadow then
 					shadow.Size = UDim2.fromOffset(nw + 16, nh + 16)
 				end
@@ -4173,6 +4334,8 @@ return (function()
 		if self._sidebarScrollCon then self._sidebarScrollCon:Disconnect(); self._sidebarScrollCon = nil end
 		if self._resizeInputCon then self._resizeInputCon:Disconnect(); self._resizeInputCon = nil end
 		if self._resizeEndCon then self._resizeEndCon:Disconnect(); self._resizeEndCon = nil end
+		if self._cameraCon then self._cameraCon:Disconnect(); self._cameraCon = nil end
+		if self._cameraViewportCon then self._cameraViewportCon:Disconnect(); self._cameraViewportCon = nil end
 		if self._keybindInputCon then self._keybindInputCon:Disconnect(); self._keybindInputCon = nil end
 		if self._keybindEndCon then self._keybindEndCon:Disconnect(); self._keybindEndCon = nil end
 		if self._scaleTween then self._scaleTween:Cancel(); self._scaleTween = nil end
@@ -4196,6 +4359,7 @@ return (function()
 			self._activePopupFrame:Destroy()
 			self._activePopupFrame = nil
 		end
+		if self._activePopupOverlay then self._activePopupOverlay:Destroy(); self._activePopupOverlay = nil end
 		if self._activeDropdown then self._activeDropdown = nil end
 
 		-- Tooltip cleanup
@@ -4381,6 +4545,7 @@ return (function()
 		if not isFiniteNumber(value) then return false, "expected finite number" end
 		value = math.clamp(value, 0.75, 1.35)
 		self.Scale = value
+		self:_applyResponsiveLayout()
 		if not self._uiScale then return true end
 		if self._reducedMotion then
 			self._uiScale.Scale = value
@@ -4492,13 +4657,11 @@ return (function()
 		label.Visible = true
 		label.BackgroundTransparency = 1
 		label.TextTransparency = 1
-		local ts = game:GetService("TweenService")
 		if self._tooltipTween then self._tooltipTween:Cancel() end
-		self._tooltipTween = ts:Create(label, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		self._tooltipTween = self:_transition(label, 0.12, {
 			BackgroundTransparency = 0.08,
 			TextTransparency = 0,
 		})
-		self._tooltipTween:Play()
 		self._tooltipActive = true
 	end
 
@@ -4508,15 +4671,12 @@ return (function()
 		if self._tooltipTween then self._tooltipTween:Cancel(); self._tooltipTween = nil end
 
 		local label = self._tooltipLabel
-		local ts = game:GetService("TweenService")
-		local tw = ts:Create(label, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		self:_transition(label, 0.08, {
 			BackgroundTransparency = 1,
 			TextTransparency = 1,
-		})
-		tw.Completed:Connect(function()
+		}, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
 			label.Visible = false
 		end)
-		tw:Play()
 	end
 
 	function Menu:_updateTooltipPosition()
@@ -4807,7 +4967,7 @@ return (function()
 		end)
 
 		-- Palette frame (centered on screen relative to gui)
-		local palW, palH = 380, 310
+		local palW, palH = self:_modalSize(380, 310, 180, 180)
 		self._paletteFrame = U.Create("Frame", {
 			Name = "CommandPalette",
 			Size = UDim2.fromOffset(palW, palH),
@@ -4911,11 +5071,9 @@ return (function()
 		self._paletteFrame.Visible = true
 
 		-- Animate in
-		ts:Create(self._paletteOverlay, TweenInfo.new(0.15), { BackgroundTransparency = 0.45 }):Play()
+		self:_transition(self._paletteOverlay, 0.15, { BackgroundTransparency = 0.45 })
 		self._paletteFrame.Size = UDim2.fromOffset(0, 0)
-		ts:Create(self._paletteFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.fromOffset(palW, palH),
-		}):Play()
+		self:_transition(self._paletteFrame, 0.2, { Size = UDim2.fromOffset(palW, palH) })
 
 		-- Focus search box after a tick
 		task.spawn(function()
@@ -4963,7 +5121,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.10.9", Theme = Theme }
+	local FyyUI = { Version = "0.11.0", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod

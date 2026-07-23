@@ -7,6 +7,13 @@ local menu = FyyUI.Menu({
 	Theme = "Amoled",
 	Stats = true,
 	Logo = true,
+	-- QA: resize Studio/device viewport below 640px and verify the compact sidebar,
+	-- centered long-option dropdown, safe padding, and 44px option targets.
+	Responsive = true,
+	CompactBreakpoint = 640,
+	SafePadding = 12,
+	TouchTargetSize = 44,
+	ReducedMotion = false, -- QA: set true and verify transient UI opens/closes instantly.
 })
 
 -- Tab 1: Combat
@@ -74,6 +81,15 @@ general:Dropdown({
 })
 general:Checkbox({ Text = "Show Watermark", Default = true })
 general:Checkbox({ Text = "Auto Update", Default = true })
+general:Dropdown({
+	Text = "Mobile long-label / modal dropdown QA",
+	Options = {
+		"A deliberately long option label that must remain readable on a phone",
+		"Another extended option for testing touch scrolling and selection",
+		"Short fallback",
+	},
+	Placeholder = "Resize to a narrow viewport, then open me",
+})
 general:Slider({
 	Text = "UI Scale",
 	Min = 0.75,

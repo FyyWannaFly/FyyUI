@@ -6,6 +6,7 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
+	assert(FyyUI.Version == "0.11.0", "library version must identify the responsive UX release")
 	local callbacks = { toggle = 0, checkbox = 0, multi = 0, options = 0 }
 	local menu = FyyUI.Menu({
 		Title = "FyyUI hardening regression",
@@ -13,6 +14,28 @@ return function(FyyUI)
 		Scale = 9, -- constructor must clamp to the supported range.
 	})
 	assert(menu:GetScale() == 1.35, "constructor scale must be clamped")
+	assert(menu.Responsive and menu.CompactBreakpoint == 640 and menu.SafePadding == 12, "responsive defaults must be stable")
+	assert(menu.TouchTargetSize == 36 and not menu._reducedMotion, "touch and motion defaults must be stable")
+	assert(menu:ExportConfig().Version == "0.11.0", "config export must identify the responsive UX release")
+	assert(not pcall(function() FyyUI.Menu({ CompactBreakpoint = 0 }) end), "invalid compact breakpoints must fail early")
+	assert(not pcall(function() FyyUI.Menu({ SafePadding = -1 }) end), "invalid safe padding must fail early")
+	assert(not pcall(function() FyyUI.Menu({ TouchTargetSize = math.huge }) end), "invalid touch target sizes must fail early")
+	local popupShown = menu:ShowDropdownPopup(Vector2.new(0, 0), Vector2.new(36, 36), { "One" }, 0, function() end, false)
+	assert(popupShown and menu._activePopupFrame, "dropdown popup must report successful UI creation")
+	menu:HideDropdownPopup()
+
+	local reducedMenu = FyyUI.Menu({
+		Title = "Reduced-motion responsive regression",
+		Stats = false,
+		Responsive = false,
+		CompactBreakpoint = 720,
+		SafePadding = 16,
+		TouchTargetSize = 44,
+		ReducedMotion = true,
+	})
+	assert(not reducedMenu.Responsive and reducedMenu.CompactBreakpoint == 720 and reducedMenu.SafePadding == 16, "responsive overrides must be retained")
+	assert(reducedMenu.TouchTargetSize == 44 and reducedMenu._reducedMotion, "reduced motion must be retained at menu level")
+	reducedMenu:Destroy()
 
 	local tab = menu:Tab({ Text = "Regression" })
 	local toggle = tab:Toggle({ Flag = "toggle", Callback = function() callbacks.toggle += 1 end })
