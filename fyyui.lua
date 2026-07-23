@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.13.2
+FyyUI v0.13.3
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -144,7 +144,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.13.2"
+	local LIBRARY_VERSION = "0.13.3"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -2419,6 +2419,7 @@ return (function()
 			Size = UDim2.new(1, 0, 0, 0),
 			Position = UDim2.fromOffset(0, 34),
 			BackgroundTransparency = 1,
+			Visible = self._isOpen,
 			Parent = self.Container,
 		})
 		local layout = U.Create("UIListLayout", {
@@ -2465,16 +2466,23 @@ return (function()
 		if type(v) ~= "boolean" then return false, "expected boolean" end
 		if self._isOpen == v then return true end
 		self._isOpen = v
+		local transitionId = (self._transitionId or 0) + 1
+		self._transitionId = transitionId
 		self.Arrow.Text = v and "▼" or "▶"
 		if self._tween then self._tween:Cancel() end
 		if not self.Container then return false, "missing container" end
+		if v and self.Content then self.Content.Visible = true end
 			local contentH = self._layout and self._layout.AbsoluteContentSize.Y or 0
 			if v and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset end
 			local targetH = v and (34 + contentH) or 34
+			local function finishTransition()
+				if self._transitionId == transitionId and not self._isOpen and self.Content then self.Content.Visible = false end
+			end
 			if self._menu then
-				self._tween = self._menu:_transition(self.Container, 0.25, { Size = UDim2.new(1, -12, 0, targetH) })
+				self._tween = self._menu:_transition(self.Container, 0.25, { Size = UDim2.new(1, -12, 0, targetH) }, nil, nil, finishTransition)
 			else
 				self._tween = game:GetService("TweenService"):Create(self.Container, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, -12, 0, targetH) })
+				self._tween.Completed:Connect(finishTransition)
 				self._tween:Play()
 			end
 		return true
@@ -3657,10 +3665,19 @@ return (function()
 		isMulti = isMulti or false
 		dd = dd or self._activeDropdown  -- fallback to _activeDropdown if not passed
 
-		-- Determine panel width and position based on available viewport space
+		-- Determine panel width from the longest option, with room for the
+		-- selection mark and comfortable right-side breathing space.
 		local viewport = self:_viewportSize()
-		local PREF_W = 220           -- preferred side-panel width
-		local COMFORT_W = 140        -- minimum width for a comfortable panel
+		local textService = game:GetService("TextService")
+		local longestOptionWidth = 0
+		for _, option in ipairs(opts) do
+			local measured = textService:GetTextSize(tostring(option), theme.FontSize, theme.Font, Vector2.new(1000, 100)).X
+			longestOptionWidth = math.max(longestOptionWidth, measured)
+		end
+		local PANEL_CHROME = 54
+		local MIN_W = 120
+		local PREF_W = math.ceil(math.max(MIN_W, longestOptionWidth + PANEL_CHROME))
+		local COMFORT_W = math.min(140, PREF_W)
 		local USABLE_W = 80          -- absolute minimum; below this the panel has negative/zero inner content
 		local rightEdge = frameAbs.X + frameSiz.X
 		local rightRoom = viewport.X - rightEdge - 4  -- 4px margin from screen edge
