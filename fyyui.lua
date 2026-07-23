@@ -1,5 +1,5 @@
 --[[
-	FyyUI v0.12.0
+FyyUI v0.13.1
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -144,7 +144,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.13.0"
+	local LIBRARY_VERSION = "0.13.1"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -152,10 +152,38 @@ return (function()
 	local MAX_CONFIG_STRING_BYTES = 16 * 1024
 	local MAX_CONFIG_NODES = 8192
 
-	--[[ Icon Module (Lucide/Solar/etc.) ]]
-	-- Icon providers are always supplied by the caller. FyyUI never downloads or
-	-- executes icon source.
+	--[[ Icon Module (Lucide/Solar/etc.) — auto-load from GitHub ]]
 	local IconModule = nil
+	local DEFAULT_ICON_URL = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"
+
+	local function loadRemoteIconModule(url)
+		url = url or DEFAULT_ICON_URL
+		local raw
+		local httpMethods = {
+			function() return game:HttpGet(url) end,
+			function() return game:GetService("HttpService"):GetAsync(url) end,
+		}
+		for _, method in ipairs(httpMethods) do
+			local ok, result = pcall(method)
+			if ok and type(result) == "string" and result ~= "" then
+				raw = result
+				break
+			end
+		end
+		if not raw then return false, "Failed to download icon module" end
+
+		local compiler = loadstring
+		if type(compiler) ~= "function" then return false, "loadstring is unavailable" end
+		local compiled, compileError = compiler(raw)
+		if not compiled then return false, compileError or "Failed to compile icon module" end
+		local ok, module = pcall(compiled)
+		if not ok then return false, module end
+		if type(module) ~= "table" then return false, "Icon module must return a table" end
+		IconModule = module
+		return true, module
+	end
+
+	loadRemoteIconModule(DEFAULT_ICON_URL)
 
 	local function isFiniteNumber(value)
 		return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
@@ -290,29 +318,6 @@ return (function()
 		return false
 	end
 
-	-- Internal fallback mapping for named icons when no IconModule is set.
-	-- These let demo icon names and internal control icons render as text
-	-- without any caller setup.
-	local _ICON_FALLBACK = {
-		crosshair = "\226\140\150",
-		zap = "\226\154\161",
-		settings = "\226\154\153",
-		info = "\226\132\185",
-		["toggle-right"] = "\226\150\182",
-		square = "\226\150\162",
-		["refresh-cw"] = "\226\134\187",
-		x = "\226\156\149",
-		minus = "\226\136\146",
-		scan = "\226\138\158",
-		["chevron-down"] = "\226\150\188",
-		["chevron-right"] = "\226\150\182",
-		["mouse-pointer-2"] = "\226\152\157",
-	}
-
-	local function isProbablyEmoji(s)
-		return #s > 0 and s:byte(1) > 127
-	end
-
 	local function resolveIcon(icon)
 		if not icon or type(icon) ~= "string" then return nil end
 		-- Direct rbxassetid:// (no resolution needed)
@@ -343,23 +348,11 @@ return (function()
 				end
 			end
 		end
-		-- Internal icon fallback (named icons used by demo / internal controls)
-		local lookup = icon
-		local colon = icon:find(":")
-		if colon then lookup = icon:sub(colon + 1) end
-		local fb = _ICON_FALLBACK[lookup]
-		if fb then
-			return { Text = fb }
-		end
-		-- Emoji strings → render as text
-		if isProbablyEmoji(icon) then
-			return { Text = icon }
-		end
 		return nil
 	end
 
-	-- Helper: renders an icon as either an ImageLabel (image-backed) or TextLabel
-	-- (emoji/text fallback) depending on what resolveIcon returns. Callers pass
+	-- Helper: renders an icon as either an ImageLabel or TextLabel depending on
+	-- what the configured icon provider returns. Callers pass
 	-- the same extra table for Size/Position/etc.; Image-only props are mapped
 	-- to text-equivalent properties when creating a TextLabel.
 	local function renderIcon(parent, icon, extra)
@@ -5445,10 +5438,8 @@ return (function()
 		IconModule = mod
 	end
 
-	-- Retained as a migration-safe compatibility stub. It intentionally performs
-	-- no network access and never executes downloaded source.
-	function FyyUI.LoadRemoteIconModule(_)
-		return false, "Remote icon modules are disabled; use FyyUI.SetIconModule() with a local module instead."
+	function FyyUI.LoadRemoteIconModule(url)
+		return loadRemoteIconModule(url)
 	end
 	function FyyUI.GetIconModule()
 		return IconModule
