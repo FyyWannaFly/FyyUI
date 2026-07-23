@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.13.1
+FyyUI v0.13.2
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -144,7 +144,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.13.1"
+	local LIBRARY_VERSION = "0.13.2"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -1822,8 +1822,8 @@ return (function()
 		})
 		self.Container = U.Create("ScrollingFrame", {
 			Name = "TabContent",
-			Size = UDim2.new(1, -12, 1, -6),
-			Position = UDim2.fromOffset(6, 3),
+			Size = UDim2.new(1, -12, 1, -12),
+			Position = UDim2.fromOffset(6, 6),
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			ScrollBarThickness = 3,
@@ -1834,6 +1834,11 @@ return (function()
 			Visible = false,
 			Parent = menu.ContentArea,
 		})
+		local contentPadding = U.Create("UIPadding", {
+			PaddingTop = UDim.new(0, 6),
+			PaddingBottom = UDim.new(0, 12),
+			Parent = self.Container,
+		})
 		local listLayout = U.Create("UIListLayout", {
 			Padding = UDim.new(0, theme.Spacing),
 			SortOrder = Enum.SortOrder.LayoutOrder,
@@ -1841,7 +1846,7 @@ return (function()
 		})
 		listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 			if self.Container then
-				self.Container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+				self.Container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + contentPadding.PaddingTop.Offset + contentPadding.PaddingBottom.Offset)
 			end
 		end)
 
@@ -2421,7 +2426,12 @@ return (function()
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Parent = self.Content,
 		})
+		local contentPadding = U.Create("UIPadding", {
+			PaddingBottom = UDim.new(0, 8),
+			Parent = self.Content,
+		})
 		self._layout = layout
+		self._contentPadding = contentPadding
 
 		-- Resize when content changes
 		self._layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -2459,6 +2469,7 @@ return (function()
 		if self._tween then self._tween:Cancel() end
 		if not self.Container then return false, "missing container" end
 			local contentH = self._layout and self._layout.AbsoluteContentSize.Y or 0
+			if v and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset end
 			local targetH = v and (34 + contentH) or 34
 			if self._menu then
 				self._tween = self._menu:_transition(self.Container, 0.25, { Size = UDim2.new(1, -12, 0, targetH) })
@@ -2484,6 +2495,7 @@ return (function()
 		if self._closed or not self._layout or not self.Container or not self.Container.Parent then return end
 		if self._tween then self._tween:Cancel() end
 		local contentH = self._layout.AbsoluteContentSize.Y
+		if self._isOpen and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset end
 		local targetH = self._isOpen and (34 + contentH) or 34
 		if instant then
 			self.Container.Size = UDim2.new(1, -12, 0, targetH)
@@ -3603,7 +3615,7 @@ return (function()
 		if self.ActiveTab then
 			local old = self.ActiveTab
 			old.Container.Visible = false
-			old.Container.Position = UDim2.fromOffset(6, 3) -- reset
+			old.Container.Position = UDim2.fromOffset(6, 6) -- reset
 			old.TabButton.BackgroundTransparency = 1
 			if old._glow then old._glow.BackgroundTransparency = 1 end
 			local lbl = old.TabButton:FindFirstChild("Label")
@@ -3615,7 +3627,7 @@ return (function()
 			-- New tab slides in from below
 			tab.Container.Position = UDim2.fromOffset(6, offsetY)
 			tab.Container.Visible = true
-			self:_transition(tab.Container, 0.22, { Position = UDim2.fromOffset(6, 3) })
+			self:_transition(tab.Container, 0.22, { Position = UDim2.fromOffset(6, 6) })
 
 			self:_positionActiveBar(tab, hadPrevTab)
 
@@ -3679,15 +3691,11 @@ return (function()
 			px = 0
 		end
 
-		-- Content-aware height: size to options, clamped to menu bounds
+		-- Classic desktop side panel fills the complete menu height. Narrow
+		-- viewports keep the centered modal behavior and safe viewport padding.
 		local OPT_H = math.max(32, self.TouchTargetSize)
-		local MIN_H = 60
-		local contentH = 8 + (#opts * OPT_H) + math.max(0, #opts - 1) * 2
-		local availableH = modal and math.max(1, viewport.Y - self.SafePadding * 2) or frameSiz.Y
-		local clampedH = math.min(availableH, math.max(MIN_H, math.min(contentH, availableH)))
-		if not modal then
-			py = math.clamp(atPos.Y + atSize.Y - frameAbs.Y, 0, math.max(0, frameSiz.Y - clampedH))
-		end
+		local clampedH = frameSiz.Y
+		if modal then clampedH = math.max(1, math.min(frameSiz.Y, viewport.Y - self.SafePadding * 2)) end
 		local popupParent = self.Frame
 		if modal then
 			self._activePopupOverlay = U.Create("ImageButton", {
