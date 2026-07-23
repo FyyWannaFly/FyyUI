@@ -1,5 +1,5 @@
 --[[
-	FyyUI v0.10.3
+	FyyUI v0.10.4
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -701,6 +701,7 @@ return (function()
 
 		-- Dropdown toggle
 		self.SelectBtn.MouseButton1Click:Connect(function()
+			if not self._menu then return end
 			if self._menu._activePopupFrame then
 				self.Open = false
 				if self._arrow then self._arrow.Image = self._arrowDown end
@@ -947,7 +948,7 @@ return (function()
 	end
 
 	function Dropdown:Destroy()
-		if self._menu._activeDropdown == self then
+		if self._menu and self._menu._activeDropdown == self then
 			self._menu._activeDropdown = nil
 		end
 		if self.Container then self.Container:Destroy() end
@@ -4500,7 +4501,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.10.3", Theme = Theme }
+	local FyyUI = { Version = "0.10.4", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
