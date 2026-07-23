@@ -1,6 +1,6 @@
 # Configuration and Persistence
 
-> Applies to FyyUI v0.13.0 · Updated 2026-07-24
+> Applies to FyyUI v0.13.1 · Updated 2026-07-24
 
 FyyUI exports controls with a `Flag`. Keep each flag unique and stable across releases.
 
@@ -17,7 +17,7 @@ Zero-argument export remains the compatible v1 format:
 ```lua
 {
 	Schema = "FyyUI.Config.v1",
-	Version = "0.13.0",
+	Version = "0.13.1",
 	Values = {
 		music = true,
 		volume = 50,

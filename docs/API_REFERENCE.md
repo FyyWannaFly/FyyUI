@@ -1,8 +1,8 @@
 # FyyUI API Reference
 
-> Applies to FyyUI v0.13.0 · Updated 2026-07-24
+> Applies to FyyUI v0.13.1 · Updated 2026-07-24
 
-This reference describes the public FyyUI v0.13.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
+This reference describes the public FyyUI v0.13.1 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
 
 ## Module
 
@@ -15,9 +15,9 @@ local FyyUI = require(script.Parent.FyyUI)
 | `FyyUI.Version` | Current version string. |
 | `FyyUI.Theme` | Built-in `Dark`, `Light`, and `Amoled` themes. |
 | `FyyUI.Menu(options)` | Creates a menu. |
-| `FyyUI.SetIconModule(module)` | Sets a trusted local icon provider. |
+| `FyyUI.SetIconModule(module)` | Overrides the active icon provider. |
 | `FyyUI.GetIconModule()` | Reads the current icon provider. |
-| `FyyUI.LoadRemoteIconModule(...)` | Compatibility stub; always returns `false` and never executes code. |
+| `FyyUI.LoadRemoteIconModule(url?)` | Downloads and executes an icon provider; defaults to the bundled Lucide source URL. |
 
 ## `FyyUI.Menu(options)`
 

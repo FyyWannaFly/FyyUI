@@ -2,7 +2,7 @@
 
 FyyUI is a local Roblox Luau UI library for tabs, controls, command-palette navigation, responsive layouts, and persisted settings.
 
-Current release: **v0.13.0**.
+Current release: **v0.13.1**.
 
 ## Quick start
 
@@ -44,7 +44,7 @@ You should see a window with a **Main** tab and an interactive toggle.
 
 ## Security model
 
-FyyUI is intended to be loaded from a trusted local ModuleScript. `LoadRemoteIconModule` is retained only as a compatibility stub and always returns `false`; it does not download or execute code. Supply a trusted local icon provider with `FyyUI.SetIconModule(module)` when needed.
+FyyUI automatically loads the Lucide icon provider from the configured GitHub source, so controls can use names such as `crosshair`, `settings`, or `refresh-cw`. `FyyUI.LoadRemoteIconModule(url)` can reload or replace that provider, and `FyyUI.SetIconModule(module)` can override it directly.
 
 ## Requirements
 
@@ -54,7 +54,7 @@ FyyUI is intended to be loaded from a trusted local ModuleScript. `LoadRemoteIco
 
 ## Release highlights
 
-v0.13.0 adds practical keyboard/gamepad selection, 44px touch-friendly key targets, transient-overlay focus restoration, and reduced-motion coverage. See [Accessibility and device support](docs/ACCESSIBILITY.md) for device behavior.
+v0.13.1 restores automatic Lucide icon loading while retaining the accessibility and responsive-input improvements introduced in v0.13.0. See [Accessibility and device support](docs/ACCESSIBILITY.md) for device behavior.
 
 ## License and contributions
 
