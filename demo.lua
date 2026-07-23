@@ -23,8 +23,8 @@ local function notify(title, content, kind)
 	})
 end
 
--- 🎯 Combat
-local combatTab = menu:Tab({ Text = "Combat", Icon = "🎯", Tooltip = "Combat controls" })
+-- Combat
+local combatTab = menu:Tab({ Text = "Combat", Icon = "crosshair", Tooltip = "Combat controls" })
 
 local aimSection = combatTab:Collapsible("Aim Assist", { DefaultOpen = true })
 aimSection:Toggle({
@@ -68,8 +68,8 @@ combatTab:Button({
 	end,
 })
 
--- ⚡ Automation
-local automationTab = menu:Tab({ Text = "Automation", Icon = "⚡", Tooltip = "Automation examples" })
+-- Automation
+local automationTab = menu:Tab({ Text = "Automation", Icon = "zap", Tooltip = "Automation examples" })
 
 local movementSection = automationTab:Collapsible("Movement", { DefaultOpen = true })
 movementSection:Toggle({ Text = "Auto Sprint", Default = true, Flag = "auto_sprint" })
@@ -114,14 +114,14 @@ automationTab:Divider()
 automationTab:Button({
 	Text = "Start Demo Routine",
 	Description = "Shows how action buttons and notifications work together",
-	Icon = "🚀",
+	Icon = "rocket",
 	Callback = function()
 		notify("Automation Ready", "The demo routine is ready to start.", "Success")
 	end,
 })
 
--- 🎨 Interface
-local interfaceTab = menu:Tab({ Text = "Interface", Icon = "🎨", Tooltip = "Appearance and input settings" })
+-- Interface
+local interfaceTab = menu:Tab({ Text = "Interface", Icon = "settings", Tooltip = "Appearance and input settings" })
 
 local appearanceSection = interfaceTab:Collapsible("Appearance", { DefaultOpen = true })
 appearanceSection:Dropdown({
@@ -173,16 +173,16 @@ interfaceTab:Divider()
 interfaceTab:Button({
 	Text = "Open Command Palette",
 	Description = "Search tabs and available actions",
-	Icon = "🔎",
+	Icon = "search",
 	Callback = function()
 		menu:ToggleCommandPalette()
 	end,
 })
 
--- 🧪 Components
-local componentsTab = menu:Tab({ Text = "Components", Icon = "🧪", Tooltip = "Full component showcase" })
+-- Components
+local componentsTab = menu:Tab({ Text = "Components", Icon = "layout-grid", Tooltip = "Full component showcase" })
 
-componentsTab:BoldLabel({ Text = "✨ Component Gallery", Description = "A clean preview of the public FyyUI controls" })
+componentsTab:BoldLabel({ Text = "Component Gallery", Description = "A clean preview of the public FyyUI controls" })
 componentsTab:Label({ Text = "Use this tab as a quick API reference while building your own menu." })
 componentsTab:Divider()
 
@@ -200,30 +200,30 @@ controlsSection:Dropdown({
 controlsSection:Input({ Text = "Text Input", Placeholder = "Type something...", ClearOnFocus = false })
 controlsSection:Keybind({ Text = "Keybind", Default = Enum.KeyCode.K, Mode = "Toggle" })
 controlsSection:Button({
-	Text = "Emoji Button",
-	Description = "Literal emoji icons render without an external icon provider",
-	Icon = "😊",
+	Text = "Icon Button",
+	Description = "Lucide icons are loaded automatically and called by name",
+	Icon = "smile",
 	Callback = function()
-		notify("Emoji Works", "Named icons and literal emoji can be mixed.", "Info")
+		notify("Icons Ready", "Lucide icon names are loading correctly.", "Info")
 	end,
 })
 
 local feedbackSection = componentsTab:Collapsible("Notifications", { DefaultOpen = false })
-feedbackSection:Button({ Text = "Success", Icon = "✅", Callback = function() notify("Success", "Everything completed successfully.", "Success") end })
-feedbackSection:Button({ Text = "Information", Icon = "ℹ️", Callback = function() notify("Information", "This is an informational message.", "Info") end })
-feedbackSection:Button({ Text = "Warning", Icon = "⚠️", Callback = function() notify("Warning", "Review this action before continuing.", "Warning") end })
-feedbackSection:Button({ Text = "Error", Icon = "❌", Callback = function() notify("Error", "The demo error notification is working.", "Error") end })
+feedbackSection:Button({ Text = "Success", Icon = "circle-check", Callback = function() notify("Success", "Everything completed successfully.", "Success") end })
+feedbackSection:Button({ Text = "Information", Icon = "info", Callback = function() notify("Information", "This is an informational message.", "Info") end })
+feedbackSection:Button({ Text = "Warning", Icon = "triangle-alert", Callback = function() notify("Warning", "Review this action before continuing.", "Warning") end })
+feedbackSection:Button({ Text = "Error", Icon = "circle-x", Callback = function() notify("Error", "The demo error notification is working.", "Error") end })
 
--- ℹ️ About
-local aboutTab = menu:Tab({ Text = "About", Icon = "ℹ️", Tooltip = "Library information" })
+-- About
+local aboutTab = menu:Tab({ Text = "About", Icon = "info", Tooltip = "Library information" })
 
 aboutTab:BoldLabel({ Text = "FyyCommunity v" .. FyyUI.Version, Description = "Responsive Roblox UI library" })
 aboutTab:BoldLabel({ Text = "● Ready", Color = Color3.fromRGB(70, 220, 120) })
 aboutTab:Divider()
-aboutTab:Label({ Text = "🎯 Named icons and literal emoji" })
-aboutTab:Label({ Text = "📱 Responsive mouse, touch, keyboard, and gamepad navigation" })
-aboutTab:Label({ Text = "💾 Versioned configuration export and import" })
-aboutTab:Label({ Text = "⌨️ Command palette and keybind capture" })
+aboutTab:Label({ Text = "Named Lucide icons loaded automatically" })
+aboutTab:Label({ Text = "Responsive mouse, touch, keyboard, and gamepad navigation" })
+aboutTab:Label({ Text = "Versioned configuration export and import" })
+aboutTab:Label({ Text = "Command palette and keybind capture" })
 aboutTab:Divider()
 aboutTab:Button({
 	Text = "Export & Import Config",
@@ -246,7 +246,7 @@ aboutTab:Button({
 })
 
 menu:Notify({
-	Title = "✨ FyyUI Ready",
+	Title = "FyyUI Ready",
 	Content = "Explore the clean component demo and multi-select dropdowns.",
 	Type = "Success",
 	Duration = 4,
