@@ -1921,7 +1921,8 @@ return (function()
 		end
 		btn.SetCallback = function(cb) options.Callback = cb end
 		btn.Destroy = function() if btn.Container then btn.Container:Destroy() end end
-		btn.ApplyTheme = function(t)
+		btn.ApplyTheme = function(_, t)
+			t = t or _
 			if not btn.Container then return end
 			btn.Container.BackgroundColor3 = t.Element
 			local stroke = btn.Container:FindFirstChildOfClass("UIStroke")
@@ -1988,7 +1989,8 @@ return (function()
 		lbl.SetText = function(text) lbl.TextLabel.Text = text end
 		lbl.SetColor = function(c) lbl.TextLabel.TextColor3 = c end
 		lbl.Destroy = function() if lbl.Container then lbl.Container:Destroy() end end
-		lbl.ApplyTheme = function(t)
+		lbl.ApplyTheme = function(_, t)
+			t = t or _
 			if not lbl.TextLabel then return end
 			lbl.TextLabel.Font = t.Font
 			lbl.TextLabel.TextSize = _labelTextSize
@@ -2050,7 +2052,8 @@ return (function()
 		lbl.SetText = function(text) lbl.TextLabel.Text = text end
 		lbl.SetColor = function(c) lbl.TextLabel.TextColor3 = c end
 		lbl.Destroy = function() if lbl.Container then lbl.Container:Destroy() end end
-		lbl.ApplyTheme = function(t)
+		lbl.ApplyTheme = function(_, t)
+			t = t or _
 			if not lbl.TextLabel then return end
 			lbl.TextLabel.Font = t.FontBold
 			lbl.TextLabel.TextSize = _blTextSize
@@ -2081,7 +2084,8 @@ return (function()
 			Parent = div.Container,
 		})
 		div.Destroy = function() if div.Container then div.Container:Destroy() end end
-		div.ApplyTheme = function(t)
+		div.ApplyTheme = function(_, t)
+			t = t or _
 			local line = div.Container:FindFirstChild("Line")
 			if line then line.BackgroundColor3 = t.Border end
 		end
@@ -2479,7 +2483,8 @@ return (function()
 		btn.Container.MouseButton1Click:Connect(function() if opts.Callback then opts.Callback() end end)
 		btn.Destroy = function() if btn.Container then btn.Container:Destroy() end end
 		local _btnColor = opts.Color
-		btn.ApplyTheme = function(t)
+		btn.ApplyTheme = function(_, t)
+			t = t or _
 			if not btn.Container then return end
 			btn.Container.BackgroundColor3 = t.Element
 			local s = btn.Container:FindFirstChildOfClass("UIStroke")
@@ -2505,7 +2510,8 @@ return (function()
 		lbl.TextLabel = U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, 0, 0, hasDesc and 20 or h), Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 20) / 2 + 1), BackgroundTransparency = 1, Text = opts.Text or "", Font = theme.Font, TextSize = _lblTextSize, TextColor3 = _lblColor or theme.TextSecondary, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = lbl.Container })
 		if hasDesc then U.Create("TextLabel", { Name = "Description", Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 24), BackgroundTransparency = 1, Text = opts.Description, Font = theme.Font, TextSize = theme.FontSizeSmall, TextColor3 = theme.TextMuted, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = lbl.Container }) end
 		lbl.Destroy = function() if lbl.Container then lbl.Container:Destroy() end end
-		lbl.ApplyTheme = function(t)
+		lbl.ApplyTheme = function(_, t)
+			t = t or _
 			if not lbl.TextLabel then return end
 			lbl.TextLabel.Font = t.Font
 			lbl.TextLabel.TextSize = _lblTextSize
@@ -2528,7 +2534,8 @@ return (function()
 		lbl.TextLabel = U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, 0, 0, hasDesc and 22 or h), Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 22) / 2 + 1), BackgroundTransparency = 1, Text = opts.Text or "", Font = theme.FontBold, TextSize = _blblTextSize, TextColor3 = _blblColor or theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = lbl.Container })
 		if hasDesc then U.Create("TextLabel", { Name = "Description", Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 24), BackgroundTransparency = 1, Text = opts.Description, Font = theme.Font, TextSize = theme.FontSizeSmall, TextColor3 = theme.TextMuted, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = lbl.Container }) end
 		lbl.Destroy = function() if lbl.Container then lbl.Container:Destroy() end end
-		lbl.ApplyTheme = function(t)
+		lbl.ApplyTheme = function(_, t)
+			t = t or _
 			if not lbl.TextLabel then return end
 			lbl.TextLabel.Font = t.FontBold
 			lbl.TextLabel.TextSize = _blblTextSize
@@ -2538,7 +2545,7 @@ return (function()
 		end
 		table.insert(self.Components, lbl); self:_updateSize(); return lbl
 	end
-	function Collapsible:Divider() if destroyedFactoryResult(self) then return nil, "destroyed" end; local div = {}; div.Container = U.Create("Frame", { Name = "Divider", Size = UDim2.new(1, -20, 0, 1), Position = UDim2.fromOffset(10, 0), BackgroundColor3 = self.Theme.Border, BackgroundTransparency = 0.5, BorderSizePixel = 0, Parent = self.Content }); div.ApplyTheme = function(t) if div.Container then div.Container.BackgroundColor3 = t.Border end end; table.insert(self.Components, div); self:_updateSize(); return div end
+		function Collapsible:Divider() if destroyedFactoryResult(self) then return nil, "destroyed" end; local div = {}; div.Container = U.Create("Frame", { Name = "Divider", Size = UDim2.new(1, -20, 0, 1), Position = UDim2.fromOffset(10, 0), BackgroundColor3 = self.Theme.Border, BackgroundTransparency = 0.5, BorderSizePixel = 0, Parent = self.Content }); div.ApplyTheme = function(_, t) t = t or _; if div.Container then div.Container.BackgroundColor3 = t.Border end end; table.insert(self.Components, div); self:_updateSize(); return div end
 	function Collapsible:Destroy()
 		if self._destroyed then return end
 		self._destroyed = true
