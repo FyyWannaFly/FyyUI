@@ -4,6 +4,7 @@ local FyyUI = require(script.Parent.FyyUI)
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
 	Resizable = true,
+	Shadow = true,
 	HasOutline = true,
 	Theme = "Amoled",
 	Stats = true,

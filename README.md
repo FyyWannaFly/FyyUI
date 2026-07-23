@@ -2,7 +2,7 @@
 
 FyyUI is a local Roblox Luau UI library for tabs, controls, command-palette navigation, responsive layouts, and persisted settings.
 
-Current release: **v0.13.0**.
+Current release: **v0.13.1**.
 
 ## Quick start
 
@@ -54,7 +54,7 @@ FyyUI is intended to be loaded from a trusted local ModuleScript. `LoadRemoteIco
 
 ## Release highlights
 
-v0.13.0 adds practical keyboard/gamepad selection, 44px touch-friendly key targets, transient-overlay focus restoration, and reduced-motion coverage. See [Accessibility and device support](docs/ACCESSIBILITY.md) for device behavior.
+v0.13.1 fixes visual scale geometry: menus remain centred, responsive safe areas are respected, resize deltas work at every scale, and shadows stay attached to the window. v0.13.0 adds practical keyboard/gamepad selection, 44px touch-friendly key targets, transient-overlay focus restoration, and reduced-motion coverage. See [Accessibility and device support](docs/ACCESSIBILITY.md) for device behavior.
 
 ## License and contributions
 
