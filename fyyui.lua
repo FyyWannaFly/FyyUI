@@ -290,6 +290,29 @@ return (function()
 		return false
 	end
 
+	-- Internal fallback mapping for named icons when no IconModule is set.
+	-- These let demo icon names and internal control icons render as text
+	-- without any caller setup.
+	local _ICON_FALLBACK = {
+		crosshair = "\226\140\150",
+		zap = "\226\154\161",
+		settings = "\226\154\153",
+		info = "\226\132\185",
+		["toggle-right"] = "\226\150\182",
+		square = "\226\150\162",
+		["refresh-cw"] = "\226\134\187",
+		x = "\226\156\149",
+		minus = "\226\136\146",
+		scan = "\226\138\158",
+		["chevron-down"] = "\226\150\188",
+		["chevron-right"] = "\226\150\182",
+		["mouse-pointer-2"] = "\226\152\157",
+	}
+
+	local function isProbablyEmoji(s)
+		return #s > 0 and s:byte(1) > 127
+	end
+
 	local function resolveIcon(icon)
 		if not icon or type(icon) ~= "string" then return nil end
 		-- Direct rbxassetid:// (no resolution needed)
@@ -320,8 +343,83 @@ return (function()
 				end
 			end
 		end
-		-- Fallback: treat as raw asset ID
-		return { Image = icon }
+		-- Internal icon fallback (named icons used by demo / internal controls)
+		local lookup = icon
+		local colon = icon:find(":")
+		if colon then lookup = icon:sub(colon + 1) end
+		local fb = _ICON_FALLBACK[lookup]
+		if fb then
+			return { Text = fb }
+		end
+		-- Emoji strings → render as text
+		if isProbablyEmoji(icon) then
+			return { Text = icon }
+		end
+		return nil
+	end
+
+	-- Helper: renders an icon as either an ImageLabel (image-backed) or TextLabel
+	-- (emoji/text fallback) depending on what resolveIcon returns. Callers pass
+	-- the same extra table for Size/Position/etc.; Image-only props are mapped
+	-- to text-equivalent properties when creating a TextLabel.
+	local function renderIcon(parent, icon, extra)
+		if not parent or not icon then return nil end
+		local resolved = resolveIcon(icon)
+		if not resolved then return nil end
+		if resolved.Text then
+			local props = {
+				Name = "Icon",
+				Size = UDim2.fromOffset(18, 18),
+				BackgroundTransparency = 1,
+				Text = resolved.Text,
+				Font = Enum.Font.SourceSans,
+				TextSize = 16,
+				TextColor3 = Color3.fromRGB(200, 200, 210),
+				TextXAlignment = Enum.TextXAlignment.Center,
+				Parent = parent,
+			}
+			if extra then
+				for k, v in pairs(extra) do
+					if k == "ImageColor3" then
+						props.TextColor3 = v
+					elseif k == "ImageTransparency" then
+						props.TextTransparency = v
+					elseif k ~= "Image" and k ~= "ImageRectSize" and k ~= "ImageRectOffset" then
+						props[k] = v
+					end
+				end
+			end
+			return U.Create("TextLabel", props)
+		else
+			local props = {
+				Name = "Icon",
+				Size = UDim2.fromOffset(18, 18),
+				BackgroundTransparency = 1,
+				Image = resolved.Image,
+				Parent = parent,
+			}
+			if resolved.ImageRectSize then props.ImageRectSize = resolved.ImageRectSize end
+			if resolved.ImageRectOffset then props.ImageRectOffset = resolved.ImageRectOffset end
+			if extra then
+				for k, v in pairs(extra) do
+					props[k] = v
+				end
+			end
+			return U.Create("ImageLabel", props)
+		end
+	end
+
+	-- Apply a resolved icon (from resolveIcon) to an existing ImageLabel or TextLabel.
+	-- Sets Image+ImageRect on ImageLabel, or Text on TextLabel.
+	local function applyIconToLabel(label, resolved)
+		if not label or not resolved then return end
+		if resolved.Image then
+			label.Image = resolved.Image
+			if resolved.ImageRectSize then label.ImageRectSize = resolved.ImageRectSize end
+			if resolved.ImageRectOffset then label.ImageRectOffset = resolved.ImageRectOffset end
+		elseif resolved.Text then
+			label.Text = resolved.Text
+		end
 	end
 
 	local function cleanupController(controller)
@@ -855,15 +953,12 @@ return (function()
 			Parent = self.SelectBtn,
 		})
 
-		self._arrowDown = (resolveIcon("chevron-down") or {}).Image or "rbxassetid://134243273101015"
-		self._arrowRight = (resolveIcon("chevron-right") or {}).Image or "rbxassetid://92473583511724"
-		self._arrow = U.Create("ImageLabel", {
+		self._arrowDown = resolveIcon("chevron-down") or { Image = "rbxassetid://134243273101015" }
+		self._arrowRight = resolveIcon("chevron-right") or { Image = "rbxassetid://92473583511724" }
+		self._arrow = renderIcon(self.SelectBtn, "chevron-down", {
 			Name = "Arrow",
 			Size = UDim2.fromOffset(16, 16),
 			Position = UDim2.new(1, -20, 0.5, -8),
-			BackgroundTransparency = 1,
-			Image = self._arrowDown,
-			Parent = self.SelectBtn,
 		})
 
 		-- Find selected index
@@ -877,7 +972,7 @@ return (function()
 			if not self._menu then return end
 			if self._menu._activePopupFrame then
 				self.Open = false
-				if self._arrow then self._arrow.Image = self._arrowDown end
+				if self._arrow then applyIconToLabel(self._arrow, self._arrowDown) end
 				if self._menu._activeDropdown == self then
 					self._menu._activeDropdown = nil
 				end
@@ -886,7 +981,7 @@ return (function()
 				if self._menu._activeDropdown and self._menu._activeDropdown ~= self then
 					self._menu._activeDropdown.Open = false
 					if self._menu._activeDropdown._arrow and self._menu._activeDropdown._arrowDown then
-						self._menu._activeDropdown._arrow.Image = self._menu._activeDropdown._arrowDown
+						applyIconToLabel(self._menu._activeDropdown._arrow, self._menu._activeDropdown._arrowDown)
 					end
 					self._menu:HideDropdownPopup()
 				end
@@ -901,11 +996,11 @@ return (function()
 				end, self.Multi, self)
 				if shown then
 					self.Open = true
-					if self._arrow then self._arrow.Image = self._arrowRight end
+					if self._arrow then applyIconToLabel(self._arrow, self._arrowRight) end
 					self._menu._activeDropdown = self
 				else
 					self.Open = false
-					if self._arrow then self._arrow.Image = self._arrowDown end
+					if self._arrow then applyIconToLabel(self._arrow, self._arrowDown) end
 				end
 			end
 		end)
@@ -990,7 +1085,7 @@ return (function()
 
 		-- Single-select
 		if v == self.Value then
-			if self._arrow then self._arrow.Image = self._arrowDown end
+			if self._arrow then applyIconToLabel(self._arrow, self._arrowDown) end
 			if self._menu and self._menu._activeDropdown == self then
 				self._menu._activeDropdown = nil
 				self._menu:HideDropdownPopup()
@@ -999,7 +1094,7 @@ return (function()
 		end
 		-- AllowNone guard: prevent clearing selection when AllowNone=false and options exist
 		if not self.AllowNone and #self.Options > 0 and v == "" then
-			if self._arrow then self._arrow.Image = self._arrowDown end
+			if self._arrow then applyIconToLabel(self._arrow, self._arrowDown) end
 			if self._menu and self._menu._activeDropdown == self then
 				self._menu._activeDropdown = nil
 				self._menu:HideDropdownPopup()
@@ -1018,7 +1113,7 @@ return (function()
 			if opt == v then self._selIdx = i; break end
 		end
 		self.Open = false
-		if self._arrow then self._arrow.Image = self._arrowDown end
+		if self._arrow then applyIconToLabel(self._arrow, self._arrowDown) end
 		if self._menu and self._menu._activeDropdown == self then
 			self._menu._activeDropdown = nil
 			self._menu:HideDropdownPopup()
@@ -1127,7 +1222,7 @@ return (function()
 					self._menu._activeDropdown = self
 				else
 					self.Open = false
-					if self._arrow then self._arrow.Image = self._arrowDown end
+					if self._arrow then applyIconToLabel(self._arrow, self._arrowDown) end
 				end
 			end
 		end
@@ -1713,22 +1808,13 @@ return (function()
 			Parent = self.TabButton,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self._glow })
-		-- Icon (optional, rbxassetid://...)
-		local iconProps = resolveIcon(options.Icon)
-		if iconProps then
-			U.Create("ImageLabel", {
-				Name = "Icon",
-				Size = UDim2.fromOffset(18, 18),
-				Position = UDim2.fromOffset(14, 10),
-				BackgroundTransparency = 1,
-				Image = iconProps.Image,
-				ImageRectSize = iconProps.ImageRectSize,
-				ImageRectOffset = iconProps.ImageRectOffset,
-				Parent = self.TabButton,
-			})
-		end
-		local textX = iconProps and 40 or 18
-		local textW = iconProps and -44 or -22
+		-- Icon (optional, uses renderIcon for image or emoji/text fallback)
+		local _tabIcon = renderIcon(self.TabButton, options.Icon, {
+			Size = UDim2.fromOffset(18, 18),
+			Position = UDim2.fromOffset(14, 10),
+		})
+		local textX = _tabIcon and 40 or 18
+		local textW = _tabIcon and -44 or -22
 		U.Create("TextLabel", {
 			Name = "Label",
 			Size = UDim2.new(1, textW, 1, 0),
@@ -1835,20 +1921,12 @@ return (function()
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
 
 		-- Right-side icon (default: mouse-pointer-2, customizable via Icon option)
-		local _rightIcon = resolveIcon(options.Icon or "mouse-pointer-2")
-		if _rightIcon then
-			U.Create("ImageLabel", {
-				Name = "Pointer",
-				Size = UDim2.fromOffset(42, 42),
-				Position = UDim2.new(1, -48, 0.5, -16),
-				BackgroundTransparency = 1,
-				ImageTransparency = 0.5,
-				Image = _rightIcon.Image,
-				ImageRectSize = _rightIcon.ImageRectSize,
-				ImageRectOffset = _rightIcon.ImageRectOffset,
-				Parent = btn.Container,
-			})
-		end
+		renderIcon(btn.Container, options.Icon or "mouse-pointer-2", {
+			Name = "Pointer",
+			Size = UDim2.fromOffset(42, 42),
+			Position = UDim2.new(1, -48, 0.5, -16),
+			ImageTransparency = 0.5,
+		})
 		local btnIconX = 10
 		local btnIconW = -20
 
@@ -2184,17 +2262,6 @@ return (function()
 			Parent = self.Container,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = self.Box })
-		self.Check = U.Create("TextLabel", {
-			Name = "Check",
-			Size = UDim2.new(1, 0, 1, 0),
-			BackgroundTransparency = 1,
-			Text = self.Value and "✓" or "",
-			Font = theme.FontBold,
-			TextSize = 16,
-			TextColor3 = Color3.fromRGB(255,255,255),
-			TextXAlignment = Enum.TextXAlignment.Center,
-			Parent = self.Box,
-		})
 
 		-- Label
 		self.Label = U.Create("TextLabel", {
@@ -2253,19 +2320,8 @@ return (function()
 		local ti = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		if instant then
 			self.Box.BackgroundColor3 = v and self.Theme.Accent or self.Theme.ElementHover
-			self.Check.Text = v and "✓" or ""
 		else
 			ts:Create(self.Box, ti, { BackgroundColor3 = v and self.Theme.Accent or self.Theme.ElementHover }):Play()
-			task.spawn(function()
-				if v then
-					self.Check.Text = ""
-					task.wait(0.05)
-					if self._destroyed or not self.Check or not self.Check.Parent then return end
-					self.Check.Text = "✓"
-				else
-					self.Check.Text = ""
-				end
-			end)
 		end
 		if not noCallback then task.spawn(function() self.Callback(v) end) end
 		return true
@@ -2293,7 +2349,6 @@ return (function()
 			desc.TextColor3 = theme.TextMuted
 		end
 		self.Box.BackgroundColor3 = self.Value and theme.Accent or theme.ElementHover
-		self.Check.Font = theme.FontBold
 	end
 
 	--[[ Collapsible Section ]]
@@ -2466,8 +2521,7 @@ return (function()
 		btn.Container = U.Create("ImageButton", { Name = "Button", Size = UDim2.new(1, -12, 0, h + 8), Position = UDim2.fromOffset(6, 0), BackgroundColor3 = theme.Element, BackgroundTransparency = 0, AutoButtonColor = false, BorderSizePixel = 0, Parent = self.Content })
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
-		local _ri = resolveIcon(opts.Icon or "mouse-pointer-2")
-		if _ri then U.Create("ImageLabel", { Name = "Pointer", Size = UDim2.fromOffset(42, 42), Position = UDim2.new(1, -48, 0.5, -16), BackgroundTransparency = 1, ImageTransparency = 0.5, Image = _ri.Image, Parent = btn.Container }) end
+		renderIcon(btn.Container, opts.Icon or "mouse-pointer-2", { Name = "Pointer", Size = UDim2.fromOffset(42, 42), Position = UDim2.new(1, -48, 0.5, -16), ImageTransparency = 0.5 })
 		local ix = 10
 		if hasDesc then
 			U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(ix, 5), BackgroundTransparency = 1, Text = opts.Text or "Button", Font = theme.Font, TextSize = theme.FontSize, TextColor3 = opts.Color or theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left, Parent = btn.Container })
@@ -2960,11 +3014,7 @@ return (function()
 			local hitSize = 44
 			local spacing = 4
 
-			local macIcons = {
-				Close = resolveIcon("x"),
-				Minimize = resolveIcon("minus"),
-				Maximize = resolveIcon("scan"),
-			}
+			local macIconNames = { Close = "x", Minimize = "minus", Maximize = "scan" }
 			local function macBtn(name, color, action)
 				local b = U.Create("ImageButton", {
 					Name = name,
@@ -2985,21 +3035,13 @@ return (function()
 					Parent = b,
 				})
 				U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = dot })
-				local icon = macIcons[name]
-				if icon then
-					U.Create("ImageLabel", {
-						Name = "Icon",
-						Size = UDim2.fromOffset(8, 8),
-						Position = UDim2.fromScale(0.5, 0.5),
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundTransparency = 1,
-						Image = icon.Image,
-						ImageRectSize = icon.ImageRectSize,
-						ImageRectOffset = icon.ImageRectOffset,
-						ImageColor3 = Color3.fromRGB(60, 60, 72),
-						Parent = b,
-					})
-				end
+				renderIcon(b, macIconNames[name], {
+					Name = "Icon",
+					Size = UDim2.fromOffset(8, 8),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					ImageColor3 = Color3.fromRGB(60, 60, 72),
+				})
 				b.Activated:Connect(action)
 				rightMargin = rightMargin + hitSize + spacing
 				return b
@@ -3858,7 +3900,7 @@ return (function()
 		if self._activeDropdown then
 			self._activeDropdown.Open = false
 			if self._activeDropdown._arrow and self._activeDropdown._arrowDown then
-				self._activeDropdown._arrow.Image = self._activeDropdown._arrowDown
+				applyIconToLabel(self._activeDropdown._arrow, self._activeDropdown._arrowDown)
 			end
 			self._activeDropdown = nil
 		end
@@ -4362,21 +4404,23 @@ return (function()
 		local frame = self.Frame
 		local shadow = self._shadow
 		local uis = game:GetService("UserInputService")
-		local resizing, rs, rp, rsiz
+		local resizing, rs, rsiz, resizeInputObj
 
 		grip.InputBegan:Connect(function(input)
 			local t = input.UserInputType
 			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
 				resizing = true
+				resizeInputObj = input
 				rs = input.Position
-				rp = frame.Position
 				rsiz = frame.Size
 			end
 		end)
-		self._resizeInputCon = uis.InputChanged:Connect(function(input, gpe)
-			if gpe then return end
+		self._resizeInputCon = uis.InputChanged:Connect(function(input, _)
 			local t = input.UserInputType
-			if (t == Enum.UserInputType.MouseMovement or t == Enum.UserInputType.Touch) and resizing then
+			-- gpe guard removed: while actively resizing we must follow all mouse/touch movement.
+			-- For touch, only follow the specific initiating touch (not unrelated touches).
+			local isOurTouch = (t == Enum.UserInputType.Touch and input == resizeInputObj)
+			if ((t == Enum.UserInputType.MouseMovement) or isOurTouch) and resizing then
 				local delta = input.Position - rs
 				local nw = math.max(200, rsiz.X.Offset + delta.X)
 				local nh = math.max(140, rsiz.Y.Offset + delta.Y)
@@ -4398,11 +4442,16 @@ return (function()
 				end
 			end
 		end)
-		self._resizeEndCon = uis.InputEnded:Connect(function(input, gpe)
-			if gpe then return end
+		self._resizeEndCon = uis.InputEnded:Connect(function(input, _)
 			local t = input.UserInputType
-			if (t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch) and resizing then
-				resizing = false
+			-- gpe guard removed: must always stop resize on release.
+			-- Mouse: any MouseButton1 release stops resize.
+			-- Touch: only the specific initiating touch release stops resize.
+			if resizing then
+				if t == Enum.UserInputType.MouseButton1 or (t == Enum.UserInputType.Touch and input == resizeInputObj) then
+					resizing = false
+					resizeInputObj = nil
+				end
 			end
 		end)
 	end
