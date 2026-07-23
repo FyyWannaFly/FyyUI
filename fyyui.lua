@@ -1,5 +1,5 @@
 --[[
-	FyyUI v0.9.51
+	FyyUI v0.9.52
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -2091,6 +2091,7 @@ return (function()
 
 	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMulti, dd)
 		self:HideDropdownPopup()
+		self._popupGen = (self._popupGen or 0) + 1  -- bump generation so stale close handlers bail out
 
 		local uis = game:GetService("UserInputService")
 		local ts = game:GetService("TweenService")
@@ -2100,7 +2101,7 @@ return (function()
 		local frameSiz = self.Frame.AbsoluteSize
 		local px = frameSiz.X
 		local py = 0
-		local panelH = frameSiz.Y
+		local panelH = math.max(frameSiz.Y, 60)  -- guard against zero/invalid height while resizing
 		isMulti = isMulti or false
 		dd = dd or self._activeDropdown  -- fallback to _activeDropdown if not passed
 
@@ -2223,11 +2224,13 @@ return (function()
 		local ti = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		ts:Create(popup, ti, { Size = UDim2.fromOffset(w, panelH) }):Play()
 
-		-- Close on click outside
+		-- Close on click outside (generation-guarded: stale invocations after a new popup are no-ops)
+		local closeGen = self._popupGen
 		self._popupUISCon = uis.InputBegan:Connect(function(input, gpe)
 			if gpe then return end
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				task.wait()
+				if closeGen ~= self._popupGen then return end  -- popup was replaced while yielding
 				self:HideDropdownPopup()
 			end
 		end)
@@ -2385,8 +2388,8 @@ return (function()
 			Position = iconPos,
 		}):Play()
 
-		task.delay(0.2, function()
-			if self._destroyed or not self.Minimized then return end
+		task.delay(0.25, function()
+			if self._destroyed or not self.Minimized or not self.Visible then return end
 			if self._minGui then
 				self._minGui.Enabled = true
 				self._minGui.Parent = game:GetService("CoreGui")
@@ -2434,18 +2437,22 @@ return (function()
 
 		local frame = self.Frame
 		local shadow = self._shadow
+		local uis = game:GetService("UserInputService")
 		local resizing, rs, rp, rsiz
 
 		grip.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			local t = input.UserInputType
+			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
 				resizing = true
 				rs = input.Position
 				rp = frame.Position
 				rsiz = frame.Size
 			end
 		end)
-		grip.InputChanged:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseMovement and resizing then
+		self._resizeInputCon = uis.InputChanged:Connect(function(input, gpe)
+			if gpe then return end
+			local t = input.UserInputType
+			if (t == Enum.UserInputType.MouseMovement or t == Enum.UserInputType.Touch) and resizing then
 				local delta = input.Position - rs
 				local nw = math.max(200, rsiz.X.Offset + delta.X)
 				local nh = math.max(140, rsiz.Y.Offset + delta.Y)
@@ -2463,8 +2470,10 @@ return (function()
 				end
 			end
 		end)
-		grip.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		self._resizeEndCon = uis.InputEnded:Connect(function(input, gpe)
+			if gpe then return end
+			local t = input.UserInputType
+			if (t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch) and resizing then
 				resizing = false
 			end
 		end)
@@ -2472,7 +2481,32 @@ return (function()
 
 	function Menu:SetVisible(v)
 		self.Visible = v
-		if self.Gui then self.Gui.Enabled = v end
+		if not self.Gui then return end
+		if v then
+			-- Restore visibility without accidentally unminimizing
+			if self.Minimized then
+				self.Gui.Enabled = false
+				if self._minGui then
+					self._minGui.Enabled = true
+					self._minGui.Parent = game:GetService("CoreGui")
+				elseif self._noLogoRestoreGui then
+					self._noLogoRestoreGui.Enabled = true
+					self._noLogoRestoreGui.Parent = game:GetService("CoreGui")
+				end
+			else
+				self.Gui.Enabled = true
+			end
+			if self._notifGui then
+				self._notifGui.Enabled = true
+			end
+		else
+			-- Deliberately hidden: close dropdown, suppress restore/notif GUIs
+			self:HideDropdownPopup()
+			if self._minGui then self._minGui.Enabled = false end
+			if self._noLogoRestoreGui then self._noLogoRestoreGui.Enabled = false end
+			if self._notifGui then self._notifGui.Enabled = false end
+			self.Gui.Enabled = false
+		end
 	end
 
 	function Menu:ToggleVisibility() self:SetVisible(not self.Visible) end
@@ -2481,6 +2515,8 @@ return (function()
 
 	function Menu:_confirmClose()
 		if self._confirmPopup then return end
+		-- Close any active dropdown first so it cannot overlay the confirmation UI
+		self:HideDropdownPopup()
 		local theme = self.Theme
 		local ts = game:GetService("TweenService")
 		local frame = self.Frame
@@ -2616,6 +2652,8 @@ return (function()
 		if self._popupUISCon then self._popupUISCon:Disconnect(); self._popupUISCon = nil end
 		if self._dragInputCon then self._dragInputCon:Disconnect(); self._dragInputCon = nil end
 		if self._minDragInputCon then self._minDragInputCon:Disconnect(); self._minDragInputCon = nil end
+		if self._resizeInputCon then self._resizeInputCon:Disconnect(); self._resizeInputCon = nil end
+		if self._resizeEndCon then self._resizeEndCon:Disconnect(); self._resizeEndCon = nil end
 
 		-- Destroy external ScreenGuis owned by this menu
 		if self._notifGui then self._notifGui:Destroy(); self._notifGui = nil end
@@ -2648,7 +2686,7 @@ return (function()
 	end
 
 	--[[ Export ]]
-	local FyyUI = { Version = "0.9.51", Theme = Theme }
+	local FyyUI = { Version = "0.9.52", Theme = Theme }
 
 	function FyyUI.SetIconModule(mod)
 		IconModule = mod
