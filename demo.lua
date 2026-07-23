@@ -1,4 +1,5 @@
-local FyyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua"))()
+-- Put fyyui.lua in a trusted local ModuleScript named "FyyUI" beside this demo.
+local FyyUI = require(script.Parent.FyyUI)
 
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
@@ -7,7 +8,19 @@ local menu = FyyUI.Menu({
 	Theme = "Amoled",
 	Stats = true,
 	Logo = true,
+	-- QA: resize Studio/device viewport below 640px and verify the compact sidebar,
+	-- centered long-option dropdown, safe padding, and 44px option targets.
+	Responsive = true,
+	CompactBreakpoint = 640,
+	SafePadding = 12,
+	TouchTargetSize = 44,
+	ReducedMotion = false, -- QA: set true and verify tabs, window transitions, and confirm popups open/close instantly.
 })
+
+-- Accessibility QA: use a gamepad to move between ordered tab/control targets,
+-- open/close a dropdown or close confirmation, and confirm focus returns safely.
+-- Focus a text input or capture a keybind and verify menu shortcuts/navigation do not steal it.
+-- On touch, tap the full checkbox row, each window control, and the lower-right resize grip.
 
 -- Tab 1: Combat
 local combatTab = menu:Tab({ Text = "Combat", Icon = "crosshair" })
@@ -63,14 +76,44 @@ autoTab:Button({ Text = "Stop All", Description = "Disable all automation", Colo
 local settingsTab = menu:Tab({ Text = "Settings", Icon = "settings" })
 
 local general = settingsTab:Collapsible("General", { DefaultOpen = true })
-general:Dropdown({ Text = "Theme", Options = { "Dark", "Light", "Amoled" }, Default = "Amoled", Callback = function(v) print("[Theme]", v) end })
+general:Dropdown({
+	Text = "Theme",
+	Options = { "Dark", "Light", "Amoled" },
+	Default = "Amoled",
+	Callback = function(v)
+		local ok, err = menu:SetTheme(v)
+		if not ok then warn("[FyyUI] Theme switch failed:", err) end
+	end,
+})
 general:Checkbox({ Text = "Show Watermark", Default = true })
 general:Checkbox({ Text = "Auto Update", Default = true })
-general:Slider({ Text = "UI Scale", Min = 0.5, Max = 1.5, Default = 1, Suffix = "x", Step = 0.1 })
+general:Dropdown({
+	Text = "Mobile long-label / modal dropdown QA",
+	Options = {
+		"A deliberately long option label that must remain readable on a phone",
+		"Another extended option for testing touch scrolling and selection",
+		"Short fallback",
+	},
+	Placeholder = "Resize to a narrow viewport, then open me",
+})
+general:Slider({
+	Text = "UI Scale",
+	Min = 0.75,
+	Max = 1.35,
+	Default = 1,
+	Suffix = "x",
+	Step = 0.1,
+	Callback = function(v) menu:SetScale(v) end,
+})
 
 local keybinds = settingsTab:Collapsible("Keybinds")
-keybinds:Dropdown({ Text = "Toggle Menu", Options = { "RightShift", "LeftShift", "RightCtrl", "F1", "F2", "F3" }, Default = "RightShift" })
-keybinds:Dropdown({ Text = "Panic Key", Options = { "None", "F1", "F2", "F3", "Insert", "Delete" }, Default = "None" })
+keybinds:Keybind({
+	Text = "Toggle Menu",
+	Default = Enum.KeyCode.RightShift,
+	Mode = "Toggle",
+	Callback = function() menu:ToggleVisibility() end,
+})
+keybinds:Keybind({ Text = "Panic Key", Default = nil, Mode = "Toggle", Callback = function() end })
 keybinds:Checkbox({ Text = "Hold to Aim", Default = false })
 
 -- Tab 4: Info
@@ -89,5 +132,15 @@ infoTab:Label({ Text = "Collapsible Section" })
 infoTab:Divider()
 
 infoTab:Button({ Text = "Rejoin Game", Description = "Rejoin the current server", Icon = "refresh-cw", Callback = function() print("Rejoining...") end })
+
+-- Safe persistence roundtrip: JSON APIs use the local Roblox HttpService only
+-- for serialization. Persist `savedConfig` with your own trusted storage layer.
+local savedConfig, saveErr = menu:ExportConfigJSON()
+if savedConfig then
+	local restored, restoreDetails = menu:ImportConfigJSON(savedConfig, { NoCallbacks = true })
+	if not restored then warn("[FyyUI] Config restore failed:", restoreDetails) end
+else
+	warn("[FyyUI] Config export failed:", saveErr)
+end
 
 print("FyyUI v" .. FyyUI.Version .. " loaded successfully!")
