@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.13.4
+FyyUI v0.13.5
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -144,7 +144,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.13.4"
+	local LIBRARY_VERSION = "0.13.5"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -395,7 +395,13 @@ return (function()
 			if resolved.ImageRectOffset then props.ImageRectOffset = resolved.ImageRectOffset end
 			if extra then
 				for k, v in pairs(extra) do
-					props[k] = v
+					if k == "TextColor3" then
+						if extra.ImageColor3 == nil then props.ImageColor3 = v end
+					elseif k == "TextTransparency" then
+						if extra.ImageTransparency == nil then props.ImageTransparency = v end
+					elseif k ~= "Text" and k ~= "Font" and k ~= "TextSize" and k ~= "TextXAlignment" and k ~= "TextYAlignment" then
+						props[k] = v
+					end
 				end
 			end
 			return U.Create("ImageLabel", props)
