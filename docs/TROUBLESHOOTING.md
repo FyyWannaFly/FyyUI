@@ -1,6 +1,6 @@
 # Troubleshooting FyyUI
 
-> Applies to FyyUI v0.13.1 · Updated 2026-07-24
+> Applies to FyyUI v0.13.2 · Updated 2026-07-24
 
 ## The library does not load
 
