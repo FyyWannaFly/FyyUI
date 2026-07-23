@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.13.3
+FyyUI v0.13.4
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -144,7 +144,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.13.3"
+	local LIBRARY_VERSION = "0.13.4"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -415,6 +415,18 @@ return (function()
 		end
 	end
 
+	local function updateRenderedIcon(label, icon, parent, extra)
+		local resolved = resolveIcon(icon)
+		if not resolved then return label end
+		local sameType = label and ((resolved.Text and label:IsA("TextLabel")) or (resolved.Image and label:IsA("ImageLabel")))
+		if sameType then
+			applyIconToLabel(label, resolved)
+			return label
+		end
+		if label then label:Destroy() end
+		return renderIcon(parent, icon, extra)
+	end
+
 	local function cleanupController(controller)
 		if controller._destroyed then return end
 		controller._destroyed = true
@@ -609,12 +621,13 @@ return (function()
 		self.Flag = options.Flag
 		self.Theme = theme
 		self.HasDesc = self.Description ~= nil and self.Description ~= ""
-		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
-		local trackY = self.HasDesc and 30 or 28
+		local h = self.HasDesc and math.max(theme.DescHeight + 12, 64) or math.max(theme.ElementHeight + 12, 56)
+		local trackW = 110
+		local trackX = -(trackW + 74)
 
 		self.Container = U.Create("Frame", {
 			Name = "Slider",
-			Size = UDim2.new(1, -12, 0, h + 8),
+			Size = UDim2.new(1, -12, 0, h),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
 			BackgroundTransparency = 0,
@@ -626,8 +639,8 @@ return (function()
 
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
-			Size = UDim2.new(1, -70, 0, 20),
-			Position = UDim2.fromOffset(10, 4),
+			Size = UDim2.new(1, -(trackW + 100), 0, 20),
+			Position = UDim2.fromOffset(12, self.HasDesc and 11 or 9),
 			BackgroundTransparency = 1,
 			Text = self.Text,
 			Font = theme.Font,
@@ -640,8 +653,8 @@ return (function()
 
 		self.ValueLabel = U.Create("TextLabel", {
 			Name = "Value",
-			Size = UDim2.fromOffset(50, 20),
-			Position = UDim2.new(1, -56, 0, 4),
+			Size = UDim2.fromOffset(54, 20),
+			Position = UDim2.new(1, -68, 0, self.HasDesc and 9 or 7),
 			BackgroundTransparency = 1,
 			Text = tostring(self.Value) .. self.Suffix,
 			Font = theme.FontBold,
@@ -652,14 +665,13 @@ return (function()
 			Parent = self.Container,
 		})
 
-		local trackH = 6
-		local trackPad = 10
+		local trackH = 8
 		local fillPct = (self.Max ~= self.Min) and (self.Value - self.Min) / (self.Max - self.Min) or 0
 
 		self.Track = U.Create("Frame", {
 			Name = "Track",
-			Size = UDim2.new(1, -(trackPad * 2), 0, trackH),
-			Position = UDim2.fromOffset(trackPad, trackY),
+			Size = UDim2.fromOffset(trackW, trackH),
+			Position = UDim2.new(1, trackX, 0.5, -(trackH / 2)),
 			BackgroundColor3 = theme.ToggleOff,
 			BorderSizePixel = 0,
 			Parent = self.Container,
@@ -742,8 +754,8 @@ return (function()
 		if self.HasDesc then
 			U.Create("TextLabel", {
 				Name = "Description",
-				Size = UDim2.new(1, -20, 0, 16),
-				Position = UDim2.fromOffset(10, trackY + trackH + 4),
+				Size = UDim2.new(1, -(trackW + 100), 0, 16),
+				Position = UDim2.fromOffset(12, 34),
 				BackgroundTransparency = 1,
 				Text = self.Description,
 				Font = theme.Font,
@@ -2385,18 +2397,15 @@ return (function()
 			Parent = self.Container,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Header })
-		-- Arrow (far right, Active=false so clicks pass through to Header)
-		self.Arrow = U.Create("TextLabel", {
+		-- Lucide chevron (far right, Active=false so clicks pass through Header)
+		self.Arrow = renderIcon(self.Header, self._isOpen and "chevron-down" or "chevron-right", {
 			Name = "Arrow",
 			Size = UDim2.fromOffset(16, 16),
 			Position = UDim2.new(1, -24, 0.5, -8),
 			BackgroundTransparency = 1,
-			Text = self._isOpen and "▼" or "▶",
-			Font = theme.FontBold,
-			TextSize = 12,
+			ImageColor3 = theme.TextSecondary,
 			TextColor3 = theme.TextSecondary,
 			Active = false,
-			Parent = self.Header,
 		})
 		-- Title (left, Active=false so clicks pass through to Header)
 		self.Title = U.Create("TextLabel", {
@@ -2428,6 +2437,8 @@ return (function()
 			Parent = self.Content,
 		})
 		local contentPadding = U.Create("UIPadding", {
+			PaddingLeft = UDim.new(0, 8),
+			PaddingRight = UDim.new(0, 8),
 			PaddingBottom = UDim.new(0, 8),
 			Parent = self.Content,
 		})
@@ -2468,12 +2479,22 @@ return (function()
 		self._isOpen = v
 		local transitionId = (self._transitionId or 0) + 1
 		self._transitionId = transitionId
-		self.Arrow.Text = v and "▼" or "▶"
+		if self.Arrow then
+			self.Arrow = updateRenderedIcon(self.Arrow, v and "chevron-down" or "chevron-right", self.Header, {
+				Name = "Arrow",
+				Size = UDim2.fromOffset(16, 16),
+				Position = UDim2.new(1, -24, 0.5, -8),
+				BackgroundTransparency = 1,
+				ImageColor3 = self.Theme.TextSecondary,
+				TextColor3 = self.Theme.TextSecondary,
+				Active = false,
+			})
+		end
 		if self._tween then self._tween:Cancel() end
 		if not self.Container then return false, "missing container" end
 		if v and self.Content then self.Content.Visible = true end
 			local contentH = self._layout and self._layout.AbsoluteContentSize.Y or 0
-			if v and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset end
+			if v and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset + 4 end
 			local targetH = v and (34 + contentH) or 34
 			local function finishTransition()
 				if self._transitionId == transitionId and not self._isOpen and self.Content then self.Content.Visible = false end
@@ -2503,7 +2524,7 @@ return (function()
 		if self._closed or not self._layout or not self.Container or not self.Container.Parent then return end
 		if self._tween then self._tween:Cancel() end
 		local contentH = self._layout.AbsoluteContentSize.Y
-		if self._isOpen and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset end
+		if self._isOpen and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset + 4 end
 		local targetH = self._isOpen and (34 + contentH) or 34
 		if instant then
 			self.Container.Size = UDim2.new(1, -12, 0, targetH)
@@ -2630,8 +2651,10 @@ return (function()
 		local stroke = self.Container:FindFirstChildOfClass("UIStroke")
 		if stroke then stroke.Color = theme.ElementBorder end
 		self.Header.BackgroundColor3 = theme.ElementHover
-		self.Arrow.Font = theme.FontBold
-		self.Arrow.TextColor3 = theme.TextSecondary
+		if self.Arrow then
+			if self.Arrow:IsA("ImageLabel") then self.Arrow.ImageColor3 = theme.TextSecondary end
+			if self.Arrow:IsA("TextLabel") then self.Arrow.TextColor3 = theme.TextSecondary end
+		end
 		self.Title.Font = theme.FontBold
 		self.Title.TextSize = theme.FontSize
 		self.Title.TextColor3 = theme.TextPrimary
@@ -3674,8 +3697,8 @@ return (function()
 			local measured = textService:GetTextSize(tostring(option), theme.FontSize, theme.Font, Vector2.new(1000, 100)).X
 			longestOptionWidth = math.max(longestOptionWidth, measured)
 		end
-		local PANEL_CHROME = 54
-		local MIN_W = 120
+		local PANEL_CHROME = 78
+		local MIN_W = 160
 		local PREF_W = math.ceil(math.max(MIN_W, longestOptionWidth + PANEL_CHROME))
 		local COMFORT_W = math.min(140, PREF_W)
 		local USABLE_W = 80          -- absolute minimum; below this the panel has negative/zero inner content
@@ -3775,8 +3798,8 @@ return (function()
 			-- ScrollingFrame for option list (content-aware)
 			local optionList = U.Create("ScrollingFrame", {
 				Name = "OptionList",
-				Size = UDim2.new(1, -8, 1, -8),
-				Position = UDim2.fromOffset(4, 4),
+				Size = UDim2.new(1, -16, 1, -16),
+				Position = UDim2.fromOffset(8, 8),
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
 				ScrollBarThickness = 3,
@@ -3801,7 +3824,7 @@ return (function()
 				end
 				local btn = U.Create("TextButton", {
 					Name = "Option",
-					Size = UDim2.new(1, -8, 0, OPT_H),
+					Size = UDim2.new(1, -6, 0, OPT_H),
 					Text = "",
 					BackgroundColor3 = sel and theme.Accent or theme.Element,
 					BackgroundTransparency = sel and 0.25 or 0.6,
