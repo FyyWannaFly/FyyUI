@@ -1,5 +1,4 @@
--- Put fyyui.lua in a trusted local ModuleScript named "FyyUI" beside this demo.
-local FyyUI = require(script.Parent.FyyUI)
+local FyyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua"))()
 
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
