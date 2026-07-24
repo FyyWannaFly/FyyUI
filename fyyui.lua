@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.14.0
+FyyUI v0.15.0
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -150,7 +150,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.14.0"
+	local LIBRARY_VERSION = "0.15.0"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -940,18 +940,7 @@ return (function()
 		})
 
 		local function initSelectText()
-			if self.Multi then
-				if self._selectedCount == 0 then return self.Placeholder end
-				if self._selectedCount <= 2 then
-					local p = {}
-					for _, o in ipairs(self.Options) do
-						if self._selected[o] then table.insert(p, o) end
-					end
-					return table.concat(p, ", ")
-				end
-				return self._selectedCount .. " selected"
-			end
-			return (self.Value and self.Value ~= "") and tostring(self.Value) or self.Placeholder
+			return self:_displayText()
 		end
 		local function initSelectColor()
 			if self.Multi then return self._selectedCount > 0 and theme.TextPrimary or theme.TextMuted end
@@ -967,6 +956,7 @@ return (function()
 			Font = theme.Font,
 			TextSize = theme.FontSize,
 			TextXAlignment = Enum.TextXAlignment.Left,
+			TextTruncate = Enum.TextTruncate.AtEnd,
 			Parent = self.SelectBtn,
 		})
 
@@ -1048,21 +1038,10 @@ return (function()
 
 	function Dropdown:_updateDisplay()
 		-- Update display text from current state (used by SetOptions/Refresh)
+		self.SelectText.Text = self:_displayText()
 		if self.Multi then
-			if self._selectedCount == 0 then
-				self.SelectText.Text = self.Placeholder
-			elseif self._selectedCount <= 2 then
-				local parts = {}
-				for _, opt in ipairs(self.Options) do
-					if self._selected[opt] then table.insert(parts, opt) end
-				end
-				self.SelectText.Text = table.concat(parts, ", ")
-			else
-				self.SelectText.Text = self._selectedCount .. " selected"
-			end
 			self.SelectText.TextColor3 = (self._selectedCount > 0) and self.Theme.TextPrimary or self.Theme.TextMuted
 		else
-			self.SelectText.Text = (self.Value ~= "") and tostring(self.Value) or self.Placeholder
 			self.SelectText.TextColor3 = (self.Value ~= "") and self.Theme.TextPrimary or self.Theme.TextMuted
 		end
 	end
@@ -1081,17 +1060,7 @@ return (function()
 				self._selectedCount = self._selectedCount + 1
 			end
 			-- Update display text
-			if self._selectedCount == 0 then
-				self.SelectText.Text = ""
-			elseif self._selectedCount <= 2 then
-				local parts = {}
-				for _, opt in ipairs(self.Options) do
-					if self._selected[opt] then table.insert(parts, opt) end
-				end
-				self.SelectText.Text = table.concat(parts, ", ")
-			else
-				self.SelectText.Text = self._selectedCount .. " selected"
-			end
+			self.SelectText.Text = self:_displayText()
 			self.SelectText.TextColor3 = (self._selectedCount > 0) and self.Theme.TextPrimary or self.Theme.TextMuted
 			if not noCallback then
 				local snapshot = self:GetValue()
@@ -1102,6 +1071,26 @@ return (function()
 
 		-- Single-select
 		if v == self.Value then
+			if self.AllowNone then
+				-- Unselect when AllowNone=true and re-clicking the active option
+				self.Value = ""
+				self.SelectText.Text = self.Placeholder
+				self.SelectText.TextColor3 = self.Theme.TextMuted
+				if self._selectStroke then
+					self._selectStroke.Transparency = 0.8
+				end
+				self._selIdx = 0
+				self.Open = false
+				if self._arrow then applyIconToLabel(self._arrow, self._arrowDown) end
+				if self._menu and self._menu._activeDropdown == self then
+					self._menu._activeDropdown = nil
+					self._menu:HideDropdownPopup()
+				end
+				if not noCallback then
+					task.spawn(function() self.Callback("") end)
+				end
+				return true
+			end
 			if self._arrow then applyIconToLabel(self._arrow, self._arrowDown) end
 			if self._menu and self._menu._activeDropdown == self then
 				self._menu._activeDropdown = nil
@@ -1120,7 +1109,7 @@ return (function()
 		end
 		if v ~= "" and not self:_optIndex(self.Options, v) then return false, "unknown option" end
 		self.Value = v
-		self.SelectText.Text = (self.Value ~= "") and tostring(self.Value) or self.Placeholder
+		self.SelectText.Text = self:_displayText()
 		self.SelectText.TextColor3 = (self.Value ~= "") and self.Theme.TextPrimary or self.Theme.TextMuted
 		if self._selectStroke then
 			self._selectStroke.Transparency = (self.Value ~= "") and 0.5 or 0.8
@@ -1259,6 +1248,34 @@ return (function()
 			end
 		end
 		return true
+	end
+
+	-- Canonical display-summary helper used by constructor, _updateDisplay, SetValue, SetOptions/Refresh.
+	-- Single: shows value or Placeholder when empty.
+	-- Multi: shows Placeholder when empty; first option text when one selected;
+	--        "First +N-1" when multiple selected (N = total selected count).
+	function Dropdown:_displayText()
+		if self.Multi then
+			if self._selectedCount == 0 then
+				return self.Placeholder
+			end
+			local first
+			local extras = 0
+			for _, opt in ipairs(self.Options) do
+				if self._selected[opt] then
+					if first == nil then
+						first = opt
+					else
+						extras = extras + 1
+					end
+				end
+			end
+			if extras == 0 then
+				return tostring(first)
+			end
+			return tostring(first) .. " +" .. extras
+		end
+		return (self.Value ~= "") and tostring(self.Value) or self.Placeholder
 	end
 
 	function Dropdown:_optIndex(list, value)
@@ -2878,7 +2895,8 @@ return (function()
 		if self._updateShadow then self._updateShadow() end
 		if self._tooltipActive then self:_updateTooltipPosition() end
 		if self.NotifBox then
-			self.NotifBox.Size = UDim2.fromOffset(math.min(320, viewport.X - safe * 2), 0)
+			local currH = self.NotifBox.Size.Y.Offset
+			self.NotifBox.Size = UDim2.fromOffset(math.min(320, viewport.X - safe * 2), currH)
 			self.NotifBox.Position = UDim2.new(1, -safe, 1, -safe)
 		end
 		if self._paletteFrame then
@@ -3381,13 +3399,7 @@ return (function()
 			ZIndex = 50,
 			Parent = self._notifGui,
 		})
-		local notifList = U.Create("UIListLayout", {
-			Padding = UDim.new(0, 4),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			VerticalAlignment = Enum.VerticalAlignment.Bottom,
-			Parent = self.NotifBox,
-		})
-		self._notifList = notifList
+		self._activeNotifs = {}
 
 		-- Floating minimize icon (only if Logo is set)
 		if _logoImage then
@@ -4211,89 +4223,372 @@ return (function()
 	function Menu:Notify(options)
 		if self._destroyed or not self.NotifBox then return nil, "destroyed" end
 		options = options or {}
-		local text = tostring(options.Text or "")
+		local title = options.Title or ""
+		local content = options.Content or (options.Text and tostring(options.Text)) or ""
 		local duration = options.Duration == nil and 3 or options.Duration
 		assert(isFiniteNumber(duration) and duration >= 0, "FyyUI Notify: Duration must be a non-negative finite number")
 		local notifType = options.Type or "Info"
 		local theme = self.Theme
 
-		local typeColors = {
-			Info = Color3.fromRGB(0, 130, 250),
-			Success = Color3.fromRGB(0, 180, 80),
-			Error = Color3.fromRGB(220, 60, 60),
-			Warning = Color3.fromRGB(220, 180, 40),
+		-- Type configuration: accent + Lucide icon
+		local typeDefs = {
+			Info    = { accent = Color3.fromRGB(0, 130, 250), icon = "info" },
+			Success = { accent = Color3.fromRGB(0, 180, 80),  icon = "check-circle" },
+			Warning = { accent = Color3.fromRGB(220, 180, 40), icon = "alert-triangle" },
+			Error   = { accent = Color3.fromRGB(220, 60, 60),  icon = "x-circle" },
 		}
-		local accent = typeColors[notifType] or typeColors.Info
+		local cfg = typeDefs[notifType] or typeDefs.Info
+		local iconData = resolveIcon(cfg.icon)
 
+		-- Layout constants
+		local PAD = 12
+		local GAP = 5
+		local CARD_W = 320
+		local ICON_SZ = 20
+		local hasTitle = title ~= ""
+		local hasContent = content ~= ""
+
+		-- Compute content text height
+		local contentW = CARD_W - PAD * 2
+		local contentH = 0
+		local textSvc = game:GetService("TextService")
+		if hasContent then
+			local sz = textSvc:GetTextSize(content, theme.FontSize, theme.Font, Vector2.new(contentW, 1000))
+			contentH = sz.Y
+		end
+
+		-- Card height: top pad + icon row + (gap + content) + bottom pad + progress bar
+		local bodyTop = PAD + ICON_SZ
+		if hasContent then bodyTop = bodyTop + GAP + contentH end
+		local cardH = math.max(bodyTop + PAD + 3, 54)
+
+		-- ── Build card ──
 		local frame = U.Create("Frame", {
 			Name = "Notification",
-			Size = UDim2.new(1, 0, 0, 0),
+			Size = UDim2.fromOffset(CARD_W, cardH),
 			BackgroundColor3 = theme.Element,
 			BorderSizePixel = 0,
-			ClipsDescendants = true,
 			Parent = self.NotifBox,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = frame })
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = frame })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = frame })
 
-		U.Create("Frame", {
-			Name = "Bar",
-			Size = UDim2.new(0, 3, 1, 0),
-			BackgroundColor3 = accent,
+		-- Icon
+		if iconData and iconData.Image then
+			U.Create("ImageLabel", {
+				Name = "Icon",
+				Size = UDim2.fromOffset(ICON_SZ, ICON_SZ),
+				Position = UDim2.fromOffset(PAD, PAD),
+				BackgroundTransparency = 1,
+				Image = iconData.Image,
+				ImageColor3 = cfg.accent,
+				Parent = frame,
+			})
+		end
+
+		-- Title (right of icon)
+		local titleLabel
+		if hasTitle then
+			local titleX = iconData and (PAD + ICON_SZ + 8) or PAD
+			titleLabel = U.Create("TextLabel", {
+				Name = "Title",
+				Size = UDim2.new(0, CARD_W - titleX - PAD, 0, theme.FontSize + 2),
+				Position = UDim2.fromOffset(titleX, PAD),
+				BackgroundTransparency = 1,
+				Text = title,
+				Font = theme.FontBold,
+				TextSize = theme.FontSize,
+				TextColor3 = theme.TextPrimary,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextYAlignment = Enum.TextYAlignment.Top,
+				TextWrapped = false,
+				Parent = frame,
+			})
+		end
+
+		-- Content (below icon row, full width)
+		local contentLabel
+		if hasContent then
+			local contentY = PAD + ICON_SZ + GAP
+			contentLabel = U.Create("TextLabel", {
+				Name = "Content",
+				Size = UDim2.new(0, contentW, 0, contentH),
+				Position = UDim2.fromOffset(PAD, contentY),
+				BackgroundTransparency = 1,
+				Text = content,
+				Font = theme.Font,
+				TextSize = theme.FontSize,
+				TextColor3 = theme.TextSecondary,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextYAlignment = Enum.TextYAlignment.Top,
+				TextWrapped = true,
+				Parent = frame,
+			})
+		end
+
+		-- Progress track + fill (bottom of card)
+		local progressTrack = U.Create("Frame", {
+			Name = "ProgressTrack",
+			Size = UDim2.new(1, 0, 0, 3),
+			Position = UDim2.fromOffset(0, cardH - 3),
+			BackgroundColor3 = theme.ElementHover,
 			BorderSizePixel = 0,
 			Parent = frame,
 		})
-
-		local label = U.Create("TextLabel", {
-			Name = "Text",
-			Size = UDim2.new(1, -14, 1, 0),
-			Position = UDim2.fromOffset(12, 0),
-			BackgroundTransparency = 1,
-			Text = text,
-			Font = theme.Font,
-			TextSize = theme.FontSize,
-			TextColor3 = theme.TextPrimary,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextYAlignment = Enum.TextYAlignment.Center,
-			TextWrapped = true,
-			Parent = frame,
+		local progressFill = U.Create("Frame", {
+			Name = "ProgressFill",
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.fromOffset(0, 0),
+			BackgroundColor3 = cfg.accent,
+			BorderSizePixel = 0,
+			Parent = progressTrack,
 		})
 
-		-- Animate in
-		local textSize = game:GetService("TextService"):GetTextSize(tostring(text), theme.FontSize, theme.Font, Vector2.new(292, 1000))
-		local h = math.max(32, textSize.Y + 14)
-		frame.Size = UDim2.new(1, 0, 0, 0)
+		-- ── Entrance setup ──
 		local ts = game:GetService("TweenService")
 		local dismissed = false
+		local progressTween
+		local enterTween
+		local dismissTask
+
+		-- Calculate Y position (newest at bottom of stack)
+		local targetY = 0
+		local GAP_BETWEEN = 4
+		for _, rec in ipairs(self._activeNotifs) do
+			targetY = targetY + rec.h + GAP_BETWEEN
+		end
+
+		-- Record
+		local record = {
+			frame = frame,
+			h = cardH,
+			dismiss = nil,
+		}
+		table.insert(self._activeNotifs, record)
+
+		-- Place at entrance offset, then animate to target
+		if not self._reducedMotion then
+			frame.Position = UDim2.fromOffset(24, targetY)
+			frame.BackgroundTransparency = 1
+			for _, child in ipairs(frame:GetChildren()) do
+				if child:IsA("TextLabel") then child.TextTransparency = 1 end
+				if child:IsA("ImageLabel") then child.ImageTransparency = 1 end
+				if child:IsA("Frame") then child.BackgroundTransparency = 1 end
+				if child:IsA("UIStroke") then child.Transparency = 1 end
+			end
+			if progressTrack then progressTrack.BackgroundTransparency = 1 end
+			if progressFill then progressFill.BackgroundTransparency = 1 end
+
+			-- Entrance: slide in from right + fade
+			enterTween = self:_transition(frame, 0.3, {
+				Position = UDim2.fromOffset(0, targetY),
+				BackgroundTransparency = 0,
+			}, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+			-- Fade children in alongside
+			for _, child in ipairs(frame:GetChildren()) do
+				if child:IsA("TextLabel") then
+					self:_transition(child, 0.25, { TextTransparency = 0 })
+				elseif child:IsA("ImageLabel") then
+					self:_transition(child, 0.25, { ImageTransparency = 0 })
+				elseif child:IsA("Frame") then
+					self:_transition(child, 0.25, { BackgroundTransparency = 0 })
+				elseif child:IsA("UIStroke") then
+					self:_transition(child, 0.25, { Transparency = 0.6 })
+				end
+			end
+			if progressTrack then
+				self:_transition(progressTrack, 0.25, { BackgroundTransparency = 0 })
+			end
+			if progressFill then
+				self:_transition(progressFill, 0.25, { BackgroundTransparency = 0 })
+			end
+		else
+			frame.Position = UDim2.fromOffset(0, targetY)
+			frame.BackgroundTransparency = 0
+		end
+
+		-- Update NotifBox height to contain all cards
+		local totalH = targetY + cardH
+		self.NotifBox.Size = UDim2.new(0, CARD_W, 0, totalH)
+
+		-- ── Local dismiss function ──
 		local function dismiss()
-			if dismissed or not frame.Parent then return false end
+			if dismissed or not frame or not frame.Parent then return false end
 			dismissed = true
-			local fadeOut = self:_transition(frame, 0.3, {
-				Size = UDim2.new(1, 0, 0, 0),
-				BackgroundTransparency = 1,
-			}, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
+
+			-- Cancel scheduled dismiss & tweens
+			if dismissTask then task.cancel(dismissTask); dismissTask = nil end
+			if progressTween then progressTween:Cancel(); progressTween = nil end
+			if enterTween then enterTween:Cancel(); enterTween = nil end
+
+			-- Remove from active records
+			for i, rec in ipairs(self._activeNotifs) do
+				if rec.frame == frame then
+					table.remove(self._activeNotifs, i)
+					break
+				end
+			end
+
+			if not self._reducedMotion then
+				-- Slide right + fade out
+				local currPos = frame.Position
+				self:_transition(frame, 0.3, {
+					Position = UDim2.fromOffset(24, currPos.Y.Offset),
+					BackgroundTransparency = 1,
+				}, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
+					if frame and frame.Parent then frame:Destroy() end
+				end)
+				-- Fade children
+				for _, child in ipairs(frame:GetChildren()) do
+					if child:IsA("TextLabel") or child:IsA("ImageLabel") then
+						local prop = child:IsA("TextLabel") and "TextTransparency" or "ImageTransparency"
+						self:_transition(child, 0.2, { [prop] = 1 })
+					end
+				end
+				-- Reflow remaining cards after exit starts
+				task.delay(0.05, function()
+					if not self._destroyed then self:_reflowNotifs(true) end
+				end)
+			else
 				if frame then frame:Destroy() end
-			end)
+				self:_reflowNotifs(false)
+			end
 			return true
 		end
-		local fadeIn
+		record.dismiss = dismiss
+
+		-- ── Auto-dismiss ──
+		if duration > 0 then
+			if not self._reducedMotion then
+				progressTween = ts:Create(progressFill, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+					Size = UDim2.new(0, 0, 1, 0),
+				})
+				progressTween:Play()
+			end
+			dismissTask = task.delay(duration, function()
+				if self._destroyed or dismissed or not frame or not frame.Parent then return end
+				dismiss()
+			end)
+		end
+
+		-- ── Handle ──
 		local handle = {}
 		function handle:Dismiss() return dismiss() end
-		function handle:Update(nextText)
-			if dismissed or not frame.Parent then return false, "dismissed" end
-			if fadeIn then fadeIn:Cancel(); fadeIn = nil end
-			label.Text = tostring(nextText or "")
-			local nextSize = game:GetService("TextService"):GetTextSize(label.Text, theme.FontSize, theme.Font, Vector2.new(292, 1000))
-			frame.Size = UDim2.new(1, 0, 0, math.max(32, nextSize.Y + 14))
+		function handle:Update(...)
+			if dismissed or not frame or not frame.Parent then return false, "dismissed" end
+			local args = {...}
+			-- Backward-compat: single arg updates Content, clears Title
+			if #args == 1 and type(args[1]) == "string" then
+				content = args[1]
+				title = ""
+				hasTitle = false
+				hasContent = content ~= ""
+			elseif #args >= 2 then
+				title = tostring(args[1] or "")
+				content = tostring(args[2] or "")
+				hasTitle = title ~= ""
+				hasContent = content ~= ""
+			end
+
+			-- Recalculate height
+			contentH = 0
+			if hasContent then
+				local sz = textSvc:GetTextSize(content, theme.FontSize, theme.Font, Vector2.new(contentW, 1000))
+				contentH = sz.Y
+			end
+			local newBodyTop = PAD + ICON_SZ
+			if hasContent then newBodyTop = newBodyTop + GAP + contentH end
+			local newCardH = math.max(newBodyTop + PAD + 3, 54)
+
+			-- Update labels
+			if titleLabel then
+				titleLabel.Text = title
+				titleLabel.Visible = hasTitle
+			elseif hasTitle then
+				-- Need to create title label
+				local titleX = iconData and (PAD + ICON_SZ + 8) or PAD
+				titleLabel = U.Create("TextLabel", {
+					Name = "Title",
+					Size = UDim2.new(0, CARD_W - titleX - PAD, 0, theme.FontSize + 2),
+					Position = UDim2.fromOffset(titleX, PAD),
+					BackgroundTransparency = 1,
+					Text = title,
+					Font = theme.FontBold,
+					TextSize = theme.FontSize,
+					TextColor3 = theme.TextPrimary,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Top,
+					TextWrapped = false,
+					Parent = frame,
+				})
+			end
+			if not hasTitle and titleLabel then
+				titleLabel.Visible = false
+			end
+
+			if contentLabel then
+				contentLabel.Text = content
+				contentLabel.Size = UDim2.new(0, contentW, 0, contentH)
+				local newContentY = PAD + ICON_SZ + GAP
+				contentLabel.Position = UDim2.fromOffset(PAD, newContentY)
+				contentLabel.Visible = hasContent
+			elseif hasContent then
+				local contentY = PAD + ICON_SZ + GAP
+				contentLabel = U.Create("TextLabel", {
+					Name = "Content",
+					Size = UDim2.new(0, contentW, 0, contentH),
+					Position = UDim2.fromOffset(PAD, contentY),
+					BackgroundTransparency = 1,
+					Text = content,
+					Font = theme.Font,
+					TextSize = theme.FontSize,
+					TextColor3 = theme.TextSecondary,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Top,
+					TextWrapped = true,
+					Parent = frame,
+				end)
+			end
+			if not hasContent and contentLabel then
+				contentLabel.Visible = false
+			end
+
+			-- Update frame size
+			frame.Size = UDim2.fromOffset(CARD_W, newCardH)
+			record.h = newCardH
+			progressTrack.Position = UDim2.fromOffset(0, newCardH - 3)
+
+			-- Reflow siblings
+			self:_reflowNotifs(not self._reducedMotion)
 			return true
 		end
-		fadeIn = self:_transition(frame, 0.2, { Size = UDim2.new(1, 0, 0, h) })
 
-		-- Auto dismiss
-		task.delay(duration, function()
-			if self._destroyed or not frame.Parent then return end
-			dismiss()
-		end)
 		return handle
+	end
+
+	function Menu:_reflowNotifs(animated)
+		if self._destroyed or not self._activeNotifs then return end
+		if animated and self._reducedMotion then animated = false end
+		local y = 0
+		local GAP = 4
+		for _, rec in ipairs(self._activeNotifs) do
+			local frame = rec.frame
+			if frame and frame.Parent then
+				if animated then
+					self:_transition(frame, 0.25, {
+						Position = UDim2.fromOffset(0, y),
+					}, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				else
+					frame.Position = UDim2.fromOffset(0, y)
+				end
+			end
+			y = y + rec.h + GAP
+		end
+		local totalH = y > 0 and (y - GAP) or 0
+		if self.NotifBox then
+			self.NotifBox.Size = UDim2.new(0, 320, 0, totalH)
+		end
 	end
 
 	function Menu:_dragging()
@@ -4358,10 +4653,27 @@ return (function()
 		end
 	end
 
+	function Menu:_setInternalsVisible(visible)
+		if self.Sidebar then self.Sidebar.Visible = visible end
+		if self.ContentArea then self.ContentArea.Visible = visible end
+		if self.SidebarLine then self.SidebarLine.Visible = visible end
+		if self.TitleSep then self.TitleSep.Visible = visible end
+		if self.Title then self.Title.Visible = visible end
+		if self.StatusLabel then self.StatusLabel.Visible = visible end
+		if self.Topbar then
+			for _, child in ipairs(self.Topbar:GetChildren()) do
+				if child:IsA("ImageButton") then
+					child.Visible = visible
+				end
+			end
+		end
+	end
+
 	function Menu:_minimize()
 		if self._destroyed then return end
 		if self.Minimized then return true end
 		self:_closeTransientUi()
+		self:_setInternalsVisible(false)
 		self.Minimized = true
 		self._minPrevSize = self.Frame.Size
 		self._minPrevPos = self.Frame.Position
@@ -4391,6 +4703,7 @@ return (function()
 	function Menu:_restore()
 		if self._destroyed then return end
 		self._minimizeToken = (self._minimizeToken or 0) + 1
+		local restoreToken = self._minimizeToken
 		self.Minimized = false
 
 		local iconPos = self._minFrame and (self._minSavedPos or self._minFrame.Position) or (self._noLogoSavedPos or UDim2.new(0.5,-25,0.5,-25))
@@ -4398,14 +4711,39 @@ return (function()
 		self.Frame.Size = UDim2.fromOffset(60, 60)
 		self.Frame.Position = iconPos
 		self.Gui.Enabled = true
+		-- Internals stay hidden (set by _minimize) until expansion tween completes
 
 		self:_transition(self.Frame, 0.3, {
 			Size = self._minPrevSize or self._initialSize,
 			Position = self._minPrevPos or self._initialPos,
-		}, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut)
-
-		if self._minGui then self._minGui.Enabled = false end
-		if self._noLogoRestoreGui then self._noLogoRestoreGui.Enabled = false end
+		}, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut, function()
+			if self._destroyed or self._minimizeToken ~= restoreToken then return end
+			self:_setInternalsVisible(true)
+			if self._minGui then self._minGui.Enabled = false end
+			if self._noLogoRestoreGui then self._noLogoRestoreGui.Enabled = false end
+			-- Refresh tab canvas sizes after layout settles
+			if self.ContentArea then
+				for _, child in ipairs(self.ContentArea:GetChildren()) do
+					if child:IsA("ScrollingFrame") then
+						local layout = child:FindFirstChildOfClass("UIListLayout")
+						if layout then
+							local padding = child:FindFirstChildOfClass("UIPadding")
+							local paddingY = padding and (padding.PaddingTop.Offset + padding.PaddingBottom.Offset) or 0
+							child.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + paddingY)
+						end
+					end
+				end
+			end
+			-- Refresh Collapsible sizes in active tab
+			local activeTab = self.ActiveTab
+			if activeTab and activeTab.Components then
+				for _, comp in ipairs(activeTab.Components) do
+					if type(comp) == "table" and type(comp._updateSize) == "function" then
+						pcall(comp._updateSize, comp, true)
+					end
+				end
+			end
+		end)
 	end
 
 	function Menu:_toggleMaximize()
@@ -4415,6 +4753,7 @@ return (function()
 		self.Gui.Enabled = true
 		if self.Minimized then
 			self.Minimized = false
+			self:_setInternalsVisible(true)
 			if self._minGui then self._minGui.Enabled = false end
 			if self._noLogoRestoreGui then self._noLogoRestoreGui.Enabled = false end
 		end
@@ -4534,6 +4873,7 @@ return (function()
 				end
 			else
 				self.Gui.Enabled = true
+				self:_setInternalsVisible(true)
 			end
 			if self._notifGui then
 				self._notifGui.Enabled = true
@@ -4699,6 +5039,13 @@ return (function()
 		self:_closeTransientUi()
 		self._destroyed = true
 		self._minimizeToken = (self._minimizeToken or 0) + 1
+		if self._activeNotifs then
+			local activeNotifs = table.clone(self._activeNotifs)
+			for _, record in ipairs(activeNotifs) do
+				if record.dismiss then pcall(record.dismiss) end
+			end
+			table.clear(self._activeNotifs)
+		end
 
 		-- Disconnect all service-level connections
 		if self._heartbeatCon then self._heartbeatCon:Disconnect(); self._heartbeatCon = nil end
@@ -4850,11 +5197,27 @@ return (function()
 			for _, notif in ipairs(self.NotifBox:GetChildren()) do
 				if notif:IsA("Frame") then
 					notif.BackgroundColor3 = theme.Element
-					local txt = notif:FindFirstChild("Text")
-					if txt and txt:IsA("TextLabel") then
-						txt.Font = theme.Font
-						txt.TextSize = theme.FontSize
-						txt.TextColor3 = theme.TextPrimary
+					local stroke = notif:FindFirstChildOfClass("UIStroke")
+					if stroke then stroke.Color = theme.ElementBorder end
+					local icon = notif:FindFirstChild("Icon")
+					if icon and icon:IsA("ImageLabel") then
+						icon.ImageColor3 = icon.ImageColor3 -- keep type accent, already set
+					end
+					local titleLbl = notif:FindFirstChild("Title")
+					if titleLbl and titleLbl:IsA("TextLabel") then
+						titleLbl.Font = theme.FontBold
+						titleLbl.TextSize = theme.FontSize
+						titleLbl.TextColor3 = theme.TextPrimary
+					end
+					local contentLbl = notif:FindFirstChild("Content")
+					if contentLbl and contentLbl:IsA("TextLabel") then
+						contentLbl.Font = theme.Font
+						contentLbl.TextSize = theme.FontSize
+						contentLbl.TextColor3 = theme.TextSecondary
+					end
+					local track = notif:FindFirstChild("ProgressTrack")
+					if track and track:IsA("Frame") then
+						track.BackgroundColor3 = theme.ElementHover
 					end
 				end
 			end
