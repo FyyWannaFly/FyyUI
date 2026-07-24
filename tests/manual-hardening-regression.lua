@@ -29,15 +29,27 @@ return function(FyyUI)
 			and menu.Topbar:FindFirstChild("TitleSep") == nil,
 		"topbar and floating icons must use the branded assets without the old vertical separator"
 	)
-	assert(menu.Title.Text:find("<font", 1, true), "Fyy title prefix must use theme accent RichText")
 	assert(
-		menu:SetTheme("Light") and menu.Title.Text:find(menu.Theme.Accent:ToHex(), 1, true),
+		menu.TitleLogo.Size == UDim2.fromOffset(22, 22)
+			and menu.TitleAccent.Visible
+			and menu.TitleAccent.Text == "Fyy"
+			and menu.Title.Text == "UI hardening regression"
+			and menu.TitleAccent.Font == Enum.Font.BuilderSansExtraBold
+			and menu.Title.Font == Enum.Font.BuilderSansBold
+			and menu.Title.TextSize == 17,
+		"branded title must use modern split typography with visible spacing"
+	)
+	assert(
+		menu:SetTheme("Light") and menu.TitleAccent.TextColor3 == menu.Theme.Accent,
 		"Fyy title prefix must follow runtime theme changes"
 	)
-	assert(menu:SetTitle("Custom Menu") and not menu.Title.Text:find("<font", 1, true), "custom titles must stay plain")
 	assert(
-		menu:SetTitle("FyyCommunity") and menu.Title.Text:find("<font", 1, true),
-		"Fyy titles must retain accent styling"
+		menu:SetTitle("Custom Menu") and not menu.TitleAccent.Visible and menu.Title.Text == "Custom Menu",
+		"custom titles must stay plain"
+	)
+	assert(
+		menu:SetTitle("FyyCommunity") and menu.TitleAccent.Visible and menu.Title.Text == "Community",
+		"Fyy titles must retain split accent styling and insert visual spacing"
 	)
 	assert(
 		menu.Responsive and menu.CompactBreakpoint == 640 and menu.SafePadding == 12,
