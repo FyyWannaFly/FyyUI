@@ -43,6 +43,9 @@ function Menu:SelectTab(tab)
 		return
 	end
 	self:HideDropdownPopup()
+	if self.ActiveTab and self.ActiveTab._isOverview then
+		self:_releaseInput("OverviewWheel")
+	end
 	local offsetY = 36
 
 	-- Hide old tab content immediately (no glitchy slide-out)
@@ -122,62 +125,51 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 	local rightRoom = viewport.X - rightEdge - 4 -- 4px margin from screen edge
 	local leftRoom = frameAbs.X - 4 -- space to the left of the menu
 	local w, px
-	local modal = false
-	if rightRoom >= COMFORT_W then
+	local placement
+	if not self._compact and rightRoom >= COMFORT_W then
 		-- Right side: comfortable space for full panel
 		w = math.min(PREF_W, rightRoom)
 		px = frameSiz.X
-	elseif rightRoom >= USABLE_W then
-		-- Right side constrained but still large enough for valid content
-		w = rightRoom
-		px = frameSiz.X
-	elseif leftRoom >= COMFORT_W then
+		placement = "ExteriorRight"
+	elseif not self._compact and leftRoom >= COMFORT_W then
 		-- Right side insufficient → left fallback with comfortable width
 		w = math.min(PREF_W, leftRoom)
 		px = -w
-	elseif leftRoom >= USABLE_W then
-		-- Left side constrained but still large enough for valid content
-		w = leftRoom
-		px = -w
+		placement = "ExteriorLeft"
 	else
-		-- On narrow/mobile viewports, present a centered modal instead of
-		-- creating an unusable side panel or leaving the dropdown "open".
-		modal = true
-		w = math.min(360, math.max(1, viewport.X - self.SafePadding * 2))
-		px = 0
+		-- Compact fallback: keep the panel inside the menu, aligned to the right.
+		placement = "InteriorRight"
+		local interiorPadding = 8
+		w = math.min(PREF_W, math.max(USABLE_W, frameSiz.X - interiorPadding * 2))
+		px = frameSiz.X - interiorPadding - w
 	end
 
-	-- Classic desktop side panel fills the complete menu height. Narrow
-	-- viewports keep the centered modal behavior and safe viewport padding.
+	-- Side panels fill the menu height. Interior panels stay below the topbar.
 	local OPT_H = math.max(32, self.TouchTargetSize)
 	local clampedH = frameSiz.Y
-	if modal then
-		clampedH = math.max(1, math.min(frameSiz.Y, viewport.Y - self.SafePadding * 2))
+	if placement == "InteriorRight" then
+		local topInset = self.Topbar.AbsoluteSize.Y + 8
+		local bottomInset = 8
+		clampedH = math.max(80, frameSiz.Y - topInset - bottomInset)
+		local triggerTop = atPos.Y - frameAbs.Y
+		local belowY = triggerTop + atSize.Y + 4
+		local aboveY = triggerTop - clampedH - 4
+		if belowY + clampedH <= frameSiz.Y - bottomInset then
+			py = belowY
+		elseif aboveY >= topInset then
+			py = aboveY
+		else
+			py = topInset
+		end
 	end
 	local popupParent = self.Frame
-	if modal then
-		self._activePopupOverlay = U.Create("ImageButton", {
-			Name = "DropdownOverlay",
-			Size = UDim2.new(1, 0, 1, 0),
-			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-			BackgroundTransparency = 0.48,
-			BorderSizePixel = 0,
-			AutoButtonColor = false,
-			ZIndex = 9999,
-			Parent = self.Gui,
-		})
-		self._activePopupOverlay.MouseButton1Click:Connect(function()
-			self:HideDropdownPopup()
-		end)
-		popupParent = self.Gui
-	end
 
 	-- Create popup with 0 width → tween to slide in from right
 	local popup = U.Create("Frame", {
-		Name = modal and "DropdownModal" or "DropdownPopup",
+		Name = "DropdownPopup",
 		Size = UDim2.fromOffset(0, clampedH),
-		Position = modal and UDim2.fromScale(0.5, 0.5) or UDim2.fromOffset(px, py),
-		AnchorPoint = modal and Vector2.new(0.5, 0.5) or Vector2.new(0, 0),
+		Position = UDim2.fromOffset(px, py),
+		AnchorPoint = Vector2.new(0, 0),
 		BackgroundColor3 = theme.Sidebar,
 		BorderSizePixel = 0,
 		ZIndex = 10000,
@@ -209,7 +201,7 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 		BorderSizePixel = 0,
 		BackgroundTransparency = 0.3,
 		ZIndex = 10001,
-		Visible = not modal,
+		Visible = placement ~= "InteriorRight",
 		Parent = popup,
 	})
 
@@ -319,7 +311,15 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 	end
 
 	self._activePopupFrame = popup
-	self._activePopupModal = modal
+	self._activePopupModal = false
+	self._activePopupPlacement = placement
+	self._activePopupBounds = {
+		X = px,
+		Y = py,
+		Width = w,
+		Height = clampedH,
+		Placement = placement,
+	}
 	self:_transition(popup, 0.25, { Size = UDim2.fromOffset(w, clampedH) })
 	if self._popupFocusReturn and firstOptionButton then
 		game:GetService("GuiService").SelectedObject = firstOptionButton
@@ -383,6 +383,8 @@ function Menu:HideDropdownPopup()
 		self._activePopupOverlay = nil
 	end
 	self._activePopupModal = nil
+	self._activePopupPlacement = nil
+	self._activePopupBounds = nil
 	local focusReturn = self._popupFocusReturn
 	self._popupFocusReturn = nil
 	self:_restoreTransientFocus(focusReturn)
