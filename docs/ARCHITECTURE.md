@@ -65,3 +65,5 @@ It intentionally refuses to overwrite `src/` without `--force`.
 4. Commit source changes and regenerated `fyyui.lua` together.
 5. Run `node scripts/build.js --check`, StyLua verification, and the Roblox smoke harness before release.
 6. Keep the root file because demos and users load it directly from GitHub with one request.
+
+The generated file intentionally contains only the public copyright and license notice. Development and build instructions remain in this document instead of the runtime bundle header.
