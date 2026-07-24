@@ -41,7 +41,7 @@ aimSection:Dropdown({
 	Text = "Hit Part",
 	Options = { "Head", "Upper Torso", "Lower Torso", "Random" },
 	Default = "Head",
-	AllowNone = false,
+	AllowNone = true,
 	Flag = "combat_hit_part",
 })
 aimSection:Dropdown({
