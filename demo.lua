@@ -1,4 +1,4 @@
-local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua?v=0.17.0-overview")
+local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua?v=0.18.0-config-tab")
 local chunk, compileError = loadstring(source)
 assert(chunk, "FyyUI compile error: " .. tostring(compileError))
 local FyyUI = chunk()
@@ -167,6 +167,15 @@ automationTab:Button({
 })
 
 -- Interface
+local configTab = menu:ConfigTab({
+	Text = "Config",
+	Icon = "settings-2",
+	Folder = "FyyUI/DemoConfigs",
+	DefaultProfile = "Default",
+	AutoLoad = true,
+	LoadCallbacks = false,
+})
+
 local interfaceTab = menu:Tab({ Text = "Interface", Icon = "settings", Tooltip = "Appearance and input settings" })
 
 local appearanceSection = interfaceTab:Collapsible("Appearance", { DefaultOpen = true })
