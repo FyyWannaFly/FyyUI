@@ -4908,8 +4908,8 @@ return (function()
 
 		self.TitleLogo = U.Create("ImageLabel", {
 			Name = "TitleLogo",
-			Size = UDim2.fromOffset(24, 24),
-			Position = UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 24) / 2)),
+			Size = UDim2.fromOffset(22, 22),
+			Position = UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 22) / 2)),
 			BackgroundTransparency = 1,
 			Image = "rbxassetid://90892630150011",
 			ScaleType = Enum.ScaleType.Fit,
@@ -4918,33 +4918,50 @@ return (function()
 
 		-- Title
 		self._titleText = options.Title or "FyyUI"
-		local function escapeTitle(text)
-			return text:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;"):gsub("'", "&apos;")
-		end
-		self._refreshTitle = function()
-			local text = escapeTitle(self._titleText)
-			if self._titleText:sub(1, 3):lower() == "fyy" then
-				text = ('<font color="#%s">%s</font>%s'):format(
-					self.Theme.Accent:ToHex(),
-					escapeTitle(self._titleText:sub(1, 3)),
-					escapeTitle(self._titleText:sub(4))
-				)
-			end
-			self.Title.Text = text
-		end
-		self.Title = U.Create("TextLabel", {
-			Name = "Title",
-			Size = UDim2.new(1, -(leftMargin + 84), 1, 0),
-			Position = UDim2.fromOffset(leftMargin + 44, 0),
+		local titleX = leftMargin + 42
+		local titleSize = 17
+		local titleGap = 5
+		self.TitleAccent = U.Create("TextLabel", {
+			Name = "TitleAccent",
+			Size = UDim2.fromOffset(30, theme.TopbarHeight),
+			Position = UDim2.fromOffset(titleX, 0),
 			BackgroundTransparency = 1,
-			Text = "",
-			Font = theme.FontBold,
-			TextSize = theme.FontSizeTitle,
-			TextColor3 = theme.TextPrimary,
-			TextXAlignment = titleAlign == "Right" and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
-			RichText = true,
+			Text = "Fyy",
+			Font = Enum.Font.BuilderSansExtraBold,
+			TextSize = titleSize,
+			TextColor3 = theme.Accent,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Visible = false,
 			Parent = self.Topbar,
 		})
+		self.Title = U.Create("TextLabel", {
+			Name = "Title",
+			Size = UDim2.new(1, -(titleX + 40), 1, 0),
+			Position = UDim2.fromOffset(titleX, 0),
+			BackgroundTransparency = 1,
+			Text = "",
+			Font = Enum.Font.BuilderSansBold,
+			TextSize = titleSize,
+			TextColor3 = theme.TextPrimary,
+			TextXAlignment = titleAlign == "Right" and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
+			Parent = self.Topbar,
+		})
+		self._refreshTitle = function()
+			local branded = titleAlign ~= "Right" and self._titleText:sub(1, 3):lower() == "fyy"
+			self._titleBranded = branded
+			self.TitleAccent.Visible = branded
+			if branded then
+				local remainder = self._titleText:sub(4):gsub("^%s+", "")
+				self.TitleAccent.Text = self._titleText:sub(1, 3)
+				self.Title.Text = remainder
+				self.Title.Position = UDim2.fromOffset(titleX + 30 + titleGap, 0)
+				self.Title.Size = UDim2.new(1, -(titleX + 30 + titleGap + 40), 1, 0)
+			else
+				self.Title.Text = self._titleText
+				self.Title.Position = UDim2.fromOffset(titleX, 0)
+				self.Title.Size = UDim2.new(1, -(titleX + 40), 1, 0)
+			end
+		end
 		self._refreshTitle()
 
 		-- Accent line under topbar
@@ -7081,6 +7098,9 @@ return (function()
 		if self.TitleLogo then
 			self.TitleLogo.Visible = visible
 		end
+		if self.TitleAccent then
+			self.TitleAccent.Visible = visible and self._titleBranded
+		end
 		if self.Title then
 			self.Title.Visible = visible
 		end
@@ -7868,8 +7888,13 @@ return (function()
 
 		-- Title
 		self.Title.TextColor3 = theme.TextPrimary
-		self.Title.Font = theme.FontBold
-		self.Title.TextSize = theme.FontSizeTitle
+		self.Title.Font = Enum.Font.BuilderSansBold
+		self.Title.TextSize = 17
+		if self.TitleAccent then
+			self.TitleAccent.TextColor3 = theme.Accent
+			self.TitleAccent.Font = Enum.Font.BuilderSansExtraBold
+			self.TitleAccent.TextSize = 17
+		end
 		if self._refreshTitle then
 			self._refreshTitle()
 		end
