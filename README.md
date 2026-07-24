@@ -2,7 +2,7 @@
 
 FyyUI is a local Roblox Luau UI library for tabs, controls, command-palette navigation, responsive layouts, and persisted settings.
 
-Current release: **v0.13.5**.
+Current release: **v0.14.0**.
 
 ## Quick start
 
@@ -54,7 +54,7 @@ FyyUI automatically loads the Lucide icon provider from the configured GitHub so
 
 ## Release highlights
 
-v0.13.5 fixes property mapping for image-backed Lucide icons while retaining the component layout polish from v0.13.4.
+v0.14.0 unifies card-backed component sizing and alignment, moves Dropdown and Slider controls into consistent right-side layouts, and corrects Collapsible child spacing and animation sizing.
 
 ## License and contributions
 
