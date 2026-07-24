@@ -4483,9 +4483,6 @@ return (function()
 			if self.SidebarLine then
 				self.SidebarLine.Position = UDim2.new(0, sidebarWidth + 4, 0, self.Theme.TopbarHeight + 6)
 			end
-			if self.TitleSep then
-				self.TitleSep.Position = UDim2.fromOffset(sidebarWidth + 4, 0)
-			end
 		end
 		if self.Minimized then
 			self._minPrevSize = self.Frame.Size
@@ -4905,29 +4902,42 @@ return (function()
 		end
 
 		-- Logo image for floating minimize icon (true=default, string=custom, nil=false)
-		local _logoImage = options.Logo == true and "rbxassetid://112551105311815"
+		local _logoImage = options.Logo == true and "rbxassetid://90051950241069"
 			or type(options.Logo) == "string" and options.Logo
 			or nil
 
-		-- Title vertical separator | — aligns with SidebarLine (sbw + 4)
-		local sepX = theme.SidebarWidth + 4
-		self.TitleSep = U.Create("Frame", {
-			Name = "TitleSep",
-			Size = UDim2.fromOffset(2, theme.TopbarHeight),
-			Position = UDim2.fromOffset(sepX, 0),
-			BackgroundColor3 = theme.Accent,
-			BorderSizePixel = 0,
-			ZIndex = 1,
+		self.TitleLogo = U.Create("ImageLabel", {
+			Name = "TitleLogo",
+			Size = UDim2.fromOffset(24, 24),
+			Position = UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 24) / 2)),
+			BackgroundTransparency = 1,
+			Image = "rbxassetid://90892630150011",
+			ScaleType = Enum.ScaleType.Fit,
 			Parent = self.Topbar,
 		})
 
 		-- Title
+		self._titleText = options.Title or "FyyUI"
+		local function escapeTitle(text)
+			return text:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;"):gsub("'", "&apos;")
+		end
+		self._refreshTitle = function()
+			local text = escapeTitle(self._titleText)
+			if self._titleText:sub(1, 3):lower() == "fyy" then
+				text = ('<font color="#%s">%s</font>%s'):format(
+					self.Theme.Accent:ToHex(),
+					escapeTitle(self._titleText:sub(1, 3)),
+					escapeTitle(self._titleText:sub(4))
+				)
+			end
+			self.Title.Text = text
+		end
 		self.Title = U.Create("TextLabel", {
 			Name = "Title",
-			Size = UDim2.new(1, -(leftMargin + 50), 1, 0),
-			Position = UDim2.fromOffset(leftMargin + 18, 0),
+			Size = UDim2.new(1, -(leftMargin + 84), 1, 0),
+			Position = UDim2.fromOffset(leftMargin + 44, 0),
 			BackgroundTransparency = 1,
-			Text = "<i>" .. (options.Title or "FyyUI") .. "</i>",
+			Text = "",
 			Font = theme.FontBold,
 			TextSize = theme.FontSizeTitle,
 			TextColor3 = theme.TextPrimary,
@@ -4935,6 +4945,7 @@ return (function()
 			RichText = true,
 			Parent = self.Topbar,
 		})
+		self._refreshTitle()
 
 		-- Accent line under topbar
 		self.AccentLine = U.Create("Frame", {
@@ -7067,8 +7078,8 @@ return (function()
 		if self.SidebarLine then
 			self.SidebarLine.Visible = visible
 		end
-		if self.TitleSep then
-			self.TitleSep.Visible = visible
+		if self.TitleLogo then
+			self.TitleLogo.Visible = visible
 		end
 		if self.Title then
 			self.Title.Visible = visible
@@ -7491,7 +7502,8 @@ return (function()
 		if type(t) ~= "string" then
 			return false, "expected string"
 		end
-		self.Title.Text = t
+		self._titleText = t
+		self._refreshTitle()
 		return true
 	end
 
@@ -7858,6 +7870,9 @@ return (function()
 		self.Title.TextColor3 = theme.TextPrimary
 		self.Title.Font = theme.FontBold
 		self.Title.TextSize = theme.FontSizeTitle
+		if self._refreshTitle then
+			self._refreshTitle()
+		end
 
 		-- Accent line under topbar
 		if self.AccentLine then
@@ -7896,9 +7911,6 @@ return (function()
 			if minStroke then
 				minStroke.Color = theme.Accent
 			end
-		end
-		if self.TitleSep then
-			self.TitleSep.BackgroundColor3 = theme.Accent
 		end
 		if self.SidebarLine then
 			self.SidebarLine.BackgroundColor3 = theme.Border
