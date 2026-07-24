@@ -1,8 +1,8 @@
 # FyyUI API Reference
 
-> Applies to FyyUI v0.14.0 · Updated 2026-07-24
+> Applies to FyyUI v0.15.0 · Updated 2026-07-24
 
-This reference describes the public FyyUI v0.14.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
+This reference describes the public FyyUI v0.15.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
 
 ## Module
 
@@ -60,12 +60,12 @@ local FyyUI = require(script.Parent.FyyUI)
 ### Notifications
 
 ```lua
-local handle = menu:Notify({ Text = "Settings updated.", Duration = 3 })
+local handle = menu:Notify({ Title = "Settings", Content = "Updated successfully.", Type = "Success", Duration = 3 })
 handle:Update("Done.")
 handle:Dismiss()
 ```
 
-`Text` may be multiline. Use a positive `Duration` for auto-dismiss or dismiss the returned handle yourself.
+Notifications render as bottom-right cards with Lucide status icons and a duration progress line. `Title` and `Content` are preferred; `Text` remains a backward-compatible content alias. Supported types are `Info`, `Success`, `Warning`, and `Error`. Use a positive `Duration` for auto-dismiss, `0` for a persistent card, or dismiss the returned handle yourself. Notifications intentionally have no close button.
 
 ## Tabs and collapsibles
 
@@ -125,7 +125,7 @@ dropdown:Refresh(options [, preferredValue] [, noCallback])
 dropdown:GetValue()
 ```
 
-Set `Multi = true` for an ordered array result and callback snapshot. Set `AllowNone = true` to allow no selection. `SetOptions` rejects non-table lists and does not fire callbacks when the selection is unchanged.
+Set `Multi = true` for an ordered array result and callback snapshot. Compact Multi selectors display the first selected option followed by the additional count, such as `Weapon +2`. Set `AllowNone = true` to allow no selection; clicking an active Single option again clears it and shows `Select...`. `AllowNone = false` keeps one valid option selected. `SetOptions` rejects non-table lists and does not fire callbacks when the selection is unchanged.
 
 ### Keybind and input
 
