@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.16.0
+FyyUI v0.17.0
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -164,7 +164,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.16.0"
+	local LIBRARY_VERSION = "0.17.0"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -4536,6 +4536,54 @@ return (function()
 		local self = setmetatable({}, Menu)
 		self.Options = options
 		self.Theme = theme
+		assert(
+			options.Stats == nil or type(options.Stats) == "boolean" or type(options.Stats) == "table",
+			"FyyUI Menu: Stats must be a boolean or table"
+		)
+		assert(options.Support == nil or type(options.Support) == "table", "FyyUI Menu: Support must be a table")
+		local statsOptions = type(options.Stats) == "table" and options.Stats or {}
+		assert(
+			statsOptions.Enabled == nil or type(statsOptions.Enabled) == "boolean",
+			"FyyUI Menu: Stats.Enabled must be a boolean"
+		)
+		assert(
+			statsOptions.TabName == nil or (type(statsOptions.TabName) == "string" and statsOptions.TabName ~= ""),
+			"FyyUI Menu: Stats.TabName must be a non-empty string"
+		)
+		for _, key in ipairs({ "ShowProfile", "ShowGame", "ShowServer", "ShowSupport" }) do
+			assert(
+				statsOptions[key] == nil or type(statsOptions[key]) == "boolean",
+				("FyyUI Menu: Stats.%s must be a boolean"):format(key)
+			)
+		end
+		local supportOptions = options.Support or {}
+		for _, key in ipairs({ "Title", "Description", "ButtonText", "Discord" }) do
+			assert(
+				supportOptions[key] == nil or type(supportOptions[key]) == "string",
+				("FyyUI Menu: Support.%s must be a string"):format(key)
+			)
+		end
+		assert(
+			supportOptions.ButtonIcon == nil
+				or type(supportOptions.ButtonIcon) == "string"
+				or type(supportOptions.ButtonIcon) == "number"
+				or type(supportOptions.ButtonIcon) == "table",
+			"FyyUI Menu: Support.ButtonIcon must be a supported icon value"
+		)
+		assert(
+			supportOptions.Callback == nil or type(supportOptions.Callback) == "function",
+			"FyyUI Menu: Support.Callback must be a function"
+		)
+		self.StatsConfig = {
+			Enabled = options.Stats == true or (type(options.Stats) == "table" and statsOptions.Enabled ~= false),
+			TabName = statsOptions.TabName or "Overview",
+			TabIcon = statsOptions.TabIcon or "user-round",
+			ShowProfile = statsOptions.ShowProfile ~= false,
+			ShowGame = statsOptions.ShowGame ~= false,
+			ShowServer = statsOptions.ShowServer ~= false,
+			ShowSupport = statsOptions.ShowSupport ~= false,
+		}
+		self.SupportConfig = supportOptions
 		self.Tabs = {}
 		self._flagRegistry = {}
 		self._keybindList = {}
@@ -4552,6 +4600,10 @@ return (function()
 		self._paletteFilteredResults = {}
 		self._paletteResultButtons = {}
 		self._paletteSelectedIndex = 0
+		self._overviewConns = {}
+		self.Minimized = false
+		self._restoring = false
+		self._minimizeToken = 0
 		local paletteMaxResults = options.PaletteMaxResults == nil and 60 or options.PaletteMaxResults
 		assert(
 			isFiniteNumber(paletteMaxResults) and paletteMaxResults >= 1,
@@ -4884,78 +4936,6 @@ return (function()
 			Parent = self.Topbar,
 		})
 
-		-- MS / FPS display (right after TitleSep) — enabled via options.Stats = true
-		if options.Stats then
-			local statsX = sepX + 18
-			self.StatusLabel = U.Create("TextLabel", {
-				Name = "Status",
-				Size = UDim2.new(1, -(statsX + 50), 1, 0),
-				Position = UDim2.fromOffset(statsX, 0),
-				BackgroundTransparency = 1,
-				Text = "---",
-				Font = theme.FontBold,
-				TextSize = theme.FontSizeSmall,
-				TextColor3 = theme.TextPrimary,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				RichText = true,
-				Parent = self.Topbar,
-			})
-			local _frameCount = 0
-			local _lastTime = tick()
-			local _currentFps = 0
-			local _currentPing = 0
-			local _pingTime = tick()
-			local _green = Color3.fromRGB(0, 200, 80)
-			local _yellow = Color3.fromRGB(230, 200, 0)
-			local _red = Color3.fromRGB(230, 50, 50)
-			local function _hex(c)
-				local ok, h = pcall(c.ToHex, c)
-				if ok and h then
-					return h
-				end
-				return ("%02x%02x%02x"):format(c.R * 255, c.G * 255, c.B * 255)
-			end
-			self._heartbeatCon = game:GetService("RunService").Heartbeat:Connect(function()
-				if
-					self._destroyed
-					or not self.Visible
-					or self.Minimized
-					or not self.StatusLabel
-					or not self.StatusLabel.Parent
-				then
-					return
-				end
-				-- FPS counter
-				_frameCount = _frameCount + 1
-				local now = tick()
-				if now - _lastTime >= 1 then
-					_currentFps = _frameCount
-					_frameCount = 0
-					_lastTime = now
-				end
-				-- Ping every 2s
-				if now - _pingTime >= 2 then
-					_pingTime = now
-					local ok, v = pcall(function()
-						local s = game:GetService("Stats")
-						return s.Network.ServerStatsItem["Data Ping"]:GetValue()
-					end)
-					if ok then
-						_currentPing = math.floor(v)
-					end
-				end
-				-- Build text
-				local fpsColor = _currentFps >= 50 and _green or _currentFps >= 40 and _yellow or _red
-				local pingColor = _currentPing > 0
-					and (_currentPing < 80 and _green or _currentPing < 120 and _yellow or _red)
-				self.StatusLabel.Text = ("<font color='#%s'>%s FPS</font>"):format(_hex(fpsColor), _currentFps)
-				if _currentPing > 0 then
-					self.StatusLabel.Text = self.StatusLabel.Text
-						.. (" • <font color='#%s'>%s MS</font>"):format(_hex(pingColor), _currentPing)
-				end
-			end)
-		end
-
 		-- Accent line under topbar
 		self.AccentLine = U.Create("Frame", {
 			Name = "AccentLine",
@@ -5084,16 +5064,19 @@ return (function()
 				Enabled = false,
 			})
 			local iconSize = 50
+			self._minInitialPos = UDim2.new(0, 16, 0.5, -(iconSize / 2))
 			self._minFrame = U.Create("ImageButton", {
 				Name = "MinIcon",
 				Size = UDim2.fromOffset(iconSize, iconSize),
-				Position = UDim2.new(0.5, -iconSize / 2, 0.5, -iconSize / 2),
+				Position = self._minInitialPos,
 				BackgroundColor3 = theme.Element,
 				BackgroundTransparency = 0,
 				BorderSizePixel = 0,
 				AutoButtonColor = false,
+				Active = true,
 				Parent = self._minGui,
 			})
+			self._minScale = U.Create("UIScale", { Parent = self._minFrame, Scale = 1 })
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = self._minFrame })
 			U.Create("UIStroke", { Color = theme.Accent, Thickness = 2, Parent = self._minFrame })
 			local minIcon = U.Create("ImageLabel", {
@@ -5115,6 +5098,9 @@ return (function()
 					i.UserInputType == Enum.UserInputType.MouseButton1
 					or i.UserInputType == Enum.UserInputType.Touch
 				then
+					if self._restoring then
+						return
+					end
 					dragging = true
 					didDrag = false
 					dragStart = i.Position
@@ -5183,6 +5169,9 @@ return (function()
 					i.UserInputType == Enum.UserInputType.MouseButton1
 					or i.UserInputType == Enum.UserInputType.Touch
 				then
+					if self._restoring then
+						return
+					end
 					nlDragging = true
 					nlDidDrag = false
 					nlDragStart = i.Position
@@ -5359,6 +5348,7 @@ return (function()
 				end
 			end
 		end)
+		self:_createOverview()
 
 		return self
 	end
@@ -5768,6 +5758,466 @@ return (function()
 		end
 		options = options or {}
 		return Tab.new(self, options)
+	end
+
+	function Menu:_createOverview()
+		if not self.StatsConfig.Enabled or self._overviewTab then
+			return self._overviewTab
+		end
+		local theme = self.Theme
+		local cfg = self.StatsConfig
+		local support = self.SupportConfig
+		local tab = Tab.new(self, { Text = cfg.TabName, Icon = cfg.TabIcon, Tooltip = "Account and session overview" })
+		self._overviewTab = tab
+		tab._isOverview = true
+		local root = tab.Container
+		root.Name = "OverviewContent"
+		root.ScrollBarThickness = 0
+		root.ScrollingEnabled = false
+		root.CanvasSize = UDim2.fromOffset(0, 0)
+		for _, child in ipairs(root:GetChildren()) do
+			if child:IsA("UIListLayout") or child:IsA("UIPadding") then
+				child:Destroy()
+			end
+		end
+
+		local themed = {}
+		local textStyles = {}
+		local icons = {}
+		local overviewConns = {}
+		local profileEnabled = cfg.ShowProfile
+		local infoEnabled = cfg.ShowGame or cfg.ShowServer
+		local supportEnabled = cfg.ShowSupport and (support.Discord or support.Callback)
+		local contentTop = 40
+		local contentBottom = 276
+		local sectionGap = 8
+		local profileHeight = profileEnabled and 88 or 0
+		local infoHeight = infoEnabled and 76 or 0
+		local supportHeight = supportEnabled and 56 or 0
+		local totalHeight = profileHeight
+			+ infoHeight
+			+ supportHeight
+			+ (profileEnabled and infoEnabled and sectionGap or 0)
+			+ (infoEnabled and supportEnabled and sectionGap or 0)
+			+ (profileEnabled and not infoEnabled and supportEnabled and sectionGap or 0)
+		local sectionY = contentTop + math.max(0, math.floor((contentBottom - contentTop - totalHeight) / 2))
+		local function card(name, position, size, radius)
+			local frame = U.Create("Frame", {
+				Name = name,
+				Position = position,
+				Size = size,
+				BackgroundColor3 = theme.Element,
+				BorderSizePixel = 0,
+				Parent = root,
+			})
+			U.Create("UICorner", { CornerRadius = UDim.new(0, radius or 8), Parent = frame })
+			local stroke = U.Create("UIStroke", {
+				Color = theme.ElementBorder,
+				Transparency = 0.6,
+				Thickness = 1,
+				Parent = frame,
+			})
+			table.insert(themed, { kind = "card", frame = frame, stroke = stroke })
+			return frame
+		end
+		local function label(parent, text, position, size, font, textSize, color, colorRole, fontRole)
+			local value = U.Create("TextLabel", {
+				Position = position,
+				Size = size,
+				BackgroundTransparency = 1,
+				Text = text,
+				Font = font,
+				TextSize = textSize,
+				TextColor3 = color,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Parent = parent,
+			})
+			table.insert(textStyles, {
+				label = value,
+				colorRole = colorRole,
+				fontRole = fontRole,
+			})
+			return value
+		end
+
+		label(
+			root,
+			string.upper(cfg.TabName),
+			UDim2.fromOffset(2, 0),
+			UDim2.new(1, -4, 0, 20),
+			theme.FontBold,
+			16,
+			theme.TextPrimary,
+			"TextPrimary",
+			"FontBold"
+		)
+		label(
+			root,
+			"Your account and current session",
+			UDim2.fromOffset(2, 19),
+			UDim2.new(1, -4, 0, 16),
+			theme.Font,
+			13,
+			theme.TextMuted,
+			"TextMuted",
+			"Font"
+		)
+
+		local players = game:GetService("Players")
+		local player = players.LocalPlayer
+		if cfg.ShowProfile then
+			local profile = card("Profile", UDim2.new(0, 0, 0, sectionY), UDim2.new(1, 0, 0, profileHeight), 10)
+			local accent = U.Create("Frame", {
+				Name = "Accent",
+				Position = UDim2.fromOffset(0, 12),
+				Size = UDim2.fromOffset(3, 64),
+				BackgroundColor3 = theme.Accent,
+				BorderSizePixel = 0,
+				Parent = profile,
+			})
+			table.insert(themed, { kind = "accent", frame = accent })
+			local avatar = U.Create("ImageLabel", {
+				Name = "Avatar",
+				Position = UDim2.fromOffset(12, 12),
+				Size = UDim2.fromOffset(64, 64),
+				BackgroundColor3 = theme.ElementHover,
+				BorderSizePixel = 0,
+				Parent = profile,
+			})
+			U.Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = avatar })
+			local avatarStroke =
+				U.Create("UIStroke", { Color = theme.Accent, Transparency = 0.65, Thickness = 1, Parent = avatar })
+			table.insert(themed, { kind = "avatar", frame = avatar, stroke = avatarStroke })
+			local displayName = player and player.DisplayName or "Player"
+			local userName = player and ("@" .. player.Name) or "@unknown"
+			local accountInfo = player and (("%d days · ID %d"):format(player.AccountAge, player.UserId))
+				or "Account unavailable"
+			label(
+				profile,
+				displayName,
+				UDim2.fromOffset(88, 13),
+				UDim2.new(1, -174, 0, 20),
+				theme.FontBold,
+				16,
+				theme.TextPrimary,
+				"TextPrimary",
+				"FontBold"
+			)
+			label(
+				profile,
+				userName,
+				UDim2.fromOffset(88, 34),
+				UDim2.new(1, -102, 0, 18),
+				theme.Font,
+				14,
+				theme.TextSecondary,
+				"TextSecondary",
+				"Font"
+			)
+			label(
+				profile,
+				accountInfo,
+				UDim2.fromOffset(88, 55),
+				UDim2.new(1, -102, 0, 16),
+				theme.Font,
+				13,
+				theme.TextMuted,
+				"TextMuted",
+				"Font"
+			)
+			label(
+				profile,
+				"● Ready",
+				UDim2.new(1, -80, 0, 14),
+				UDim2.fromOffset(68, 18),
+				theme.FontBold,
+				13,
+				Color3.fromRGB(70, 220, 120),
+				"Status",
+				"FontBold"
+			).TextXAlignment =
+				Enum.TextXAlignment.Right
+			if player then
+				task.spawn(function()
+					local ok, image = pcall(
+						players.GetUserThumbnailAsync,
+						players,
+						player.UserId,
+						Enum.ThumbnailType.HeadShot,
+						Enum.ThumbnailSize.Size150x150
+					)
+					if ok and avatar and avatar.Parent then
+						avatar.Image = image
+					end
+				end)
+			end
+		end
+
+		if profileEnabled then
+			sectionY += profileHeight + ((infoEnabled or supportEnabled) and sectionGap or 0)
+		end
+		local showGame, showServer = cfg.ShowGame, cfg.ShowServer
+		local rowY = sectionY
+		local rowGap = 8
+		local function infoCard(name, xScale, xOffset, widthScale, widthOffset, iconName)
+			local info = card(name, UDim2.new(xScale, xOffset, 0, rowY), UDim2.new(widthScale, widthOffset, 0, 76), 8)
+			local icon = renderIcon(info, iconName, {
+				Size = UDim2.fromOffset(16, 16),
+				Position = UDim2.new(1, -26, 0, 10),
+				ImageColor3 = theme.TextMuted,
+			})
+			if icon then
+				table.insert(icons, { icon = icon, role = "TextMuted" })
+			end
+			return info
+		end
+		local gameCard = showGame
+			and infoCard("Game", 0, 0, showServer and 0.5 or 1, showServer and -(rowGap / 2) or 0, "gamepad-2")
+		local serverCard = showServer
+			and infoCard(
+				"Server",
+				showGame and 0.5 or 0,
+				showGame and (rowGap / 2) or 0,
+				showGame and 0.5 or 1,
+				showGame and -(rowGap / 2) or 0,
+				"server"
+			)
+		if gameCard then
+			label(
+				gameCard,
+				"GAME",
+				UDim2.fromOffset(12, 8),
+				UDim2.new(1, -44, 0, 16),
+				theme.FontBold,
+				12,
+				theme.TextMuted,
+				"TextMuted",
+				"FontBold"
+			)
+			local gameName = label(
+				gameCard,
+				"Current Experience",
+				UDim2.fromOffset(12, 29),
+				UDim2.new(1, -24, 0, 19),
+				theme.FontBold,
+				15,
+				theme.TextPrimary,
+				"TextPrimary",
+				"FontBold"
+			)
+			label(
+				gameCard,
+				"Place " .. tostring(game.PlaceId),
+				UDim2.fromOffset(12, 51),
+				UDim2.new(1, -24, 0, 15),
+				theme.Font,
+				12,
+				theme.TextMuted,
+				"TextMuted",
+				"Font"
+			)
+			task.spawn(function()
+				local marketplace = game:GetService("MarketplaceService")
+				local fetched, details = pcall(marketplace.GetProductInfo, marketplace, game.PlaceId)
+				if fetched and details and gameName and gameName.Parent then
+					gameName.Text = details.Name or gameName.Text
+				end
+			end)
+		end
+		if serverCard then
+			label(
+				serverCard,
+				"SERVER",
+				UDim2.fromOffset(12, 8),
+				UDim2.new(1, -44, 0, 16),
+				theme.FontBold,
+				12,
+				theme.TextMuted,
+				"TextMuted",
+				"FontBold"
+			)
+			local playerCount = label(
+				serverCard,
+				"",
+				UDim2.fromOffset(12, 29),
+				UDim2.new(1, -24, 0, 19),
+				theme.FontBold,
+				15,
+				theme.TextPrimary,
+				"TextPrimary",
+				"FontBold"
+			)
+			local function updatePlayers()
+				if playerCount and playerCount.Parent then
+					playerCount.Text = ("%d / %d Players"):format(#players:GetPlayers(), players.MaxPlayers)
+				end
+			end
+			updatePlayers()
+			label(
+				serverCard,
+				"● Connected",
+				UDim2.fromOffset(12, 51),
+				UDim2.new(1, -24, 0, 15),
+				theme.Font,
+				12,
+				Color3.fromRGB(70, 220, 120),
+				"Status",
+				"Font"
+			)
+			table.insert(overviewConns, players.PlayerAdded:Connect(updatePlayers))
+			table.insert(self._overviewConns, overviewConns[#overviewConns])
+			table.insert(
+				overviewConns,
+				players.PlayerRemoving:Connect(function()
+					task.defer(updatePlayers)
+				end)
+			)
+			table.insert(self._overviewConns, overviewConns[#overviewConns])
+		end
+
+		if infoEnabled then
+			sectionY += infoHeight + (supportEnabled and sectionGap or 0)
+		end
+		if supportEnabled then
+			local supportCard = card("Support", UDim2.new(0, 0, 0, sectionY), UDim2.new(1, 0, 0, supportHeight), 8)
+			label(
+				supportCard,
+				support.Title or "Need Support?",
+				UDim2.fromOffset(12, 8),
+				UDim2.new(1, -158, 0, 19),
+				theme.FontBold,
+				15,
+				theme.TextPrimary,
+				"TextPrimary",
+				"FontBold"
+			)
+			label(
+				supportCard,
+				support.Description or "Get help or join the community",
+				UDim2.fromOffset(12, 29),
+				UDim2.new(1, -158, 0, 16),
+				theme.Font,
+				12,
+				theme.TextMuted,
+				"TextMuted",
+				"Font"
+			)
+			local button = U.Create("ImageButton", {
+				Name = "SupportButton",
+				Position = UDim2.new(1, -138, 0.5, -14),
+				Size = UDim2.fromOffset(126, 28),
+				BackgroundColor3 = theme.ElementHover,
+				AutoButtonColor = false,
+				Parent = supportCard,
+			})
+			self:_makeSelectable(button)
+			U.Create("UICorner", { CornerRadius = UDim.new(0, 7), Parent = button })
+			local buttonStroke =
+				U.Create("UIStroke", { Color = theme.Accent, Transparency = 0.5, Thickness = 1, Parent = button })
+			local supportIcon = renderIcon(
+				button,
+				support.ButtonIcon or "message-circle",
+				{ Size = UDim2.fromOffset(15, 15), Position = UDim2.fromOffset(9, 7), ImageColor3 = theme.TextPrimary }
+			)
+			if supportIcon then
+				table.insert(icons, { icon = supportIcon, role = "TextPrimary" })
+			end
+			local supportLabel = label(
+				button,
+				support.ButtonText or "Join Discord",
+				UDim2.fromOffset(30, 0),
+				UDim2.new(1, -36, 1, 0),
+				theme.FontBold,
+				13,
+				theme.TextPrimary,
+				"TextPrimary",
+				"FontBold"
+			)
+			supportLabel.TextXAlignment = Enum.TextXAlignment.Center
+			table.insert(themed, { kind = "button", frame = button, stroke = buttonStroke })
+			button.Activated:Connect(function()
+				local url = support.Discord
+				if type(support.Callback) == "function" then
+					task.spawn(support.Callback, url)
+					return
+				end
+				local env = type(getgenv) == "function" and getgenv() or _G
+				local clipboard = type(env) == "table" and rawget(env, "setclipboard") or nil
+				if type(clipboard) == "function" and url then
+					local copied = pcall(clipboard, url)
+					if copied then
+						self:Notify({
+							Title = "Discord Copied",
+							Content = "Invite link copied to clipboard.",
+							Type = "Success",
+						})
+					else
+						self:Notify({ Title = "Discord", Content = url, Type = "Info" })
+					end
+				elseif url then
+					self:Notify({ Title = "Discord", Content = url, Type = "Info" })
+				end
+			end)
+		end
+		local baseDestroy = tab.Destroy
+		tab.Destroy = function(overview)
+			if overview._destroyed then
+				return
+			end
+			for _, connection in ipairs(overviewConns) do
+				connection:Disconnect()
+				for i = #self._overviewConns, 1, -1 do
+					if self._overviewConns[i] == connection then
+						table.remove(self._overviewConns, i)
+					end
+				end
+			end
+			table.clear(overviewConns)
+			if self._overviewTab == overview then
+				self._overviewTab = nil
+			end
+			baseDestroy(overview)
+		end
+		tab.ApplyTheme = function(overview, newTheme)
+			overview.Theme = newTheme
+			for _, entry in ipairs(themed) do
+				if entry.frame and entry.frame.Parent then
+					if entry.kind == "accent" then
+						entry.frame.BackgroundColor3 = newTheme.Accent
+					elseif entry.kind == "button" or entry.kind == "avatar" then
+						entry.frame.BackgroundColor3 = newTheme.ElementHover
+					else
+						entry.frame.BackgroundColor3 = newTheme.Element
+					end
+				end
+				if entry.stroke and entry.stroke.Parent then
+					entry.stroke.Color = (entry.kind == "button" or entry.kind == "avatar") and newTheme.Accent
+						or newTheme.ElementBorder
+				end
+			end
+			for _, entry in ipairs(textStyles) do
+				if entry.label and entry.label.Parent then
+					entry.label.Font = newTheme[entry.fontRole]
+					entry.label.TextColor3 = entry.colorRole == "Status" and Color3.fromRGB(70, 220, 120)
+						or newTheme[entry.colorRole]
+				end
+			end
+			for _, entry in ipairs(icons) do
+				if entry.icon and entry.icon.Parent then
+					if entry.icon:IsA("ImageLabel") then
+						entry.icon.ImageColor3 = newTheme[entry.role]
+					elseif entry.icon:IsA("TextLabel") then
+						entry.icon.TextColor3 = newTheme[entry.role]
+					end
+				end
+			end
+			theme = newTheme
+			Tab.ApplyTheme(overview, newTheme)
+		end
+
+		tab._overviewThemed = themed
+		return tab
 	end
 
 	function Menu:_trackFlagged(ctrl)
@@ -6623,9 +7073,6 @@ return (function()
 		if self.Title then
 			self.Title.Visible = visible
 		end
-		if self.StatusLabel then
-			self.StatusLabel.Visible = visible
-		end
 		if self.Topbar then
 			for _, child in ipairs(self.Topbar:GetChildren()) do
 				if child:IsA("ImageButton") then
@@ -6690,13 +7137,30 @@ return (function()
 				return
 			end
 			if self._destroyed or self._minimizeToken ~= minimizeToken or not self.Minimized or not self.Visible then
+				if self._minimizeToken == minimizeToken then
+					self:_setInternalsVisible(true)
+					self:_setMenuTransitionVisual(self.Scale, self._baseBackgroundTransparency, 0.55, 0.25)
+				end
 				return
 			end
 			if self._minGui then
+				self._minFrame.Position = self._minSavedPos or self._minInitialPos
+				self._minFrame.Active = true
+				self._minFrame.BackgroundTransparency = 0
+				if self._minScale then
+					self._minScale.Scale = 1
+				end
+				local icon = self._minFrame:FindFirstChild("Icon")
+				if icon then
+					icon.ImageTransparency = 0
+				end
 				self._minGui.Enabled = true
 				self._minGui.Parent = self.GuiParent
 				self.Gui.Enabled = false
 			elseif self._noLogoRestoreGui then
+				if self._noLogoRestoreBtn and self._noLogoSavedPos then
+					self._noLogoRestoreBtn.Position = self._noLogoSavedPos
+				end
 				self._noLogoRestoreGui.Enabled = true
 				self._noLogoRestoreGui.Parent = self.GuiParent
 				self.Gui.Enabled = false
@@ -6720,12 +7184,16 @@ return (function()
 	end
 
 	function Menu:_restore()
-		if self._destroyed then
+		if self._destroyed or self._restoring or not self.Minimized then
 			return
 		end
+		self._restoring = true
 		self._minimizeToken = (self._minimizeToken or 0) + 1
 		local restoreToken = self._minimizeToken
 		self.Minimized = false
+		local guiWasEnabled = self.Gui.Enabled
+		local minGuiWasEnabled = self._minGui and self._minGui.Enabled or false
+		local noLogoGuiWasEnabled = self._noLogoRestoreGui and self._noLogoRestoreGui.Enabled or false
 
 		local restorePos = self._minPrevPos or self._initialPos
 		self.Frame.Size = self._minPrevSize or self._initialSize
@@ -6733,17 +7201,67 @@ return (function()
 		self:_setMenuTransitionVisual(self.Scale * 0.96, math.min(1, self._baseBackgroundTransparency + 0.72), 1, 1)
 		self.Gui.Enabled = true
 		self:_refreshRestoredLayout()
+		if self._minFrame and self._minGui and self._minGui.Enabled then
+			self._minFrame.Active = false
+			local icon = self._minFrame:FindFirstChild("Icon")
+			self:_transition(
+				self._minFrame,
+				0.12,
+				{ BackgroundTransparency = 1 },
+				Enum.EasingStyle.Quad,
+				Enum.EasingDirection.In
+			)
+			if self._minScale then
+				self:_transition(self._minScale, 0.12, { Scale = 0.9 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			end
+			if icon then
+				self:_transition(icon, 0.1, { ImageTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			end
+			local function hideMinimizeGui()
+				if self._destroyed or self._minimizeToken ~= restoreToken then
+					return
+				end
+				self._minGui.Enabled = false
+			end
+			if self._reducedMotion then
+				hideMinimizeGui()
+			else
+				task.delay(0.12, hideMinimizeGui)
+			end
+		elseif self._noLogoRestoreGui then
+			self._noLogoRestoreGui.Enabled = false
+		end
 
 		local pending = self._shadow and 3 or 2
 		local function finishRestore()
 			pending -= 1
 			if pending <= 0 then
 				if self._destroyed or self._minimizeToken ~= restoreToken then
+					if not self._destroyed then
+						self.Minimized = true
+						self.Gui.Enabled = guiWasEnabled
+						if self._minGui then
+							self._minGui.Enabled = minGuiWasEnabled
+						end
+						if self._noLogoRestoreGui then
+							self._noLogoRestoreGui.Enabled = noLogoGuiWasEnabled
+						end
+					end
+					self._restoring = false
 					return
 				end
 				self:_setInternalsVisible(true)
-				if self._minGui then
-					self._minGui.Enabled = false
+				self._restoring = false
+				if self._minFrame then
+					self._minFrame.Active = true
+					self._minFrame.BackgroundTransparency = 0
+					if self._minScale then
+						self._minScale.Scale = 1
+					end
+					local icon = self._minFrame:FindFirstChild("Icon")
+					if icon then
+						icon.ImageTransparency = 0
+					end
 				end
 				if self._noLogoRestoreGui then
 					self._noLogoRestoreGui.Enabled = false
@@ -6777,6 +7295,9 @@ return (function()
 		)
 		if self._shadow then
 			self:_transition(self._shadow, 0.22, { BackgroundTransparency = 0.55 }, nil, nil, finishRestore)
+		else
+			-- Frame and scale are the only completion signals when no shadow exists.
+			-- Keep the restoring lock until both callbacks above complete.
 		end
 	end
 
@@ -7163,6 +7684,10 @@ return (function()
 			self._heartbeatCon:Disconnect()
 			self._heartbeatCon = nil
 		end
+		for _, connection in ipairs(self._overviewConns or {}) do
+			connection:Disconnect()
+		end
+		self._overviewConns = {}
 		if self._popupUISCon then
 			self._popupUISCon:Disconnect()
 			self._popupUISCon = nil
@@ -7333,13 +7858,6 @@ return (function()
 		self.Title.TextColor3 = theme.TextPrimary
 		self.Title.Font = theme.FontBold
 		self.Title.TextSize = theme.FontSizeTitle
-
-		-- Status label (Stats)
-		if self.StatusLabel then
-			self.StatusLabel.TextColor3 = theme.TextPrimary
-			self.StatusLabel.Font = theme.FontBold
-			self.StatusLabel.TextSize = theme.FontSizeSmall
-		end
 
 		-- Accent line under topbar
 		if self.AccentLine then
