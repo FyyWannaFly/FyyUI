@@ -50,6 +50,14 @@ return function(FyyUI)
 	)
 	assert(popupShown and menu._activePopupFrame, "dropdown popup must report successful UI creation")
 	menu:HideDropdownPopup()
+	local notification = menu:Notify({ Title = "Exit regression", Content = "Position must stay frozen", Duration = 0 })
+	task.wait()
+	local notificationFrame = menu._activeNotifs[1] and menu._activeNotifs[1].frame
+	assert(notificationFrame and notification:Dismiss(), "notification dismiss must start successfully")
+	assert(
+		notificationFrame.Parent == menu._notifGui and notificationFrame.AnchorPoint == Vector2.new(0, 0),
+		"exiting notifications must detach into screen space before stack reflow"
+	)
 
 	local reducedMenu = FyyUI.Menu({
 		Title = "Reduced-motion responsive regression",
