@@ -4905,7 +4905,7 @@ return (function()
 		end
 
 		-- Logo image for floating minimize icon (true=default, string=custom, nil=false)
-		local _logoImage = options.Logo == true and "rbxassetid://106899268176689"
+		local _logoImage = options.Logo == true and "rbxassetid://112551105311815"
 			or type(options.Logo) == "string" and options.Logo
 			or nil
 
