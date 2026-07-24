@@ -143,7 +143,16 @@ return function(FyyUI)
 		supportOnlyCard and supportOnlyCard.Position.Y.Offset >= 40 and supportOnlyCard.Position.Y.Offset + 56 <= 276,
 		"support-only Overview must remain centered inside the fixed content area"
 	)
+	assert(
+		supportOnlyOverview._overviewTab.Container.Active
+			and supportOnlyOverview._overviewTab.Container.ScrollingEnabled == false,
+		"fixed Overview must actively capture pointer input without enabling scrolling"
+	)
 	supportOnlyOverview:Destroy()
+	assert(
+		menu.TopbarDragSurface and menu.TopbarDragSurface.Active,
+		"topbar must expose a dedicated active drag surface"
+	)
 	local popupShown = menu:ShowDropdownPopup(
 		Vector2.new(0, 0),
 		Vector2.new(36, 36),
@@ -154,6 +163,22 @@ return function(FyyUI)
 	)
 	assert(popupShown and menu._activePopupFrame, "dropdown popup must report successful UI creation")
 	menu:HideDropdownPopup()
+	local previousCompact = menu._compact
+	menu._compact = true
+	assert(
+		menu:ShowDropdownPopup(Vector2.new(0, 0), Vector2.new(36, 36), { "One", "Two" }, 0, function() end, false),
+		"compact dropdown popup must be created"
+	)
+	local compactBounds = menu._activePopupBounds
+	assert(
+		compactBounds
+			and compactBounds.Placement == "InteriorRight"
+			and compactBounds.X >= 0
+			and compactBounds.X + compactBounds.Width <= menu.Frame.AbsoluteSize.X,
+		"compact dropdown must stay inside the right side of the menu"
+	)
+	menu:HideDropdownPopup()
+	menu._compact = previousCompact
 	assert(
 		menu.NotifBox.Size.Y.Scale == 1 and menu.NotifBox.AnchorPoint == Vector2.new(1, 1),
 		"notification stack must keep fixed bottom-anchored geometry"
