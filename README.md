@@ -2,7 +2,7 @@
 
 A polished Roblox Luau interface library focused on responsive layouts, consistent controls, smooth window behavior, and a compact one-file distribution.
 
-**Current release:** `v0.17.0`
+**Current release:** `v0.18.0`
 
 ## Highlights
 
@@ -11,6 +11,7 @@ A polished Roblox Luau interface library focused on responsive layouts, consiste
 - Fixed premium Overview for profile, game, server, and optional Discord support details.
 - Command palette, tooltips, notifications, theme switching, reduced motion, and JSON configuration APIs.
 - Modular development source compiled into one deterministic `fyyui.lua` bundle.
+- Ordered Config Tab with saved profiles, JSON import/export, and optional autoload.
 
 ## Quick start
 
