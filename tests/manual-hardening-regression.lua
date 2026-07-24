@@ -6,7 +6,7 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.16.0", "library version must identify the responsive columns release")
+	assert(FyyUI.Version == "0.17.0", "library version must identify the premium overview release")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
@@ -18,6 +18,7 @@ return function(FyyUI)
 	local menu = FyyUI.Menu({
 		Title = "FyyUI hardening regression",
 		Stats = false,
+		Logo = true,
 		Scale = 9, -- constructor must clamp to the supported range.
 	})
 	assert(menu:GetScale() == 1.35, "constructor scale must be clamped")
@@ -28,7 +29,7 @@ return function(FyyUI)
 	assert(menu.TouchTargetSize == 36 and not menu._reducedMotion, "touch and motion defaults must be stable")
 	local legacyConfig = menu:ExportConfig()
 	assert(
-		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.16.0",
+		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.17.0",
 		"zero-argument config export must retain the v1 contract"
 	)
 	assert(not pcall(function()
@@ -40,6 +41,80 @@ return function(FyyUI)
 	assert(not pcall(function()
 		FyyUI.Menu({ TouchTargetSize = math.huge })
 	end), "invalid touch target sizes must fail early")
+	assert(not pcall(function()
+		FyyUI.Menu({ Stats = "invalid" })
+	end), "invalid Stats configuration must fail early")
+	assert(not pcall(function()
+		FyyUI.Menu({ Stats = { ShowGame = "yes" } })
+	end), "invalid Stats fields must fail early")
+	assert(not pcall(function()
+		FyyUI.Menu({ Support = { Callback = true } })
+	end), "invalid Support fields must fail early")
+	local overviewMenu = FyyUI.Menu({
+		Title = "Overview regression",
+		Stats = {
+			Enabled = true,
+			TabName = "Home",
+			ShowProfile = true,
+			ShowGame = true,
+			ShowServer = true,
+			ShowSupport = true,
+		},
+		Support = { Discord = "https://discord.gg/example" },
+	})
+	assert(
+		overviewMenu._overviewTab
+			and overviewMenu._overviewTab.Text == "Home"
+			and not overviewMenu._overviewTab.Container.ScrollingEnabled
+			and overviewMenu._overviewTab.Container.ScrollBarThickness == 0,
+		"Stats table must create a fixed non-scrolling Overview tab"
+	)
+	assert(
+		overviewMenu.StatusLabel == nil
+			and overviewMenu._overviewTab.Container:FindFirstChild("Profile")
+			and overviewMenu._overviewTab.Container:FindFirstChild("Game")
+			and overviewMenu._overviewTab.Container:FindFirstChild("Server")
+			and overviewMenu._overviewTab.Container:FindFirstChild("Support"),
+		"Overview must replace topbar stats with the configured premium cards"
+	)
+	assert(
+		overviewMenu._overviewTab.Container.Support:FindFirstChild("SupportButton"),
+		"Discord support must use one compact custom button"
+	)
+	assert(overviewMenu:SetTheme("Light"), "Overview must support runtime theme changes")
+	assert(
+		overviewMenu._overviewTab.Container.Profile.BackgroundColor3 == overviewMenu.Theme.Element
+			and overviewMenu._overviewTab.Container.Support.SupportButton.BackgroundColor3
+				== overviewMenu.Theme.ElementHover,
+		"Overview cards and support action must follow the active theme"
+	)
+	overviewMenu._overviewTab:Destroy()
+	assert(
+		overviewMenu._overviewTab == nil and #overviewMenu._overviewConns == 0,
+		"destroying the Overview tab must disconnect its session listeners"
+	)
+	overviewMenu:Destroy()
+	local minimalOverview = FyyUI.Menu({ Stats = true })
+	assert(
+		minimalOverview._overviewTab and not minimalOverview._overviewTab.Container:FindFirstChild("Support"),
+		"Stats=true must create the default Overview without an empty support card"
+	)
+	minimalOverview:Destroy()
+	local supportOnlyOverview = FyyUI.Menu({
+		Stats = {
+			ShowProfile = false,
+			ShowGame = false,
+			ShowServer = false,
+			ShowSupport = true,
+		},
+		Support = { Callback = function() end },
+	})
+	local supportOnlyCard = supportOnlyOverview._overviewTab.Container:FindFirstChild("Support")
+	assert(
+		supportOnlyCard and supportOnlyCard.Position.Y.Offset >= 40 and supportOnlyCard.Position.Y.Offset + 56 <= 276,
+		"support-only Overview must remain centered inside the fixed content area"
+	)
+	supportOnlyOverview:Destroy()
 	local popupShown = menu:ShowDropdownPopup(
 		Vector2.new(0, 0),
 		Vector2.new(36, 36),
@@ -231,7 +306,7 @@ return function(FyyUI)
 	-- v2 is explicitly selected, JSON-safe, and never partially mutates on malformed input.
 	local v2 = menu:ExportConfig({ SchemaVersion = 2 })
 	assert(
-		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.16.0",
+		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.17.0",
 		"explicit v2 export must use the versioned JSON-safe envelope"
 	)
 	assert(v2.Values.numeric == "", "v2 export must preserve blank numeric inputs")
@@ -342,6 +417,15 @@ return function(FyyUI)
 	menu:_minimize()
 	menu:_minimize()
 	assert(menu._minPrevSize == originalSize, "minimize must be idempotent")
+	if menu._minFrame then
+		assert(menu._minFrame.Position == menu._minInitialPos, "first floating icon position must be left-center")
+		menu._minGui.Enabled = true
+		menu.Gui.Enabled = false
+		menu:_restore()
+		assert(menu._restoring and not menu._minFrame.Active, "floating icon must disable immediately during restore")
+		task.wait(0.14)
+		assert(not menu._minGui.Enabled, "floating icon must hide before menu restore finishes")
+	end
 
 	menu:Destroy()
 	local themeOk, themeErr = menu:SetTheme("Dark")
