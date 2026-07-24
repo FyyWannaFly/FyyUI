@@ -233,6 +233,8 @@ function Menu.new(options, theme)
 	self.SupportConfig = supportOptions
 	self.Tabs = {}
 	self._flagRegistry = {}
+	self._pendingConfigValues = {}
+	self._configTabs = {}
 	self._keybindList = {}
 	self._capturingKeybind = nil
 	self._selectionOrder = 0
