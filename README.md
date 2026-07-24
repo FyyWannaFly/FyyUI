@@ -43,6 +43,7 @@ You should see a window with a **Main** tab and an interactive toggle.
 - [Configuration](docs/CONFIGURATION.md) — flags, legacy snapshots, JSON-safe v2, and import errors.
 - [Accessibility and device support](docs/ACCESSIBILITY.md) — responsive layout, touch, keyboard, gamepad, and reduced motion.
 - [Troubleshooting](docs/TROUBLESHOOTING.md) — setup, configuration, popup, and lifecycle fixes.
+- [Architecture and build](docs/ARCHITECTURE.md) — modular source tree and deterministic one-file bundling.
 
 ## Security model
 
