@@ -579,7 +579,10 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+		U.Create(
+			"UIStroke",
+			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
+		)
 
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
@@ -764,7 +767,10 @@ return (function()
 			isFiniteNumber(self.Min) and isFiniteNumber(self.Max) and self.Min <= self.Max,
 			"FyyUI Slider: Min and Max must be finite numbers with Min <= Max"
 		)
-		assert(isFiniteNumber(self.Step) and self.Step > 0, "FyyUI Slider: Step must be a finite number greater than zero")
+		assert(
+			isFiniteNumber(self.Step) and self.Step > 0,
+			"FyyUI Slider: Step must be a finite number greater than zero"
+		)
 		local default = options.Default == nil and self.Min or options.Default
 		assert(isFiniteNumber(default), "FyyUI Slider: Default must be a finite number")
 		self.Value = math.clamp(default, self.Min, self.Max)
@@ -791,7 +797,10 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+		U.Create(
+			"UIStroke",
+			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
+		)
 
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
@@ -880,8 +889,10 @@ return (function()
 				return
 			end
 			if
-				(input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch)
-				and dragging
+				(
+					input.UserInputType == Enum.UserInputType.MouseMovement
+					or input.UserInputType == Enum.UserInputType.Touch
+				) and dragging
 			then
 				local absPos = self.Track.AbsolutePosition.X
 				local size = self.Track.AbsoluteSize.X
@@ -1100,7 +1111,10 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+		U.Create(
+			"UIStroke",
+			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
+		)
 
 		U.Create("TextLabel", {
 			Name = "Label",
@@ -1630,7 +1644,10 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+		U.Create(
+			"UIStroke",
+			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
+		)
 
 		-- Label
 		self.Label = U.Create("TextLabel", {
@@ -1955,7 +1972,10 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+		U.Create(
+			"UIStroke",
+			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
+		)
 
 		-- Label
 		self.Label = U.Create("TextLabel", {
@@ -2172,7 +2192,10 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+		U.Create(
+			"UIStroke",
+			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
+		)
 
 		-- Box
 		local boxSize = 20
@@ -2979,7 +3002,10 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
+		U.Create(
+			"UIStroke",
+			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
+		)
 
 		-- Header button
 		self.Header = U.Create("ImageButton", {
@@ -3864,9 +3890,11 @@ return (function()
 				btn._scaleTween:Cancel()
 			end
 			btn.Container.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-			btn._scaleTween =
-				game:GetService("TweenService")
-					:Create(_scale, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 0.97 })
+			btn._scaleTween = game:GetService("TweenService"):Create(
+				_scale,
+				TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{ Scale = 0.97 }
+			)
 			btn._scaleTween:Play()
 		end)
 		btn.Container.MouseButton1Up:Connect(function()
@@ -4554,6 +4582,11 @@ return (function()
 		self._paletteResultButtons = {}
 		self._paletteSelectedIndex = 0
 		self._overviewConns = {}
+		self._inputCapturePrefix = ("FyyUI_%s_%s"):format(
+			tostring(self):gsub("[^%w]", ""),
+			tostring(os.clock()):gsub("%D", "")
+		)
+		self._capturedActions = {}
 		self.Minimized = false
 		self._restoring = false
 		self._minimizeToken = 0
@@ -4573,7 +4606,10 @@ return (function()
 			"FyyUI Menu: MinSize and MaxSize must be Vector2 values"
 		)
 		assert(
-			isFiniteNumber(self.MinSize.X) and isFiniteNumber(self.MinSize.Y) and self.MinSize.X > 0 and self.MinSize.Y > 0,
+			isFiniteNumber(self.MinSize.X)
+				and isFiniteNumber(self.MinSize.Y)
+				and self.MinSize.X > 0
+				and self.MinSize.Y > 0,
 			"FyyUI Menu: MinSize must be positive"
 		)
 		assert(
@@ -4697,7 +4733,8 @@ return (function()
 				end
 				local s = self.Frame.Size
 				self._shadow.Size = UDim2.fromOffset(s.X.Offset + 16, s.Y.Offset + 16)
-				self._shadow.Position = UDim2.fromOffset(self.Frame.Position.X.Offset - 8, self.Frame.Position.Y.Offset - 8)
+				self._shadow.Position =
+					UDim2.fromOffset(self.Frame.Position.X.Offset - 8, self.Frame.Position.Y.Offset - 8)
 			end
 		end
 
@@ -4716,6 +4753,17 @@ return (function()
 			Position = UDim2.new(0, 0, 1, -theme.CornerRadius),
 			BackgroundColor3 = theme.Topbar,
 			BorderSizePixel = 0,
+			Parent = self.Topbar,
+		})
+		self.TopbarDragSurface = U.Create("TextButton", {
+			Name = "DragSurface",
+			Size = UDim2.new(1, 0, 1, 0),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Text = "",
+			AutoButtonColor = false,
+			Active = true,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 
@@ -4744,6 +4792,7 @@ return (function()
 					Position = UDim2.new(0, rightMargin, 0, 0),
 					BackgroundTransparency = 1,
 					AutoButtonColor = false,
+					ZIndex = 3,
 					Parent = self.Topbar,
 				})
 				self:_makeSelectable(b)
@@ -4798,6 +4847,7 @@ return (function()
 					Position = UDim2.new(1, xOff, 0, 0),
 					BackgroundTransparency = 1,
 					AutoButtonColor = false,
+					ZIndex = 3,
 					Parent = self.Topbar,
 				})
 				self:_makeSelectable(b)
@@ -4865,6 +4915,7 @@ return (function()
 			BackgroundTransparency = 1,
 			Image = "rbxassetid://90892630150011",
 			ScaleType = Enum.ScaleType.Fit,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 
@@ -4884,6 +4935,7 @@ return (function()
 			TextColor3 = theme.Accent,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Visible = false,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 		self.Title = U.Create("TextLabel", {
@@ -4896,6 +4948,7 @@ return (function()
 			TextSize = titleSize,
 			TextColor3 = theme.TextPrimary,
 			TextXAlignment = titleAlign == "Right" and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 		self._refreshTitle = function()
@@ -5074,7 +5127,10 @@ return (function()
 			-- Dragging with click/drag distinction
 			local dragging, dragStart, startPos, didDrag
 			self._minFrame.InputBegan:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+				if
+					i.UserInputType == Enum.UserInputType.MouseButton1
+					or i.UserInputType == Enum.UserInputType.Touch
+				then
 					if self._restoring then
 						return
 					end
@@ -5085,7 +5141,10 @@ return (function()
 				end
 			end)
 			self._minFrame.InputEnded:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+				if
+					i.UserInputType == Enum.UserInputType.MouseButton1
+					or i.UserInputType == Enum.UserInputType.Touch
+				then
 					dragging = false
 					if not didDrag then
 						self:_restore()
@@ -5095,7 +5154,10 @@ return (function()
 			self._minDragInputCon = game:GetService("UserInputService").InputChanged:Connect(function(i)
 				if
 					dragging
-					and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch)
+					and (
+						i.UserInputType == Enum.UserInputType.MouseMovement
+						or i.UserInputType == Enum.UserInputType.Touch
+					)
 				then
 					local delta = i.Position - dragStart
 					if delta.Magnitude > 5 then
@@ -5136,7 +5198,10 @@ return (function()
 			-- No-logo drag parity: allow repositioning the restore button
 			local nlDragging, nlDragStart, nlStartPos, nlDidDrag
 			self._noLogoRestoreBtn.InputBegan:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+				if
+					i.UserInputType == Enum.UserInputType.MouseButton1
+					or i.UserInputType == Enum.UserInputType.Touch
+				then
 					if self._restoring then
 						return
 					end
@@ -5147,7 +5212,10 @@ return (function()
 				end
 			end)
 			self._noLogoRestoreBtn.InputEnded:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+				if
+					i.UserInputType == Enum.UserInputType.MouseButton1
+					or i.UserInputType == Enum.UserInputType.Touch
+				then
 					nlDragging = false
 					if not nlDidDrag then
 						self:_restore()
@@ -5157,7 +5225,10 @@ return (function()
 			self._noLogoDragCon = game:GetService("UserInputService").InputChanged:Connect(function(i)
 				if
 					nlDragging
-					and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch)
+					and (
+						i.UserInputType == Enum.UserInputType.MouseMovement
+						or i.UserInputType == Enum.UserInputType.Touch
+					)
 				then
 					local delta = i.Position - nlDragStart
 					if delta.Magnitude > 5 then
@@ -5359,6 +5430,9 @@ return (function()
 			return
 		end
 		self:HideDropdownPopup()
+		if self.ActiveTab and self.ActiveTab._isOverview then
+			self:_releaseInput("OverviewWheel")
+		end
 		local offsetY = 36
 
 		-- Hide old tab content immediately (no glitchy slide-out)
@@ -5426,7 +5500,8 @@ return (function()
 		local textService = game:GetService("TextService")
 		local longestOptionWidth = 0
 		for _, option in ipairs(opts) do
-			local measured = textService:GetTextSize(tostring(option), theme.FontSize, theme.Font, Vector2.new(1000, 100)).X
+			local measured =
+				textService:GetTextSize(tostring(option), theme.FontSize, theme.Font, Vector2.new(1000, 100)).X
 			longestOptionWidth = math.max(longestOptionWidth, measured)
 		end
 		local PANEL_CHROME = 78
@@ -5438,62 +5513,51 @@ return (function()
 		local rightRoom = viewport.X - rightEdge - 4 -- 4px margin from screen edge
 		local leftRoom = frameAbs.X - 4 -- space to the left of the menu
 		local w, px
-		local modal = false
-		if rightRoom >= COMFORT_W then
+		local placement
+		if not self._compact and rightRoom >= COMFORT_W then
 			-- Right side: comfortable space for full panel
 			w = math.min(PREF_W, rightRoom)
 			px = frameSiz.X
-		elseif rightRoom >= USABLE_W then
-			-- Right side constrained but still large enough for valid content
-			w = rightRoom
-			px = frameSiz.X
-		elseif leftRoom >= COMFORT_W then
+			placement = "ExteriorRight"
+		elseif not self._compact and leftRoom >= COMFORT_W then
 			-- Right side insufficient → left fallback with comfortable width
 			w = math.min(PREF_W, leftRoom)
 			px = -w
-		elseif leftRoom >= USABLE_W then
-			-- Left side constrained but still large enough for valid content
-			w = leftRoom
-			px = -w
+			placement = "ExteriorLeft"
 		else
-			-- On narrow/mobile viewports, present a centered modal instead of
-			-- creating an unusable side panel or leaving the dropdown "open".
-			modal = true
-			w = math.min(360, math.max(1, viewport.X - self.SafePadding * 2))
-			px = 0
+			-- Compact fallback: keep the panel inside the menu, aligned to the right.
+			placement = "InteriorRight"
+			local interiorPadding = 8
+			w = math.min(PREF_W, math.max(USABLE_W, frameSiz.X - interiorPadding * 2))
+			px = frameSiz.X - interiorPadding - w
 		end
 
-		-- Classic desktop side panel fills the complete menu height. Narrow
-		-- viewports keep the centered modal behavior and safe viewport padding.
+		-- Side panels fill the menu height. Interior panels stay below the topbar.
 		local OPT_H = math.max(32, self.TouchTargetSize)
 		local clampedH = frameSiz.Y
-		if modal then
-			clampedH = math.max(1, math.min(frameSiz.Y, viewport.Y - self.SafePadding * 2))
+		if placement == "InteriorRight" then
+			local topInset = self.Topbar.AbsoluteSize.Y + 8
+			local bottomInset = 8
+			clampedH = math.max(80, frameSiz.Y - topInset - bottomInset)
+			local triggerTop = atPos.Y - frameAbs.Y
+			local belowY = triggerTop + atSize.Y + 4
+			local aboveY = triggerTop - clampedH - 4
+			if belowY + clampedH <= frameSiz.Y - bottomInset then
+				py = belowY
+			elseif aboveY >= topInset then
+				py = aboveY
+			else
+				py = topInset
+			end
 		end
 		local popupParent = self.Frame
-		if modal then
-			self._activePopupOverlay = U.Create("ImageButton", {
-				Name = "DropdownOverlay",
-				Size = UDim2.new(1, 0, 1, 0),
-				BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-				BackgroundTransparency = 0.48,
-				BorderSizePixel = 0,
-				AutoButtonColor = false,
-				ZIndex = 9999,
-				Parent = self.Gui,
-			})
-			self._activePopupOverlay.MouseButton1Click:Connect(function()
-				self:HideDropdownPopup()
-			end)
-			popupParent = self.Gui
-		end
 
 		-- Create popup with 0 width → tween to slide in from right
 		local popup = U.Create("Frame", {
-			Name = modal and "DropdownModal" or "DropdownPopup",
+			Name = "DropdownPopup",
 			Size = UDim2.fromOffset(0, clampedH),
-			Position = modal and UDim2.fromScale(0.5, 0.5) or UDim2.fromOffset(px, py),
-			AnchorPoint = modal and Vector2.new(0.5, 0.5) or Vector2.new(0, 0),
+			Position = UDim2.fromOffset(px, py),
+			AnchorPoint = Vector2.new(0, 0),
 			BackgroundColor3 = theme.Sidebar,
 			BorderSizePixel = 0,
 			ZIndex = 10000,
@@ -5525,7 +5589,7 @@ return (function()
 			BorderSizePixel = 0,
 			BackgroundTransparency = 0.3,
 			ZIndex = 10001,
-			Visible = not modal,
+			Visible = placement ~= "InteriorRight",
 			Parent = popup,
 		})
 
@@ -5635,7 +5699,15 @@ return (function()
 		end
 
 		self._activePopupFrame = popup
-		self._activePopupModal = modal
+		self._activePopupModal = false
+		self._activePopupPlacement = placement
+		self._activePopupBounds = {
+			X = px,
+			Y = py,
+			Width = w,
+			Height = clampedH,
+			Placement = placement,
+		}
 		self:_transition(popup, 0.25, { Size = UDim2.fromOffset(w, clampedH) })
 		if self._popupFocusReturn and firstOptionButton then
 			game:GetService("GuiService").SelectedObject = firstOptionButton
@@ -5659,7 +5731,8 @@ return (function()
 				if not activePopup then
 					return
 				end
-				local point, popupPos, popupSize = input.Position, activePopup.AbsolutePosition, activePopup.AbsoluteSize
+				local point, popupPos, popupSize =
+					input.Position, activePopup.AbsolutePosition, activePopup.AbsoluteSize
 				local insidePopup = point.X >= popupPos.X
 					and point.X <= popupPos.X + popupSize.X
 					and point.Y >= popupPos.Y
@@ -5699,6 +5772,8 @@ return (function()
 			self._activePopupOverlay = nil
 		end
 		self._activePopupModal = nil
+		self._activePopupPlacement = nil
+		self._activePopupBounds = nil
 		local focusReturn = self._popupFocusReturn
 		self._popupFocusReturn = nil
 		self:_restoreTransientFocus(focusReturn)
@@ -5733,6 +5808,22 @@ return (function()
 		root.ScrollBarThickness = 0
 		root.ScrollingEnabled = false
 		root.CanvasSize = UDim2.fromOffset(0, 0)
+		root.Active = true
+		local overviewHovered = false
+		local function releaseOverviewWheel()
+			overviewHovered = false
+			self:_releaseInput("OverviewWheel")
+		end
+		table.insert(
+			overviewConns,
+			root.MouseEnter:Connect(function()
+				if self.ActiveTab == tab and self.Visible and not self.Minimized then
+					overviewHovered = true
+					self:_captureInput("OverviewWheel", { Enum.UserInputType.MouseWheel })
+				end
+			end)
+		)
+		table.insert(overviewConns, root.MouseLeave:Connect(releaseOverviewWheel))
 		for _, child in ipairs(root:GetChildren()) do
 			if child:IsA("UIListLayout") or child:IsA("UIPadding") then
 				child:Destroy()
@@ -6131,6 +6222,7 @@ return (function()
 					end
 				end
 			end
+			releaseOverviewWheel()
 			table.clear(overviewConns)
 			if self._overviewTab == overview then
 				self._overviewTab = nil
@@ -6492,7 +6584,10 @@ return (function()
 		local title = options.Title or ""
 		local content = options.Content or (options.Text and tostring(options.Text)) or ""
 		local duration = options.Duration == nil and 3 or options.Duration
-		assert(isFiniteNumber(duration) and duration >= 0, "FyyUI Notify: Duration must be a non-negative finite number")
+		assert(
+			isFiniteNumber(duration) and duration >= 0,
+			"FyyUI Notify: Duration must be a non-negative finite number"
+		)
 		local notifType = options.Type or "Info"
 		local theme = self.Theme
 
@@ -6933,33 +7028,82 @@ return (function()
 			end
 		end
 	end
+	function Menu:_captureInput(key, inputTypes)
+		local contextActionService = game:GetService("ContextActionService")
+		local actionName = self._inputCapturePrefix .. "_" .. key
+		if self._capturedActions[actionName] then
+			return actionName
+		end
+		contextActionService:BindActionAtPriority(actionName, function()
+			return Enum.ContextActionResult.Sink
+		end, false, 3100, table.unpack(inputTypes))
+		self._capturedActions[actionName] = true
+		return actionName
+	end
+
+	function Menu:_releaseInput(key)
+		local actionName = self._inputCapturePrefix .. "_" .. key
+		if not self._capturedActions[actionName] then
+			return
+		end
+		game:GetService("ContextActionService"):UnbindAction(actionName)
+		self._capturedActions[actionName] = nil
+	end
+
+	function Menu:_releaseAllInputCaptures()
+		local contextActionService = game:GetService("ContextActionService")
+		for actionName in pairs(self._capturedActions or {}) do
+			contextActionService:UnbindAction(actionName)
+		end
+		table.clear(self._capturedActions)
+	end
+
 	function Menu:_dragging()
-		local topbar = self.Topbar
+		local dragSurface = self.TopbarDragSurface or self.Topbar
 		local frame = self.Frame
 		local shadow = self._shadow
-		local dragging, ds, sp
+		local dragging, dragInput, ds, sp
 		local uis = game:GetService("UserInputService")
 		local CLAMP_MARGIN = 40
 
-		topbar.InputBegan:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-				dragging = true
-				ds = input.Position
-				sp = frame.Position
-			end
-		end)
-		self._dragInputCon = uis.InputChanged:Connect(function(input, gpe)
-			if gpe then
+		local function stopDragging(input)
+			if not dragging then
 				return
 			end
-			if
-				(input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch)
-				and dragging
-			then
+			local t = input and input.UserInputType
+			if dragInput and input and input ~= dragInput and t ~= Enum.UserInputType.MouseButton1 then
+				return
+			end
+			dragging = false
+			dragInput = nil
+			self:_releaseInput("WindowDrag")
+		end
+
+		dragSurface.InputBegan:Connect(function(input)
+			local t = input.UserInputType
+			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+				self:HideDropdownPopup()
+				dragging = true
+				dragInput = input
+				ds = input.Position
+				sp = frame.Position
+				if t == Enum.UserInputType.Touch then
+					self:_captureInput("WindowDrag", { Enum.UserInputType.Touch })
+				end
+			end
+		end)
+		self._dragInputCon = uis.InputChanged:Connect(function(input)
+			local t = input.UserInputType
+			local isMouseDrag = dragging and dragInput and dragInput.UserInputType == Enum.UserInputType.MouseButton1
+			local isTouchDrag = dragging
+				and dragInput
+				and dragInput.UserInputType == Enum.UserInputType.Touch
+				and input == dragInput
+			if (isMouseDrag and t == Enum.UserInputType.MouseMovement) or isTouchDrag then
 				local delta = input.Position - ds
 				-- Clamp so at least CLAMP_MARGIN px of the frame stays visible in the viewport
-				local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+				local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+					or Vector2.new(1920, 1080)
 				local fs = frame.AbsoluteSize
 				local rawX = sp.X.Scale * viewport.X + sp.X.Offset + delta.X
 				local rawY = sp.Y.Scale * viewport.Y + sp.Y.Offset + delta.Y
@@ -6981,16 +7125,24 @@ return (function()
 				end
 			end
 		end)
-		topbar.InputEnded:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-				dragging = false
+		dragSurface.InputEnded:Connect(stopDragging)
+		self._dragEndCon = uis.InputEnded:Connect(function(input)
+			if
+				input == dragInput
+				or (
+					dragInput
+					and dragInput.UserInputType == Enum.UserInputType.MouseButton1
+					and input.UserInputType == Enum.UserInputType.MouseButton1
+				)
+			then
+				stopDragging(input)
 			end
 		end)
 	end
 
 	function Menu:_closeTransientUi()
 		self:HideDropdownPopup()
+		self:_releaseInput("OverviewWheel")
 		self:CloseCommandPalette()
 		self._tooltipPending = false
 		self._tooltipTarget = nil
@@ -7074,6 +7226,8 @@ return (function()
 		if self.Minimized then
 			return true
 		end
+		self:_releaseInput("OverviewWheel")
+		self:_releaseInput("WindowDrag")
 		self:_closeTransientUi()
 		self:_setInternalsVisible(false)
 		self.Minimized = true
@@ -7373,7 +7527,9 @@ return (function()
 			-- Mouse: any MouseButton1 release stops resize.
 			-- Touch: only the specific initiating touch release stops resize.
 			if resizing then
-				if t == Enum.UserInputType.MouseButton1 or (t == Enum.UserInputType.Touch and input == resizeInputObj) then
+				if
+					t == Enum.UserInputType.MouseButton1 or (t == Enum.UserInputType.Touch and input == resizeInputObj)
+				then
 					resizing = false
 					resizeInputObj = nil
 				end
@@ -7413,6 +7569,8 @@ return (function()
 			end
 		else
 			-- Deliberately hidden: close dropdown, suppress restore/notif GUIs
+			self:_releaseInput("OverviewWheel")
+			self:_releaseInput("WindowDrag")
 			self:_closeTransientUi()
 			if self._minGui then
 				self._minGui.Enabled = false
@@ -7494,7 +7652,10 @@ return (function()
 			Parent = frame,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = popup })
-		U.Create("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.88, Thickness = 1, Parent = popup })
+		U.Create(
+			"UIStroke",
+			{ Color = Color3.fromRGB(255, 255, 255), Transparency = 0.88, Thickness = 1, Parent = popup }
+		)
 
 		-- Title
 		U.Create("TextLabel", {
@@ -7615,6 +7776,7 @@ return (function()
 			return
 		end
 		self:_closeTransientUi()
+		self:_releaseAllInputCaptures()
 		self._destroyed = true
 		self._minimizeToken = (self._minimizeToken or 0) + 1
 		if self._activeNotifs then
@@ -7643,6 +7805,10 @@ return (function()
 		if self._dragInputCon then
 			self._dragInputCon:Disconnect()
 			self._dragInputCon = nil
+		end
+		if self._dragEndCon then
+			self._dragEndCon:Disconnect()
+			self._dragEndCon = nil
 		end
 		if self._minDragInputCon then
 			self._minDragInputCon:Disconnect()
