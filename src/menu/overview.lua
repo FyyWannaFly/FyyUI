@@ -13,6 +13,22 @@ function Menu:_createOverview()
 	root.ScrollBarThickness = 0
 	root.ScrollingEnabled = false
 	root.CanvasSize = UDim2.fromOffset(0, 0)
+	root.Active = true
+	local overviewHovered = false
+	local function releaseOverviewWheel()
+		overviewHovered = false
+		self:_releaseInput("OverviewWheel")
+	end
+	table.insert(
+		overviewConns,
+		root.MouseEnter:Connect(function()
+			if self.ActiveTab == tab and self.Visible and not self.Minimized then
+				overviewHovered = true
+				self:_captureInput("OverviewWheel", { Enum.UserInputType.MouseWheel })
+			end
+		end)
+	)
+	table.insert(overviewConns, root.MouseLeave:Connect(releaseOverviewWheel))
 	for _, child in ipairs(root:GetChildren()) do
 		if child:IsA("UIListLayout") or child:IsA("UIPadding") then
 			child:Destroy()
@@ -411,6 +427,7 @@ function Menu:_createOverview()
 				end
 			end
 		end
+		releaseOverviewWheel()
 		table.clear(overviewConns)
 		if self._overviewTab == overview then
 			self._overviewTab = nil

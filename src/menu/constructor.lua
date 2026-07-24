@@ -248,6 +248,11 @@ function Menu.new(options, theme)
 	self._paletteResultButtons = {}
 	self._paletteSelectedIndex = 0
 	self._overviewConns = {}
+	self._inputCapturePrefix = ("FyyUI_%s_%s"):format(
+		tostring(self):gsub("[^%w]", ""),
+		tostring(os.clock()):gsub("%D", "")
+	)
+	self._capturedActions = {}
 	self.Minimized = false
 	self._restoring = false
 	self._minimizeToken = 0
@@ -412,6 +417,17 @@ function Menu.new(options, theme)
 		BorderSizePixel = 0,
 		Parent = self.Topbar,
 	})
+	self.TopbarDragSurface = U.Create("TextButton", {
+		Name = "DragSurface",
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		Active = true,
+		ZIndex = 2,
+		Parent = self.Topbar,
+	})
 
 	local topCfg = options.Topbar or {}
 	local btnType = topCfg.ButtonsType or "Default"
@@ -438,6 +454,7 @@ function Menu.new(options, theme)
 				Position = UDim2.new(0, rightMargin, 0, 0),
 				BackgroundTransparency = 1,
 				AutoButtonColor = false,
+				ZIndex = 3,
 				Parent = self.Topbar,
 			})
 			self:_makeSelectable(b)
@@ -492,6 +509,7 @@ function Menu.new(options, theme)
 				Position = UDim2.new(1, xOff, 0, 0),
 				BackgroundTransparency = 1,
 				AutoButtonColor = false,
+				ZIndex = 3,
 				Parent = self.Topbar,
 			})
 			self:_makeSelectable(b)
@@ -559,6 +577,7 @@ function Menu.new(options, theme)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://90892630150011",
 		ScaleType = Enum.ScaleType.Fit,
+		ZIndex = 2,
 		Parent = self.Topbar,
 	})
 
@@ -578,6 +597,7 @@ function Menu.new(options, theme)
 		TextColor3 = theme.Accent,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Visible = false,
+		ZIndex = 2,
 		Parent = self.Topbar,
 	})
 	self.Title = U.Create("TextLabel", {
@@ -590,6 +610,7 @@ function Menu.new(options, theme)
 		TextSize = titleSize,
 		TextColor3 = theme.TextPrimary,
 		TextXAlignment = titleAlign == "Right" and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
+		ZIndex = 2,
 		Parent = self.Topbar,
 	})
 	self._refreshTitle = function()

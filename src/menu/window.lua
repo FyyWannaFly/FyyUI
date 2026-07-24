@@ -1,27 +1,75 @@
+function Menu:_captureInput(key, inputTypes)
+	local contextActionService = game:GetService("ContextActionService")
+	local actionName = self._inputCapturePrefix .. "_" .. key
+	if self._capturedActions[actionName] then
+		return actionName
+	end
+	contextActionService:BindActionAtPriority(actionName, function()
+		return Enum.ContextActionResult.Sink
+	end, false, 3100, table.unpack(inputTypes))
+	self._capturedActions[actionName] = true
+	return actionName
+end
+
+function Menu:_releaseInput(key)
+	local actionName = self._inputCapturePrefix .. "_" .. key
+	if not self._capturedActions[actionName] then
+		return
+	end
+	game:GetService("ContextActionService"):UnbindAction(actionName)
+	self._capturedActions[actionName] = nil
+end
+
+function Menu:_releaseAllInputCaptures()
+	local contextActionService = game:GetService("ContextActionService")
+	for actionName in pairs(self._capturedActions or {}) do
+		contextActionService:UnbindAction(actionName)
+	end
+	table.clear(self._capturedActions)
+end
+
 function Menu:_dragging()
-	local topbar = self.Topbar
+	local dragSurface = self.TopbarDragSurface or self.Topbar
 	local frame = self.Frame
 	local shadow = self._shadow
-	local dragging, ds, sp
+	local dragging, dragInput, ds, sp
 	local uis = game:GetService("UserInputService")
 	local CLAMP_MARGIN = 40
 
-	topbar.InputBegan:Connect(function(input)
-		local t = input.UserInputType
-		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-			dragging = true
-			ds = input.Position
-			sp = frame.Position
-		end
-	end)
-	self._dragInputCon = uis.InputChanged:Connect(function(input, gpe)
-		if gpe then
+	local function stopDragging(input)
+		if not dragging then
 			return
 		end
-		if
-			(input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch)
-			and dragging
-		then
+		local t = input and input.UserInputType
+		if dragInput and input and input ~= dragInput and t ~= Enum.UserInputType.MouseButton1 then
+			return
+		end
+		dragging = false
+		dragInput = nil
+		self:_releaseInput("WindowDrag")
+	end
+
+	dragSurface.InputBegan:Connect(function(input)
+		local t = input.UserInputType
+		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+			self:HideDropdownPopup()
+			dragging = true
+			dragInput = input
+			ds = input.Position
+			sp = frame.Position
+			if t == Enum.UserInputType.Touch then
+				self:_captureInput("WindowDrag", { Enum.UserInputType.Touch })
+			end
+		end
+	end)
+	self._dragInputCon = uis.InputChanged:Connect(function(input)
+		local t = input.UserInputType
+		local isMouseDrag = dragging and dragInput and dragInput.UserInputType == Enum.UserInputType.MouseButton1
+		local isTouchDrag = dragging
+			and dragInput
+			and dragInput.UserInputType == Enum.UserInputType.Touch
+			and input == dragInput
+		if (isMouseDrag and t == Enum.UserInputType.MouseMovement) or isTouchDrag then
 			local delta = input.Position - ds
 			-- Clamp so at least CLAMP_MARGIN px of the frame stays visible in the viewport
 			local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
@@ -46,16 +94,24 @@ function Menu:_dragging()
 			end
 		end
 	end)
-	topbar.InputEnded:Connect(function(input)
-		local t = input.UserInputType
-		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-			dragging = false
+	dragSurface.InputEnded:Connect(stopDragging)
+	self._dragEndCon = uis.InputEnded:Connect(function(input)
+		if
+			input == dragInput
+			or (
+				dragInput
+				and dragInput.UserInputType == Enum.UserInputType.MouseButton1
+				and input.UserInputType == Enum.UserInputType.MouseButton1
+			)
+		then
+			stopDragging(input)
 		end
 	end)
 end
 
 function Menu:_closeTransientUi()
 	self:HideDropdownPopup()
+	self:_releaseInput("OverviewWheel")
 	self:CloseCommandPalette()
 	self._tooltipPending = false
 	self._tooltipTarget = nil
@@ -139,6 +195,8 @@ function Menu:_minimize()
 	if self.Minimized then
 		return true
 	end
+	self:_releaseInput("OverviewWheel")
+	self:_releaseInput("WindowDrag")
 	self:_closeTransientUi()
 	self:_setInternalsVisible(false)
 	self.Minimized = true
@@ -478,6 +536,8 @@ function Menu:SetVisible(v)
 		end
 	else
 		-- Deliberately hidden: close dropdown, suppress restore/notif GUIs
+		self:_releaseInput("OverviewWheel")
+		self:_releaseInput("WindowDrag")
 		self:_closeTransientUi()
 		if self._minGui then
 			self._minGui.Enabled = false
@@ -680,6 +740,7 @@ function Menu:Destroy()
 		return
 	end
 	self:_closeTransientUi()
+	self:_releaseAllInputCaptures()
 	self._destroyed = true
 	self._minimizeToken = (self._minimizeToken or 0) + 1
 	if self._activeNotifs then
@@ -708,6 +769,10 @@ function Menu:Destroy()
 	if self._dragInputCon then
 		self._dragInputCon:Disconnect()
 		self._dragInputCon = nil
+	end
+	if self._dragEndCon then
+		self._dragEndCon:Disconnect()
+		self._dragEndCon = nil
 	end
 	if self._minDragInputCon then
 		self._minDragInputCon:Disconnect()
