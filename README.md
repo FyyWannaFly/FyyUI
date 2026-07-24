@@ -2,7 +2,7 @@
 
 FyyUI is a local Roblox Luau UI library for tabs, controls, command-palette navigation, responsive layouts, and persisted settings.
 
-Current release: **v0.16.0**.
+Current release: **v0.17.0**.
 
 ## Quick start
 
@@ -19,6 +19,8 @@ local menu = FyyUI.Menu({
 	Resizable = true,
 	Responsive = true,
 	ReducedMotion = false,
+	Stats = true,
+	Support = { Discord = "https://discord.gg/example" },
 })
 
 local tab = menu:Tab({ Text = "Main", Icon = "home" })
@@ -54,7 +56,7 @@ FyyUI automatically loads the Lucide icon provider from the configured GitHub so
 
 ## Release highlights
 
-v0.16.0 adds responsive 1:1 Columns to Tabs and Collapsibles, including compact stacking and independent Collapsible flows, and removes notification exit jumps by freezing the exiting card before a smooth rightward fade.
+v0.17.0 replaces topbar FPS/ping with a fixed premium Overview tab for profile, game, server, and optional Discord support, and synchronizes floating-icon restore motion.
 
 ## License and contributions
 
