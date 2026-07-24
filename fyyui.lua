@@ -1104,7 +1104,7 @@ return (function()
 		self.Open = false
 		self.HasDesc = self.Description ~= nil and self.Description ~= ""
 		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
-		local btnW = 100
+		local btnW = options._compactControl and 88 or 100
 
 		self.Container = U.Create("Frame", {
 			Name = "Dropdown",
@@ -2339,8 +2339,8 @@ return (function()
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
 
-		-- Right-side icon (default: mouse-pointer-2, customizable via Icon option)
-		renderIcon(btn.Container, options.Icon or "mouse-pointer-2", {
+		-- Right-side icon (default: rocket, customizable via Icon option)
+		renderIcon(btn.Container, options.Icon or "rocket", {
 			Name = "Pointer",
 			Size = UDim2.fromOffset(26, 26),
 			Position = UDim2.new(1, -38, 0.5, -13),
@@ -3174,7 +3174,12 @@ return (function()
 			return nil, "destroyed"
 		end
 		opts = opts or {}
-		local c = Dropdown.new(self.Content, opts, self.Theme, self._menu or nil)
+		local dropdownOpts = {}
+		for k, v in pairs(opts) do
+			dropdownOpts[k] = v
+		end
+		dropdownOpts._compactControl = true
+		local c = Dropdown.new(self.Content, dropdownOpts, self.Theme, self._menu or nil)
 		table.insert(self.Components, c)
 		if c.Flag and self._menu then
 			self._menu:_trackFlagged(c)
@@ -3238,10 +3243,10 @@ return (function()
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
-		renderIcon(btn.Container, opts.Icon or "mouse-pointer-2", {
+		renderIcon(btn.Container, opts.Icon or "rocket", {
 			Name = "Pointer",
-			Size = UDim2.fromOffset(42, 42),
-			Position = UDim2.new(1, -48, 0.5, -16),
+			Size = UDim2.fromOffset(26, 26),
+			Position = UDim2.new(1, -38, 0.5, -13),
 			ImageTransparency = 0.5,
 		})
 		local ix = 10
@@ -3651,7 +3656,12 @@ return (function()
 			return nil, "destroyed"
 		end
 		opts = opts or {}
-		return self:_mount(Dropdown.new(self.Content, opts, self.Theme, self._menu), opts)
+		local dropdownOpts = {}
+		for k, v in pairs(opts) do
+			dropdownOpts[k] = v
+		end
+		dropdownOpts._compactControl = true
+		return self:_mount(Dropdown.new(self.Content, dropdownOpts, self.Theme, self._menu), opts)
 	end
 
 	function Column:Keybind(opts)
@@ -3720,10 +3730,10 @@ return (function()
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
-		renderIcon(btn.Container, opts.Icon or "mouse-pointer-2", {
+		renderIcon(btn.Container, opts.Icon or "rocket", {
 			Name = "Pointer",
-			Size = UDim2.fromOffset(42, 42),
-			Position = UDim2.new(1, -48, 0.5, -16),
+			Size = UDim2.fromOffset(26, 26),
+			Position = UDim2.new(1, -38, 0.5, -13),
 			ImageTransparency = 0.5,
 		})
 		local ix = 10
@@ -4623,7 +4633,7 @@ return (function()
 				options.Size.Y.Offset + options.Size.Y.Scale * viewport.Y
 			)
 		else
-			size = Vector2.new(601, 344)
+			size = Vector2.new(645, 365)
 		end
 		size = Vector2.new(
 			math.clamp(size.X, self.MinSize.X, self.MaxSize.X),
