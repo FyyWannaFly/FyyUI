@@ -5752,6 +5752,7 @@ return (function()
 		self._overviewTab = tab
 		tab._isOverview = true
 		local root = tab.Container
+		local overviewConns = {}
 		root.Name = "OverviewContent"
 		root.ScrollBarThickness = 0
 		root.ScrollingEnabled = false
@@ -5781,7 +5782,6 @@ return (function()
 		local themed = {}
 		local textStyles = {}
 		local icons = {}
-		local overviewConns = {}
 		local profileEnabled = cfg.ShowProfile
 		local infoEnabled = cfg.ShowGame or cfg.ShowServer
 		local supportEnabled = cfg.ShowSupport and (support.Discord or support.Callback)
