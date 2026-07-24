@@ -6,6 +6,7 @@ local FyyUI = chunk()
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
 	Theme = "Amoled",
+	Size = UDim2.fromOffset(645, 365),
 	Resizable = true,
 	HasOutline = true,
 	Stats = true,
@@ -82,7 +83,7 @@ combatTab:Divider()
 combatTab:Button({
 	Text = "Test Target Lock",
 	Description = "Preview a success notification",
-	Icon = "crosshair",
+	Icon = "rocket",
 	Callback = function()
 		notify("Target Locked", "Aim preview completed successfully.", "Success")
 	end,
@@ -208,7 +209,7 @@ interfaceTab:Divider()
 interfaceTab:Button({
 	Text = "Open Command Palette",
 	Description = "Search tabs and available actions",
-	Icon = "search",
+	Icon = "rocket",
 	Callback = function()
 		menu:ToggleCommandPalette()
 	end,
@@ -225,12 +226,11 @@ local componentColumns = componentsTab:Columns({ Ratio = { 1, 1 }, Gap = 8 })
 local componentLeft = componentColumns:Column()
 local componentRight = componentColumns:Column()
 
-componentLeft:Toggle({ Text = "Left Toggle", Description = "Independent left-column flow", Default = true })
+componentLeft:Toggle({ Text = "Left Toggle", Default = true })
 componentLeft:Slider({ Text = "Left Slider", Min = 0, Max = 100, Default = 65, Suffix = "%" })
 componentRight:Dropdown({ Text = "Right Dropdown", Options = { "Alpha", "Beta", "Gamma" }, Default = "Beta" })
 componentRight:Checkbox({
 	Text = "Right Checkbox",
-	Description = "Cards stay aligned without equal-height panels",
 	Default = true,
 })
 
@@ -243,7 +243,7 @@ leftPanel:Toggle({ Text = "Auto Collect", Default = true })
 leftPanel:Dropdown({ Text = "Collect Type", Options = { "Coins", "Gems", "Crates" }, Default = "Coins" })
 leftPanel:Slider({ Text = "Collect Range", Min = 10, Max = 100, Default = 45, Suffix = " studs" })
 rightPanel:Checkbox({ Text = "Show Markers", Default = true })
-rightPanel:Button({ Text = "Refresh Markers", Icon = "refresh-cw" })
+rightPanel:Button({ Text = "Refresh Markers", Icon = "rocket" })
 
 local nestedColumns = leftPanel:Columns({ Gap = 6 })
 nestedColumns:Column():Checkbox({ Text = "Left Filter", Default = true })
@@ -269,7 +269,7 @@ controlsSection:Keybind({ Text = "Keybind", Default = Enum.KeyCode.K, Mode = "To
 controlsSection:Button({
 	Text = "Icon Button",
 	Description = "Lucide icons are loaded automatically and called by name",
-	Icon = "smile",
+	Icon = "rocket",
 	Callback = function()
 		notify("Icons Ready", "Lucide icon names are loading correctly.", "Info")
 	end,
@@ -278,28 +278,28 @@ controlsSection:Button({
 local feedbackSection = componentsTab:Collapsible("Notifications", { DefaultOpen = false })
 feedbackSection:Button({
 	Text = "Success",
-	Icon = "circle-check",
+	Icon = "rocket",
 	Callback = function()
 		notify("Success", "Everything completed successfully.", "Success")
 	end,
 })
 feedbackSection:Button({
 	Text = "Information",
-	Icon = "info",
+	Icon = "rocket",
 	Callback = function()
 		notify("Information", "This is an informational message.", "Info")
 	end,
 })
 feedbackSection:Button({
 	Text = "Warning",
-	Icon = "triangle-alert",
+	Icon = "rocket",
 	Callback = function()
 		notify("Warning", "Review this action before continuing.", "Warning")
 	end,
 })
 feedbackSection:Button({
 	Text = "Error",
-	Icon = "circle-x",
+	Icon = "rocket",
 	Callback = function()
 		notify("Error", "The demo error notification is working.", "Error")
 	end,
@@ -319,7 +319,7 @@ aboutTab:Divider()
 aboutTab:Button({
 	Text = "Export & Import Config",
 	Description = "Runs a local JSON configuration roundtrip",
-	Icon = "refresh-cw",
+	Icon = "rocket",
 	Callback = function()
 		local json, exportError = menu:ExportConfigJSON()
 		if not json then

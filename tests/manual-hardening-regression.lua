@@ -111,6 +111,7 @@ return function(FyyUI)
 	)
 	local columnToggle = leftColumn:Toggle({ Text = "Column toggle" })
 	local columnDropdown = rightColumn:Dropdown({ Text = "Column dropdown", Options = { "One", "Two" } })
+	local columnButton = rightColumn:Button({ Text = "Column button" })
 	local columnSlider = leftColumn:Slider({ Text = "Column slider", Default = 50 })
 	local columnPanel = leftColumn:Collapsible("Column panel", { DefaultOpen = true })
 	local nestedColumnSlider = columnPanel:Slider({ Text = "Nested column slider", Description = "Track below text" })
@@ -126,6 +127,12 @@ return function(FyyUI)
 	assert(
 		columnSlider.Track.Size.X.Scale == 1 and columnSlider.Track.Position.Y.Scale == 1,
 		"1:1 column slider track must span the lower row"
+	)
+	assert(columnDropdown.SelectBtn.Size.X.Offset == 88, "column dropdown selector must use the compact width")
+	local columnButtonIcon = columnButton.Container:FindFirstChild("Pointer")
+	assert(
+		columnButtonIcon and columnButtonIcon.Size.X.Offset == 26 and columnButtonIcon.Size.Y.Offset == 26,
+		"column button icon must use the compact size"
 	)
 	local nestedFromColumn = rightColumn:Columns({ Gap = 4 })
 	assert(nestedFromColumn and nestedFromColumn:Column(), "columns must support nested columns directly")
@@ -145,6 +152,19 @@ return function(FyyUI)
 	local numeric = tab:Input({ Flag = "numeric", Numeric = true, Default = "" })
 	local collapsible = tab:Collapsible("Rapid toggles")
 	collapsible:Toggle({ Text = "Nested" })
+	local collapsibleDropdown = collapsible:Dropdown({ Text = "Nested dropdown", Options = { "One", "Two" } })
+	local collapsibleButton = collapsible:Button({ Text = "Nested button" })
+	assert(
+		collapsibleDropdown.SelectBtn.Size.X.Offset == 88,
+		"collapsible dropdown selector must use the compact width"
+	)
+	local collapsibleButtonIcon = collapsibleButton.Container:FindFirstChild("Pointer")
+	assert(
+		collapsibleButtonIcon
+			and collapsibleButtonIcon.Size.X.Offset == 26
+			and collapsibleButtonIcon.Size.Y.Offset == 26,
+		"collapsible button icon must use the compact size"
+	)
 	local regularSlider = collapsible:Slider({ Text = "Regular slider" })
 	assert(
 		not regularSlider._inOneToOneColumn and regularSlider.Track.Size.X.Scale == 0,
