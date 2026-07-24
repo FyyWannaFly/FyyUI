@@ -1,8 +1,8 @@
 # FyyUI API Reference
 
-> Applies to FyyUI v0.15.2 · Updated 2026-07-24
+> Applies to FyyUI v0.16.0 · Updated 2026-07-24
 
-This reference describes the public FyyUI v0.15.2 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
+This reference describes the public FyyUI v0.16.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
 
 ## Module
 
@@ -85,7 +85,20 @@ tab:Divider()
 tab:Collapsible(title, options)
 ```
 
-Collapsibles support the same control factories (except nested collapsibles) plus `SetOpen(boolean)`, `ToggleOpen()`, `Open()`, `Close()`, `Destroy()`, and `ApplyTheme(theme)`.
+Collapsibles support the same control factories plus `Columns(options)`, `SetOpen(boolean)`, `ToggleOpen()`, `Open()`, `Close()`, `Destroy()`, and `ApplyTheme(theme)`.
+
+### Responsive Columns
+
+```lua
+local columns = tab:Columns({ Ratio = { 1, 1 }, Gap = 8, StackOnCompact = true })
+local left = columns:Column()
+local right = columns:Column()
+
+left:Toggle({ Text = "Auto Farm" })
+right:Dropdown({ Text = "Target", Options = { "Coins", "Gems" } })
+```
+
+Columns use independent vertical flows on desktop, so Collapsibles keep their natural content heights instead of being forced equal. Compact layouts stack columns vertically in creation order. `Column()` exposes the standard component factories, including nested `Collapsible` and `Columns`.
 
 All controls accept `Tooltip`. Flagged controls also accept `Flag` and participate in configuration export/import.
 
