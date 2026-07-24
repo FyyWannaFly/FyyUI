@@ -783,9 +783,13 @@ return (function()
 		self.Flag = options.Flag
 		self.Theme = theme
 		self.HasDesc = self.Description ~= nil and self.Description ~= ""
-		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
+		self._inOneToOneColumn = options._inOneToOneColumn == true
+		local baseH = self.HasDesc and theme.DescHeight or theme.ElementHeight
+		local h = self._inOneToOneColumn and (baseH + 20) or baseH
 		local trackW = 110
 		local trackX = -(trackW + 74)
+		local textWidth = self._inOneToOneColumn and -88 or -(trackW + 100)
+		local textY = self.HasDesc and 6 or (self._inOneToOneColumn and 7 or (h + 6 - 20) / 2 + 1)
 
 		self.Container = U.Create("Frame", {
 			Name = "Slider",
@@ -804,8 +808,8 @@ return (function()
 
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
-			Size = UDim2.new(1, -(trackW + 100), 0, 20),
-			Position = UDim2.fromOffset(10, self.HasDesc and 6 or (h + 6 - 20) / 2 + 1),
+			Size = UDim2.new(1, textWidth, 0, 20),
+			Position = UDim2.fromOffset(10, textY),
 			BackgroundTransparency = 1,
 			Text = self.Text,
 			Font = theme.Font,
@@ -819,7 +823,7 @@ return (function()
 		self.ValueLabel = U.Create("TextLabel", {
 			Name = "Value",
 			Size = UDim2.fromOffset(54, 20),
-			Position = UDim2.new(1, -68, 0, self.HasDesc and 6 or (h + 6 - 20) / 2 + 1),
+			Position = UDim2.new(1, -68, 0, textY),
 			BackgroundTransparency = 1,
 			Text = tostring(self.Value) .. self.Suffix,
 			Font = theme.FontBold,
@@ -835,8 +839,8 @@ return (function()
 
 		self.Track = U.Create("Frame", {
 			Name = "Track",
-			Size = UDim2.fromOffset(trackW, trackH),
-			Position = UDim2.new(1, trackX, 0.5, -(trackH / 2)),
+			Size = self._inOneToOneColumn and UDim2.new(1, -24, 0, trackH) or UDim2.fromOffset(trackW, trackH),
+			Position = self._inOneToOneColumn and UDim2.new(0, 12, 1, -18) or UDim2.new(1, trackX, 0.5, -(trackH / 2)),
 			BackgroundColor3 = theme.ToggleOff,
 			BorderSizePixel = 0,
 			Parent = self.Container,
@@ -945,7 +949,7 @@ return (function()
 		if self.HasDesc then
 			U.Create("TextLabel", {
 				Name = "Description",
-				Size = UDim2.new(1, -(trackW + 100), 0, 16),
+				Size = UDim2.new(1, self._inOneToOneColumn and -24 or -(trackW + 100), 0, 16),
 				Position = UDim2.fromOffset(12, 34),
 				BackgroundTransparency = 1,
 				Text = self.Description,
@@ -3146,6 +3150,14 @@ return (function()
 			return nil, "destroyed"
 		end
 		opts = opts or {}
+		if self._inOneToOne then
+			local clo = {}
+			for k, v in pairs(opts) do
+				clo[k] = v
+			end
+			clo._inOneToOneColumn = true
+			opts = clo
+		end
 		local c = Slider.new(self.Content, opts, self.Theme)
 		table.insert(self.Components, c)
 		if c.Flag and self._menu then
@@ -3623,6 +3635,14 @@ return (function()
 			return nil, "destroyed"
 		end
 		opts = opts or {}
+		if self._columns._isOneToOne then
+			local clo = {}
+			for k, v in pairs(opts) do
+				clo[k] = v
+			end
+			clo._inOneToOneColumn = true
+			opts = clo
+		end
 		return self:_mount(Slider.new(self.Content, opts, self.Theme), opts)
 	end
 
@@ -3657,6 +3677,9 @@ return (function()
 		opts = opts or {}
 		local c = Collapsible.new(self.Content, title, opts, self.Theme)
 		c._menu = self._menu
+		if self._columns._isOneToOne then
+			c._inOneToOne = true
+		end
 		table.insert(self.Components, c)
 		self._columns:_updateHeight()
 		return c
@@ -4026,6 +4049,8 @@ return (function()
 			assert(isFiniteNumber(v) and v > 0, "Columns: each Ratio value must be a positive finite number")
 		end
 		assert(isFiniteNumber(self._gap) and self._gap >= 0, "Columns: Gap must be a non-negative finite number")
+
+		self._isOneToOne = #self._ratio == 2 and self._ratio[1] == self._ratio[2]
 
 		-- Container frame — children are positioned manually by _updateHeight
 		self.Container = U.Create("Frame", {
@@ -4598,7 +4623,7 @@ return (function()
 				options.Size.Y.Offset + options.Size.Y.Scale * viewport.Y
 			)
 		else
-			size = Vector2.new(592, 340)
+			size = Vector2.new(601, 344)
 		end
 		size = Vector2.new(
 			math.clamp(size.X, self.MinSize.X, self.MaxSize.X),
