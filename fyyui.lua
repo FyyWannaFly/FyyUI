@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.13.5
+FyyUI v0.14.0
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -45,6 +45,12 @@ return (function()
 			Padding = 10,
 			CornerRadius = 8,
 			TopbarHeight = 44,
+			-- Card layout formula (unified across all controls):
+			--   No description: height = ElementHeight + 6 = 42px
+			--   With description: height = DescHeight + 6 = 58px
+			--   Outer inset: 6px left/right (children use width 1,-12 + position 6)
+			--   Inner text padding (left): 10px
+			--   Corner radius: 8px, Stroke: 1px, Inter-child spacing: 6px
 			ElementHeight = 36,
 			DescHeight = 52,
 			Spacing = 6,
@@ -144,7 +150,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.13.5"
+	local LIBRARY_VERSION = "0.14.0"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -627,13 +633,13 @@ return (function()
 		self.Flag = options.Flag
 		self.Theme = theme
 		self.HasDesc = self.Description ~= nil and self.Description ~= ""
-		local h = self.HasDesc and math.max(theme.DescHeight + 12, 64) or math.max(theme.ElementHeight + 12, 56)
+		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
 		local trackW = 110
 		local trackX = -(trackW + 74)
 
 		self.Container = U.Create("Frame", {
 			Name = "Slider",
-			Size = UDim2.new(1, -12, 0, h),
+			Size = UDim2.new(1, -12, 0, h + 6),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
 			BackgroundTransparency = 0,
@@ -646,7 +652,7 @@ return (function()
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
 			Size = UDim2.new(1, -(trackW + 100), 0, 20),
-			Position = UDim2.fromOffset(12, self.HasDesc and 11 or 9),
+			Position = UDim2.fromOffset(10, self.HasDesc and 6 or (h + 6 - 20) / 2 + 1),
 			BackgroundTransparency = 1,
 			Text = self.Text,
 			Font = theme.Font,
@@ -660,7 +666,7 @@ return (function()
 		self.ValueLabel = U.Create("TextLabel", {
 			Name = "Value",
 			Size = UDim2.fromOffset(54, 20),
-			Position = UDim2.new(1, -68, 0, self.HasDesc and 9 or 7),
+			Position = UDim2.new(1, -68, 0, self.HasDesc and 6 or (h + 6 - 20) / 2 + 1),
 			BackgroundTransparency = 1,
 			Text = tostring(self.Value) .. self.Suffix,
 			Font = theme.FontBold,
@@ -889,11 +895,11 @@ return (function()
 		self.Open = false
 		self.HasDesc = self.Description ~= nil and self.Description ~= ""
 		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
-		local selectY = self.HasDesc and 32 or 28
+		local btnW = 100
 
 		self.Container = U.Create("Frame", {
 			Name = "Dropdown",
-			Size = UDim2.new(1, -12, 0, h + 16),
+			Size = UDim2.new(1, -12, 0, h + 6),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
 			BackgroundTransparency = 0,
@@ -905,8 +911,8 @@ return (function()
 
 		U.Create("TextLabel", {
 			Name = "Label",
-			Size = UDim2.new(1, -70, 0, 20),
-			Position = UDim2.fromOffset(12, 6),
+			Size = UDim2.new(1, -(btnW + 28), 0, 20),
+			Position = UDim2.fromOffset(10, self.HasDesc and 6 or (h + 6 - 20) / 2 + 1),
 			BackgroundTransparency = 1,
 			Text = self.Text,
 			Font = theme.Font,
@@ -919,8 +925,8 @@ return (function()
 
 		self.SelectBtn = U.Create("ImageButton", {
 			Name = "Select",
-			Size = UDim2.new(1, -(10 * 2), 0, 24),
-			Position = UDim2.fromOffset(10, selectY),
+			Size = UDim2.fromOffset(btnW, 26),
+			Position = UDim2.new(1, -(btnW + 12), 0.5, -13),
 			BackgroundColor3 = theme.ElementHover,
 			AutoButtonColor = false,
 			Parent = self.Container,
@@ -953,8 +959,8 @@ return (function()
 		end
 		self.SelectText = U.Create("TextLabel", {
 			Name = "Text",
-			Size = UDim2.new(1, -26, 1, 0),
-			Position = UDim2.fromOffset(10, 0),
+			Size = UDim2.new(1, -24, 1, 0),
+			Position = UDim2.fromOffset(6, 0),
 			BackgroundTransparency = 1,
 			Text = initSelectText(),
 			TextColor3 = initSelectColor(),
@@ -1019,8 +1025,8 @@ return (function()
 		if self.HasDesc then
 			U.Create("TextLabel", {
 				Name = "Description",
-				Size = UDim2.new(1, -20, 0, 16),
-				Position = UDim2.fromOffset(10, selectY + 52),
+				Size = UDim2.new(1, -(btnW + 28), 0, 16),
+				Position = UDim2.fromOffset(10, 28),
 				BackgroundTransparency = 1,
 				Text = self.Description,
 				Font = theme.Font,
@@ -1923,7 +1929,7 @@ return (function()
 
 		btn.Container = U.Create("ImageButton", {
 			Name = "Button",
-			Size = UDim2.new(1, -12, 0, h + 8),
+			Size = UDim2.new(1, -12, 0, h + 6),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
 			BackgroundTransparency = 0,
@@ -1939,12 +1945,12 @@ return (function()
 		-- Right-side icon (default: mouse-pointer-2, customizable via Icon option)
 		renderIcon(btn.Container, options.Icon or "mouse-pointer-2", {
 			Name = "Pointer",
-			Size = UDim2.fromOffset(42, 42),
-			Position = UDim2.new(1, -48, 0.5, -16),
+			Size = UDim2.fromOffset(26, 26),
+			Position = UDim2.new(1, -38, 0.5, -13),
 			ImageTransparency = 0.5,
 		})
 		local btnIconX = 10
-		local btnIconW = -20
+		local btnIconW = -54
 
 		if hasDesc then
 			U.Create("TextLabel", {
@@ -1975,7 +1981,7 @@ return (function()
 			U.Create("TextLabel", {
 				Name = "Text",
 				Size = UDim2.new(1, btnIconW, 0, 20),
-				Position = UDim2.fromOffset(btnIconX, (h + 8 - 20) / 2),
+				Position = UDim2.fromOffset(btnIconX, (h + 6 - 20) / 2 + 1),
 				BackgroundTransparency = 1,
 				Text = options.Text or "Button",
 				Font = theme.Font,
@@ -2249,11 +2255,10 @@ return (function()
 		self.Theme = theme
 		self.HasDesc = options.Description ~= nil and options.Description ~= ""
 		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
-		local rowHeight = math.max(h + 6, 44)
 
 		self.Container = U.Create("ImageButton", {
 			Name = "Checkbox",
-			Size = UDim2.new(1, -12, 0, rowHeight),
+			Size = UDim2.new(1, -12, 0, h + 6),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
 			BackgroundTransparency = 0,
@@ -2429,6 +2434,8 @@ return (function()
 		})
 
 		-- Content area (children go here)
+		-- NOTE: Children already have their own 6px outer inset (width 1,-12 + position 6).
+		-- Content only provides deliberate top/bottom gaps; no left/right UIPadding.
 		self.Content = U.Create("Frame", {
 			Name = "Content",
 			Size = UDim2.new(1, 0, 0, 0),
@@ -2443,9 +2450,8 @@ return (function()
 			Parent = self.Content,
 		})
 		local contentPadding = U.Create("UIPadding", {
-			PaddingLeft = UDim.new(0, 8),
-			PaddingRight = UDim.new(0, 8),
-			PaddingBottom = UDim.new(0, 8),
+			PaddingTop = UDim.new(0, 6),
+			PaddingBottom = UDim.new(0, 6),
 			Parent = self.Content,
 		})
 		self._layout = layout
@@ -2478,6 +2484,13 @@ return (function()
 		return self
 	end
 
+	function Collapsible:_contentHeight()
+		local layoutHeight = self._layout and self._layout.AbsoluteContentSize.Y or 0
+		local paddingTop = self._contentPadding and self._contentPadding.PaddingTop.Offset or 0
+		local paddingBottom = self._contentPadding and self._contentPadding.PaddingBottom.Offset or 0
+		return layoutHeight + paddingTop + paddingBottom
+	end
+
 	function Collapsible:SetOpen(v)
 		if self._destroyed then return false, "destroyed" end
 		if type(v) ~= "boolean" then return false, "expected boolean" end
@@ -2499,9 +2512,9 @@ return (function()
 		if self._tween then self._tween:Cancel() end
 		if not self.Container then return false, "missing container" end
 		if v and self.Content then self.Content.Visible = true end
-			local contentH = self._layout and self._layout.AbsoluteContentSize.Y or 0
-			if v and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset + 4 end
-			local targetH = v and (34 + contentH) or 34
+		local contentHeight = self:_contentHeight()
+		if self.Content then self.Content.Size = UDim2.new(1, 0, 0, contentHeight) end
+		local targetH = v and (34 + contentHeight) or 34
 			local function finishTransition()
 				if self._transitionId == transitionId and not self._isOpen and self.Content then self.Content.Visible = false end
 			end
@@ -2529,9 +2542,9 @@ return (function()
 	function Collapsible:_updateSize(instant)
 		if self._closed or not self._layout or not self.Container or not self.Container.Parent then return end
 		if self._tween then self._tween:Cancel() end
-		local contentH = self._layout.AbsoluteContentSize.Y
-		if self._isOpen and self._contentPadding then contentH += self._contentPadding.PaddingBottom.Offset + 4 end
-		local targetH = self._isOpen and (34 + contentH) or 34
+		local contentHeight = self:_contentHeight()
+		if self.Content then self.Content.Size = UDim2.new(1, 0, 0, contentHeight) end
+		local targetH = self._isOpen and (34 + contentHeight) or 34
 		if instant then
 			self.Container.Size = UDim2.new(1, -12, 0, targetH)
 		else
@@ -2558,7 +2571,7 @@ return (function()
 		local hasDesc = opts.Description ~= nil and opts.Description ~= ""
 		local h = hasDesc and theme.DescHeight or theme.ElementHeight
 		local btn = {}
-		btn.Container = U.Create("ImageButton", { Name = "Button", Size = UDim2.new(1, -12, 0, h + 8), Position = UDim2.fromOffset(6, 0), BackgroundColor3 = theme.Element, BackgroundTransparency = 0, AutoButtonColor = false, BorderSizePixel = 0, Parent = self.Content })
+		btn.Container = U.Create("ImageButton", { Name = "Button", Size = UDim2.new(1, -12, 0, h + 6), Position = UDim2.fromOffset(6, 0), BackgroundColor3 = theme.Element, BackgroundTransparency = 0, AutoButtonColor = false, BorderSizePixel = 0, Parent = self.Content })
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
 		renderIcon(btn.Container, opts.Icon or "mouse-pointer-2", { Name = "Pointer", Size = UDim2.fromOffset(42, 42), Position = UDim2.new(1, -48, 0.5, -16), ImageTransparency = 0.5 })
@@ -2567,7 +2580,7 @@ return (function()
 			U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(ix, 5), BackgroundTransparency = 1, Text = opts.Text or "Button", Font = theme.Font, TextSize = theme.FontSize, TextColor3 = opts.Color or theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left, Parent = btn.Container })
 			U.Create("TextLabel", { Name = "Description", Size = UDim2.new(1, -20, 0, 16), Position = UDim2.fromOffset(ix, 27), BackgroundTransparency = 1, Text = opts.Description, Font = theme.Font, TextSize = theme.FontSizeSmall, TextColor3 = theme.TextMuted, TextXAlignment = Enum.TextXAlignment.Left, RichText = true, Parent = btn.Container })
 		else
-			U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(ix, (h + 8 - 20) / 2), BackgroundTransparency = 1, Text = opts.Text or "Button", Font = theme.Font, TextSize = theme.FontSize, TextColor3 = opts.Color or theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left, Parent = btn.Container })
+			U.Create("TextLabel", { Name = "Text", Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(ix, (h + 6 - 20) / 2 + 1), BackgroundTransparency = 1, Text = opts.Text or "Button", Font = theme.Font, TextSize = theme.FontSize, TextColor3 = opts.Color or theme.TextPrimary, TextXAlignment = Enum.TextXAlignment.Left, Parent = btn.Container })
 		end
 		local _sc = U.Create("UIScale", { Parent = btn.Container })
 		btn.Container.MouseEnter:Connect(function() btn.Container.BackgroundColor3 = theme.ElementHover; btn.Container.BackgroundTransparency = 0 end)
