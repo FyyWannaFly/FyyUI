@@ -1,8 +1,8 @@
 # FyyUI API Reference
 
-> Applies to FyyUI v0.16.0 · Updated 2026-07-24
+> Applies to FyyUI v0.17.0 · Updated 2026-07-24
 
-This reference describes the public FyyUI v0.16.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
+This reference describes the public FyyUI v0.17.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
 
 ## Module
 
@@ -39,6 +39,10 @@ local FyyUI = require(script.Parent.FyyUI)
 | `Visible` | boolean | true | Initial visibility. |
 | `Topbar` | table | `{}` | `ButtonsType` (`"Default"`/`"Mac"`) and `TitleAlignment`. |
 | `PaletteMaxResults` | number | 60 | Command-palette result cap. |
+| `Stats` | boolean/table | false | `true` creates a fixed, non-scrolling Overview tab. A table supports `Enabled`, `TabName`, `TabIcon`, `ShowProfile`, `ShowGame`, `ShowServer`, and `ShowSupport`. |
+| `Support` | table | `{}` | Optional Overview support card: `Title`, `Description`, `ButtonText`, `ButtonIcon`, `Discord`, and `Callback(url)`. |
+
+`Stats` no longer renders FPS or ping in the topbar. The Overview card layout is designed for the default 645×365 menu and follows the active theme.
 
 ### Menu methods
 

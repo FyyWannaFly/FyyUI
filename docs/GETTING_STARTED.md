@@ -1,6 +1,6 @@
 # Getting Started with FyyUI
 
-> Applies to FyyUI v0.16.0 · Updated 2026-07-24
+> Applies to FyyUI v0.17.0 · Updated 2026-07-24
 
 This guide gets a local FyyUI menu running in Roblox Studio in a few minutes.
 
@@ -25,6 +25,15 @@ local menu = FyyUI.Menu({
 	SafePadding = 12,
 	TouchTargetSize = 44,
 	ReducedMotion = false,
+	Stats = {
+		Enabled = true,
+		TabName = "Overview",
+		ShowProfile = true,
+		ShowGame = true,
+		ShowServer = true,
+		ShowSupport = true,
+	},
+	Support = { Discord = "https://discord.gg/example" },
 })
 
 local settings = menu:Tab({ Text = "Settings", Icon = "settings" })
