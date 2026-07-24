@@ -1,4 +1,4 @@
-local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua")
+local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua?v=0.16.0-fixed-stack")
 local chunk, compileError = loadstring(source)
 assert(chunk, "FyyUI compile error: " .. tostring(compileError))
 local FyyUI = chunk()

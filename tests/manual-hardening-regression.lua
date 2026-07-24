@@ -50,17 +50,28 @@ return function(FyyUI)
 	)
 	assert(popupShown and menu._activePopupFrame, "dropdown popup must report successful UI creation")
 	menu:HideDropdownPopup()
+	assert(
+		menu.NotifBox.Size.Y.Scale == 1 and menu.NotifBox.AnchorPoint == Vector2.new(1, 1),
+		"notification stack must keep fixed bottom-anchored geometry"
+	)
+	local olderNotification = menu:Notify({ Title = "Older", Duration = 0 })
+	local newerNotification = menu:Notify({ Title = "Newer", Duration = 0 })
+	task.wait()
+	assert(
+		menu._activeNotifs[1].frame.Position.Y.Offset == 0 and menu._activeNotifs[2].frame.Position.Y.Offset < 0,
+		"notification stack must keep the oldest card at the bottom"
+	)
+	assert(olderNotification:Dismiss() and newerNotification:Dismiss(), "stack setup notifications must dismiss")
 	local notification = menu:Notify({ Title = "Exit regression", Content = "Position must stay frozen", Duration = 0 })
 	task.wait()
 	local notificationFrame = menu._activeNotifs[1] and menu._activeNotifs[1].frame
-	local notificationPosition = notificationFrame and notificationFrame.AbsolutePosition
+	local notificationY = notificationFrame and notificationFrame.Position.Y
 	assert(notificationFrame and notification:Dismiss(), "notification dismiss must start successfully")
-	local notificationExit = menu._notifGui:FindFirstChild("NotificationExit")
 	assert(
-		notificationExit
-			and notificationExit.AnchorPoint == Vector2.new(0, 0)
-			and notificationExit.Position.Y.Offset == notificationPosition.Y,
-		"notification exit clones must preserve the original screen-space Y"
+		notificationFrame.Parent == menu.NotifBox
+			and notificationFrame.Position.Y.Scale == notificationY.Scale
+			and notificationFrame.Position.Y.Offset == notificationY.Offset,
+		"exiting notifications must preserve their exact bottom-relative Y"
 	)
 
 	local reducedMenu = FyyUI.Menu({
