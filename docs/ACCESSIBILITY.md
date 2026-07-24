@@ -1,8 +1,8 @@
 # Accessibility and Device Support
 
-> Applies to FyyUI v0.15.0 · Updated 2026-07-24
+> Applies to FyyUI v0.15.1 · Updated 2026-07-24
 
-FyyUI v0.15.0 supports pointer, touch, keyboard, and gamepad-oriented interaction. Test your own labels, custom colors, and callbacks because they can still affect usability.
+FyyUI v0.15.1 supports pointer, touch, keyboard, and gamepad-oriented interaction. Test your own labels, custom colors, and callbacks because they can still affect usability.
 
 ## Responsive and touch layout
 
