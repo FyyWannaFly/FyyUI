@@ -6,11 +6,14 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.15.0", "library version must identify the dropdown, minimize, and notification release")
+	assert(FyyUI.Version == "0.15.1", "library version must identify the notification syntax hotfix")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
-	assert(FyyUI.GetIconModule() == originalIconModule, "failed remote icon loading must preserve the active icon module")
+	assert(
+		FyyUI.GetIconModule() == originalIconModule,
+		"failed remote icon loading must preserve the active icon module"
+	)
 	local callbacks = { toggle = 0, checkbox = 0, multi = 0, options = 0 }
 	local menu = FyyUI.Menu({
 		Title = "FyyUI hardening regression",
@@ -18,14 +21,33 @@ return function(FyyUI)
 		Scale = 9, -- constructor must clamp to the supported range.
 	})
 	assert(menu:GetScale() == 1.35, "constructor scale must be clamped")
-	assert(menu.Responsive and menu.CompactBreakpoint == 640 and menu.SafePadding == 12, "responsive defaults must be stable")
+	assert(
+		menu.Responsive and menu.CompactBreakpoint == 640 and menu.SafePadding == 12,
+		"responsive defaults must be stable"
+	)
 	assert(menu.TouchTargetSize == 36 and not menu._reducedMotion, "touch and motion defaults must be stable")
 	local legacyConfig = menu:ExportConfig()
-	assert(legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.15.0", "zero-argument config export must retain the v1 contract")
-	assert(not pcall(function() FyyUI.Menu({ CompactBreakpoint = 0 }) end), "invalid compact breakpoints must fail early")
-	assert(not pcall(function() FyyUI.Menu({ SafePadding = -1 }) end), "invalid safe padding must fail early")
-	assert(not pcall(function() FyyUI.Menu({ TouchTargetSize = math.huge }) end), "invalid touch target sizes must fail early")
-	local popupShown = menu:ShowDropdownPopup(Vector2.new(0, 0), Vector2.new(36, 36), { "One" }, 0, function() end, false)
+	assert(
+		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.15.1",
+		"zero-argument config export must retain the v1 contract"
+	)
+	assert(not pcall(function()
+		FyyUI.Menu({ CompactBreakpoint = 0 })
+	end), "invalid compact breakpoints must fail early")
+	assert(not pcall(function()
+		FyyUI.Menu({ SafePadding = -1 })
+	end), "invalid safe padding must fail early")
+	assert(not pcall(function()
+		FyyUI.Menu({ TouchTargetSize = math.huge })
+	end), "invalid touch target sizes must fail early")
+	local popupShown = menu:ShowDropdownPopup(
+		Vector2.new(0, 0),
+		Vector2.new(36, 36),
+		{ "One" },
+		0,
+		function() end,
+		false
+	)
 	assert(popupShown and menu._activePopupFrame, "dropdown popup must report successful UI creation")
 	menu:HideDropdownPopup()
 
@@ -38,16 +60,41 @@ return function(FyyUI)
 		TouchTargetSize = 44,
 		ReducedMotion = true,
 	})
-	assert(not reducedMenu.Responsive and reducedMenu.CompactBreakpoint == 720 and reducedMenu.SafePadding == 16, "responsive overrides must be retained")
-	assert(reducedMenu.TouchTargetSize == 44 and reducedMenu._reducedMotion, "reduced motion must be retained at menu level")
+	assert(
+		not reducedMenu.Responsive and reducedMenu.CompactBreakpoint == 720 and reducedMenu.SafePadding == 16,
+		"responsive overrides must be retained"
+	)
+	assert(
+		reducedMenu.TouchTargetSize == 44 and reducedMenu._reducedMotion,
+		"reduced motion must be retained at menu level"
+	)
 	reducedMenu:Destroy()
 
 	local tab = menu:Tab({ Text = "Regression" })
-	local toggle = tab:Toggle({ Flag = "toggle", Callback = function() callbacks.toggle += 1 end })
-	local checkbox = tab:Checkbox({ Flag = "checkbox", Callback = function() callbacks.checkbox += 1 end })
-	assert(tab.TabButton.Selectable and tab.TabButton.SelectionOrder > 0, "tab navigation must expose an ordered selectable target")
-	assert(checkbox.Container.Selectable and checkbox.Container.SelectionOrder > tab.TabButton.SelectionOrder, "checkbox must expose an ordered whole-row selectable target")
-	assert(checkbox.Container.Active and checkbox.Container.AbsoluteSize.Y >= 24, "checkbox row must remain a practical touch target")
+	local toggle = tab:Toggle({
+		Flag = "toggle",
+		Callback = function()
+			callbacks.toggle += 1
+		end,
+	})
+	local checkbox = tab:Checkbox({
+		Flag = "checkbox",
+		Callback = function()
+			callbacks.checkbox += 1
+		end,
+	})
+	assert(
+		tab.TabButton.Selectable and tab.TabButton.SelectionOrder > 0,
+		"tab navigation must expose an ordered selectable target"
+	)
+	assert(
+		checkbox.Container.Selectable and checkbox.Container.SelectionOrder > tab.TabButton.SelectionOrder,
+		"checkbox must expose an ordered whole-row selectable target"
+	)
+	assert(
+		checkbox.Container.Active and checkbox.Container.AbsoluteSize.Y >= 24,
+		"checkbox row must remain a practical touch target"
+	)
 	local multi = tab:Dropdown({
 		Flag = "multi",
 		Multi = true,
@@ -62,7 +109,10 @@ return function(FyyUI)
 	assert(multi:_displayText() == "Two", "multi summary must remain stable in option order")
 	multi:SetValue("Two", true)
 	assert(multi:_displayText() == "Select...", "empty multi selection must display the placeholder")
-	assert(single:SetValue("One", true) and single:GetValue() == "", "AllowNone single dropdown must unselect the active option")
+	assert(
+		single:SetValue("One", true) and single:GetValue() == "",
+		"AllowNone single dropdown must unselect the active option"
+	)
 	assert(single:_displayText() == "Select...", "empty single selection must display the placeholder")
 	local numeric = tab:Input({ Flag = "numeric", Numeric = true, Default = "" })
 	local collapsible = tab:Collapsible("Rapid toggles")
@@ -75,7 +125,10 @@ return function(FyyUI)
 	collapsible:Label({ Text = "Nested theme regression label" })
 	collapsible:BoldLabel({ Text = "Nested theme regression bold label" })
 	collapsible:Divider()
-	assert(menu:SetTheme("Light") and menu:SetTheme("Amoled") and menu:SetTheme("Dark"), "theme switching must update lightweight and controller components without receiver mismatch")
+	assert(
+		menu:SetTheme("Light") and menu:SetTheme("Amoled") and menu:SetTheme("Dark"),
+		"theme switching must update lightweight and controller components without receiver mismatch"
+	)
 
 	assert(#multi:GetValue() == 1 and multi:GetValue()[1] == "One", "multi default must exclude unknown options")
 	local rejected, rejectionDetails = menu:ImportConfig({ Values = { single = "Unknown" } })
@@ -101,7 +154,10 @@ return function(FyyUI)
 
 	-- v2 is explicitly selected, JSON-safe, and never partially mutates on malformed input.
 	local v2 = menu:ExportConfig({ SchemaVersion = 2 })
-	assert(v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.15.0", "explicit v2 export must use the versioned JSON-safe envelope")
+	assert(
+		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.15.1",
+		"explicit v2 export must use the versioned JSON-safe envelope"
+	)
 	assert(v2.Values.numeric == "", "v2 export must preserve blank numeric inputs")
 	local json, jsonErr = menu:ExportConfigJSON()
 	assert(type(json) == "string" and jsonErr == nil, "v2 config must export to JSON")
@@ -110,23 +166,42 @@ return function(FyyUI)
 	local invalidJson, invalidJsonErr = menu:ImportConfigJSON("{", { NoCallbacks = true })
 	assert(invalidJson == false and type(invalidJsonErr) == "string", "malformed JSON must be rejected safely")
 	local nonStringJson, nonStringJsonErr = menu:ImportConfigJSON(123, { NoCallbacks = true })
-	assert(nonStringJson == false and nonStringJsonErr == "Invalid config JSON: expected a string", "non-string JSON input must be rejected before using HttpService")
+	assert(
+		nonStringJson == false and nonStringJsonErr == "Invalid config JSON: expected a string",
+		"non-string JSON input must be rejected before using HttpService"
+	)
 	local invalidV2, invalidV2Details = menu:ImportConfig({
 		Schema = "FyyUI.Config.v2",
 		SchemaVersion = 2,
 		Version = "0.12.0",
 		Values = { toggle = false, multi = { One = true } },
 	})
-	assert(invalidV2 == false and type(invalidV2Details) == "string", "invalid v2 arrays must be rejected before applying values")
-	assert(toggle:GetValue() == true and multi:GetValue()[1] == "One", "invalid v2 config must preserve all existing values")
+	assert(
+		invalidV2 == false and type(invalidV2Details) == "string",
+		"invalid v2 arrays must be rejected before applying values"
+	)
+	assert(
+		toggle:GetValue() == true and multi:GetValue()[1] == "One",
+		"invalid v2 config must preserve all existing values"
+	)
 	local configChunk = string.rep("x", 16 * 1024)
 	local oversizedV2, oversizedV2Err = menu:ImportConfig({
 		Schema = "FyyUI.Config.v2",
 		SchemaVersion = 2,
 		Version = "0.12.0",
-		Values = { toggle = false, one = configChunk, two = configChunk, three = configChunk, four = configChunk, five = configChunk },
+		Values = {
+			toggle = false,
+			one = configChunk,
+			two = configChunk,
+			three = configChunk,
+			four = configChunk,
+			five = configChunk,
+		},
 	})
-	assert(oversizedV2 == false and type(oversizedV2Err) == "string", "direct v2 imports must enforce a cumulative size budget before mutation")
+	assert(
+		oversizedV2 == false and type(oversizedV2Err) == "string",
+		"direct v2 imports must enforce a cumulative size budget before mutation"
+	)
 	assert(toggle:GetValue() == true, "oversized direct v2 config must not partially apply values")
 
 	-- Rapid state changes must retain and replace the active tween safely.
@@ -134,7 +209,10 @@ return function(FyyUI)
 	assert(collapsible:SetOpen(true))
 	assert(collapsible:SetOpen(false))
 	assert(collapsible:SetOpen(true))
-	assert(collapsible._tween ~= nil and collapsible._isOpen, "rapid collapsible toggles must retain the final tween and state")
+	assert(
+		collapsible._tween ~= nil and collapsible._isOpen,
+		"rapid collapsible toggles must retain the final tween and state"
+	)
 
 	-- Multi-dropdown callbacks receive an ordered snapshot, never internal selection state.
 	local receivedSnapshot
@@ -145,17 +223,26 @@ return function(FyyUI)
 	end
 	assert(multi:SetValue("Two"))
 	task.wait()
-	assert(callbacks.multi == 1 and receivedSnapshot[2] == "Two" and multi:GetValue()[1] == "One", "multi callback must receive an ordered snapshot without exposing controller state")
+	assert(
+		callbacks.multi == 1 and receivedSnapshot[2] == "Two" and multi:GetValue()[1] == "One",
+		"multi callback must receive an ordered snapshot without exposing controller state"
+	)
 
-	multi.Callback = function() callbacks.options += 1 end
+	multi.Callback = function()
+		callbacks.options += 1
+	end
 	assert(multi:SetOptions({ "One", "Two" }))
 	task.wait()
 	assert(callbacks.options == 0, "unchanged SetOptions must not fire a callback")
 	local optionsOk, optionsErr = multi:SetOptions("invalid")
 	assert(optionsOk == false and optionsErr == "expected options table", "SetOptions must validate option lists")
 
-	assert(not pcall(function() tab:Slider({ Min = 10, Max = 0 }) end), "invalid slider bounds must fail early")
-	assert(not pcall(function() tab:Slider({ Step = 0 }) end), "zero slider step must fail early")
+	assert(not pcall(function()
+		tab:Slider({ Min = 10, Max = 0 })
+	end), "invalid slider bounds must fail early")
+	assert(not pcall(function()
+		tab:Slider({ Step = 0 })
+	end), "zero slider step must fail early")
 
 	menu:OpenCommandPalette()
 	menu:SetVisible(false)
