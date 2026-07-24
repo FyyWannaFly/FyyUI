@@ -6,7 +6,7 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.17.0", "library version must identify the premium overview release")
+	assert(FyyUI.Version == "0.18.0", "library version must identify the config tab release")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
@@ -21,6 +21,58 @@ return function(FyyUI)
 		Logo = true,
 		Scale = 9, -- constructor must clamp to the supported range.
 	})
+	local memoryFiles = {}
+	local storage = {
+		List = function()
+			local profiles = {}
+			for name in pairs(memoryFiles) do
+				if name ~= ".autoload" then
+					table.insert(profiles, name)
+				end
+			end
+			table.sort(profiles)
+			return profiles
+		end,
+		Read = function(name)
+			return memoryFiles[name], memoryFiles[name] and nil or "profile not found"
+		end,
+		Write = function(name, json)
+			memoryFiles[name] = json
+			return true
+		end,
+		Delete = function(name)
+			memoryFiles[name] = nil
+			return true
+		end,
+	}
+	local beforeConfig = menu:Tab({ Text = "Before Config" })
+	local configController = menu:ConfigTab({ Storage = storage, AutoLoad = false, AllowImportExport = false })
+	local afterConfig = menu:Tab({ Text = "After Config" })
+	assert(
+		table.find(menu.Tabs, beforeConfig) < table.find(menu.Tabs, configController.Tab)
+			and table.find(menu.Tabs, configController.Tab) < table.find(menu.Tabs, afterConfig),
+		"Config Tab must preserve its exact creation order"
+	)
+	assert(
+		configController.Tab.Container:FindFirstChild("Collapsible") ~= nil,
+		"Config Tab must render open collapsible sections"
+	)
+	configController.NameInput:SetValue("Regression Profile", true)
+	assert(configController:Save(), "Config Tab must save through a custom storage adapter")
+	assert(memoryFiles["Regression Profile"], "saved profile must reach the storage adapter")
+	assert(configController:SetAutoload("Regression Profile"), "Config Tab must persist autoload metadata")
+	assert(memoryFiles[".autoload"], "autoload metadata must remain separate from profiles")
+	local deferredSnapshot = {
+		Schema = "FyyUI.Config.v1",
+		Version = FyyUI.Version,
+		Values = { late_flag = true },
+	}
+	local deferredOk, deferredDetails = menu:ImportConfig(deferredSnapshot, { NoCallbacks = true, DeferUnknown = true })
+	assert(deferredOk and #deferredDetails.Pending == 1, "unknown autoload flags must be deferred")
+	local lateToggle = afterConfig:Toggle({ Text = "Late Toggle", Flag = "late_flag", Default = false })
+	assert(lateToggle:GetValue() == true, "deferred config values must apply when late controls register")
+	configController:Destroy()
+	assert(configController._destroyed and #menu._configTabs == 0, "destroying Config Tab must clean its menu registry")
 	assert(menu:GetScale() == 1.35, "constructor scale must be clamped")
 	assert(
 		menu.TitleLogo
@@ -58,7 +110,7 @@ return function(FyyUI)
 	assert(menu.TouchTargetSize == 36 and not menu._reducedMotion, "touch and motion defaults must be stable")
 	local legacyConfig = menu:ExportConfig()
 	assert(
-		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.17.0",
+		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.18.0",
 		"zero-argument config export must retain the v1 contract"
 	)
 	assert(not pcall(function()
@@ -360,7 +412,7 @@ return function(FyyUI)
 	-- v2 is explicitly selected, JSON-safe, and never partially mutates on malformed input.
 	local v2 = menu:ExportConfig({ SchemaVersion = 2 })
 	assert(
-		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.17.0",
+		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.18.0",
 		"explicit v2 export must use the versioned JSON-safe envelope"
 	)
 	assert(v2.Values.numeric == "", "v2 export must preserve blank numeric inputs")
