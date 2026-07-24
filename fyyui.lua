@@ -4499,8 +4499,7 @@ return (function()
 			self:_updateTooltipPosition()
 		end
 		if self.NotifBox then
-			local currH = self.NotifBox.Size.Y.Offset
-			self.NotifBox.Size = UDim2.fromOffset(math.min(320, viewport.X - safe * 2), currH)
+			self.NotifBox.Size = UDim2.new(0, math.min(320, viewport.X - safe * 2), 1, -(safe * 2))
 			self.NotifBox.Position = UDim2.new(1, -safe, 1, -safe)
 		end
 		if self._paletteFrame then
@@ -5067,8 +5066,8 @@ return (function()
 		})
 		self.NotifBox = U.Create("Frame", {
 			Name = "Notifications",
-			Size = UDim2.new(0, 320, 0, 0),
-			Position = UDim2.new(1, -10, 1, -10),
+			Size = UDim2.new(0, 320, 1, -(self.SafePadding * 2)),
+			Position = UDim2.new(1, -self.SafePadding, 1, -self.SafePadding),
 			AnchorPoint = Vector2.new(1, 1),
 			BackgroundTransparency = 1,
 			ZIndex = 50,
@@ -6220,13 +6219,6 @@ return (function()
 		local enterTween
 		local dismissTask
 
-		-- Calculate Y position (newest at bottom of stack)
-		local targetY = 0
-		local GAP_BETWEEN = 4
-		for _, rec in ipairs(self._activeNotifs) do
-			targetY = targetY + rec.h + GAP_BETWEEN
-		end
-
 		-- Record
 		local record = {
 			frame = frame,
@@ -6235,10 +6227,21 @@ return (function()
 			posTween = nil,
 		}
 		table.insert(self._activeNotifs, record)
+		frame.AnchorPoint = Vector2.new(0, 1)
+		self:_reflowNotifs(not self._reducedMotion, record)
+		local bottomOffset = 0
+		local GAP_BETWEEN = 4
+		for _, rec in ipairs(self._activeNotifs) do
+			if rec == record then
+				break
+			end
+			bottomOffset = bottomOffset + rec.h + GAP_BETWEEN
+		end
+		local targetPosition = UDim2.new(0, 0, 1, -bottomOffset)
 
 		-- Place at entrance offset, then animate to target
 		if not self._reducedMotion then
-			frame.Position = UDim2.fromOffset(24, targetY)
+			frame.Position = UDim2.new(0, 24, 1, 0)
 			frame.BackgroundTransparency = 1
 			for _, child in ipairs(frame:GetChildren()) do
 				if child:IsA("TextLabel") then
@@ -6263,7 +6266,7 @@ return (function()
 
 			-- Entrance: slide in from right + fade
 			enterTween = self:_transition(frame, 0.3, {
-				Position = UDim2.fromOffset(0, targetY),
+				Position = targetPosition,
 				BackgroundTransparency = 0,
 			}, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
@@ -6286,13 +6289,9 @@ return (function()
 				self:_transition(progressFill, 0.25, { BackgroundTransparency = 0 })
 			end
 		else
-			frame.Position = UDim2.fromOffset(0, targetY)
+			frame.Position = targetPosition
 			frame.BackgroundTransparency = 0
 		end
-
-		-- Update NotifBox height to contain all cards
-		local totalH = targetY + cardH
-		self.NotifBox.Size = UDim2.new(0, CARD_W, 0, totalH)
 
 		-- ── Local dismiss function ──
 		local function dismiss()
@@ -6321,23 +6320,11 @@ return (function()
 				record.posTween = nil
 			end
 
-			-- Capture current on-screen position BEFORE any parent/size changes
-			local absPos = frame.AbsolutePosition
+			-- The parent has fixed geometry, so preserving this local Y guarantees
+			-- the card cannot move vertically while it exits.
+			local exitPosition = frame.Position
 
-			local exitFrame
-			if not self._reducedMotion then
-				-- Clone before touching the live stack. Reparenting the live card can expose
-				-- one layout frame from the bottom-anchored NotifBox, which looks like an
-				-- upward jump. The clone starts directly in screen space instead.
-				exitFrame = frame:Clone()
-				exitFrame.Name = "NotificationExit"
-				exitFrame.AnchorPoint = Vector2.new(0, 0)
-				exitFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y)
-				exitFrame.Parent = self._notifGui
-			end
-
-			-- Remove the live card from the active stack only after the exit clone is
-			-- ready at the exact same screen position.
+			-- Remove from active layout while keeping the live card visible.
 			for i, rec in ipairs(self._activeNotifs) do
 				if rec.frame == frame then
 					table.remove(self._activeNotifs, i)
@@ -6346,38 +6333,32 @@ return (function()
 			end
 
 			if not self._reducedMotion then
-				frame:Destroy()
-				record.frame = nil
+				-- Reflow siblings immediately; the exiting card is no longer part of
+				-- active layout and keeps its own frozen Y until destruction.
+				self:_reflowNotifs(true)
 
-				-- Schedule reflow with generation/token so concurrent dismissals
-				-- collapse into a single reflow (only the latest runs)
-				self._notifGen = (self._notifGen or 0) + 1
-				local gen = self._notifGen
-				task.delay(0.07, function()
-					if self._destroyed or gen ~= self._notifGen then
-						return
-					end
-					self:_reflowNotifs(true)
-				end)
-
-				-- Exit: slide only on X. Y remains the captured screen coordinate for
-				-- the complete lifetime of the clone.
+				-- Exit: slide only on X. Y is copied without modification.
 				self:_transition(
-					exitFrame,
+					frame,
 					0.3,
 					{
-						Position = UDim2.fromOffset(absPos.X + 40, absPos.Y),
+						Position = UDim2.new(
+							exitPosition.X.Scale,
+							exitPosition.X.Offset + 40,
+							exitPosition.Y.Scale,
+							exitPosition.Y.Offset
+						),
 						BackgroundTransparency = 1,
 					},
 					Enum.EasingStyle.Quint,
 					Enum.EasingDirection.In,
 					function()
-						if exitFrame and exitFrame.Parent then
-							exitFrame:Destroy()
+						if frame and frame.Parent then
+							frame:Destroy()
 						end
 					end
 				)
-				for _, child in ipairs(exitFrame:GetDescendants()) do
+				for _, child in ipairs(frame:GetDescendants()) do
 					if child:IsA("TextLabel") then
 						self:_transition(child, 0.2, { TextTransparency = 1 })
 					elseif child:IsA("ImageLabel") then
@@ -6517,18 +6498,23 @@ return (function()
 		return handle
 	end
 
-	function Menu:_reflowNotifs(animated)
+	function Menu:_reflowNotifs(animated, excludedRecord)
 		if self._destroyed or not self._activeNotifs then
 			return
 		end
 		if animated and self._reducedMotion then
 			animated = false
 		end
-		local y = 0
+		local bottomOffset = 0
 		local GAP = 4
-		for _, rec in ipairs(self._activeNotifs) do
+		for i = 1, #self._activeNotifs do
+			local rec = self._activeNotifs[i]
 			local frame = rec.frame
-			if frame and frame.Parent then
+			local target = UDim2.new(0, 0, 1, -bottomOffset)
+			if rec ~= excludedRecord then
+				bottomOffset = bottomOffset + rec.h + GAP
+			end
+			if rec ~= excludedRecord and frame and frame.Parent then
 				if animated then
 					-- Cancel any existing positional tween before starting a new one
 					if rec.posTween then
@@ -6536,17 +6522,12 @@ return (function()
 						rec.posTween = nil
 					end
 					rec.posTween = self:_transition(frame, 0.25, {
-						Position = UDim2.fromOffset(0, y),
+						Position = target,
 					}, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 				else
-					frame.Position = UDim2.fromOffset(0, y)
+					frame.Position = target
 				end
 			end
-			y = y + rec.h + GAP
-		end
-		local totalH = y > 0 and (y - GAP) or 0
-		if self.NotifBox then
-			self.NotifBox.Size = UDim2.new(0, 320, 0, totalH)
 		end
 	end
 
