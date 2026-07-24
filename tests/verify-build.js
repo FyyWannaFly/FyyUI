@@ -39,7 +39,8 @@ const after = hashBundle();
 assert.equal(after, before, "rebuilding must produce byte-identical deterministic output");
 
 const bundle = fs.readFileSync(bundlePath, "utf8");
-assert.match(bundle, /GENERATED FILE — DO NOT EDIT DIRECTLY\./, "bundle must identify itself as generated");
+assert.match(bundle, /Copyright \(c\) 2026 FyyWannaFly\. All rights reserved\./, "bundle must retain copyright");
+assert.match(bundle, /Unauthorized copying, modification, or redistribution is prohibited\./, "bundle must retain license notice");
 assert.match(bundle, /^return \(function\(\)/m, "bundle must preserve the shared private closure");
 assert.match(bundle, /\n\s*return FyyUI\nend\)\(\)\n$/, "bundle must preserve the public export and final closure");
 

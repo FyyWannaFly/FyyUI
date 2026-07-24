@@ -30,18 +30,10 @@ const SOURCES = [
 
 const HEADER = `--[[
 FyyUI v0.17.0
-	Roblox UI Library
-	@github FyyWannaFly/FyyUI
-
-	GENERATED FILE — DO NOT EDIT DIRECTLY.
-	Edit src/ and run: node scripts/build.js
-
-	-- Load this trusted local copy using your project's normal module loader.
-	local FyyUI = require(script.Parent.FyyUI)
-	local menu = FyyUI.Menu({ Title = "Hub" })
-	local tab = menu:Tab({ Text = "Main" })
-	tab:Toggle({ Text = "Auto Farm", Callback = function(v) end })
-	menu:Notify({ Text = "Loaded!", Duration = 3 })
+Copyright (c) 2026 FyyWannaFly. All rights reserved.
+Licensed for limited personal use under the repository LICENSE.
+Unauthorized copying, modification, or redistribution is prohibited.
+https://github.com/FyyWannaFly/FyyUI
 ]]
 
 return (function()
