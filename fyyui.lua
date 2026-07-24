@@ -6336,6 +6336,7 @@ return (function()
 				-- Reparent to _notifGui to freeze position independent of NotifBox
 				-- AnchorPoint=(1,1) on NotifBox means box shrink shifts children's
 				-- absolute Y even if their local Position is unchanged.
+				frame.AnchorPoint = Vector2.new(0, 0)
 				frame.Parent = self._notifGui
 				frame.Position = UDim2.fromOffset(absPos.X, absPos.Y)
 
@@ -6350,29 +6351,39 @@ return (function()
 					self:_reflowNotifs(true)
 				end)
 
-				-- Exit: slide right 40px, frozen Y, Quint In, fade
-				self:_transition(
-					frame,
-					0.3,
-					{
-						Position = UDim2.fromOffset(absPos.X + 40, absPos.Y),
-						BackgroundTransparency = 1,
-					},
-					Enum.EasingStyle.Quint,
-					Enum.EasingDirection.In,
-					function()
-						if frame and frame.Parent then
-							frame:Destroy()
+				-- Wait one rendered frame after reparenting so TweenService captures
+				-- the new screen-space position instead of the old stack-local one.
+				task.spawn(function()
+					game:GetService("RunService").Heartbeat:Wait()
+					if self._destroyed or not frame or frame.Parent ~= self._notifGui then
+						return
+					end
+					frame.Position = UDim2.fromOffset(absPos.X, absPos.Y)
+
+					-- Exit: slide right 40px, frozen Y, Quint In, fade
+					self:_transition(
+						frame,
+						0.3,
+						{
+							Position = UDim2.fromOffset(absPos.X + 40, absPos.Y),
+							BackgroundTransparency = 1,
+						},
+						Enum.EasingStyle.Quint,
+						Enum.EasingDirection.In,
+						function()
+							if frame and frame.Parent then
+								frame:Destroy()
+							end
+						end
+					)
+					-- Fade children
+					for _, child in ipairs(frame:GetChildren()) do
+						if child:IsA("TextLabel") or child:IsA("ImageLabel") then
+							local prop = child:IsA("TextLabel") and "TextTransparency" or "ImageTransparency"
+							self:_transition(child, 0.2, { [prop] = 1 })
 						end
 					end
-				)
-				-- Fade children
-				for _, child in ipairs(frame:GetChildren()) do
-					if child:IsA("TextLabel") or child:IsA("ImageLabel") then
-						local prop = child:IsA("TextLabel") and "TextTransparency" or "ImageTransparency"
-						self:_transition(child, 0.2, { [prop] = 1 })
-					end
-				end
+				end)
 			else
 				-- ReducedMotion: destroy + reflow immediately
 				if frame then
