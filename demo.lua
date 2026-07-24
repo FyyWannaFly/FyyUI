@@ -1,4 +1,7 @@
-local FyyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua"))()
+local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua")
+local chunk, compileError = loadstring(source)
+assert(chunk, "FyyUI compile error: " .. tostring(compileError))
+local FyyUI = chunk()
 
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
@@ -54,9 +57,26 @@ aimSection:Dropdown({
 })
 
 local weaponSection = combatTab:Collapsible("Weapon", { DefaultOpen = false })
-weaponSection:Toggle({ Text = "Trigger Bot", Description = "Fire while a target is under the crosshair", Flag = "combat_trigger" })
-weaponSection:Slider({ Text = "Trigger Delay", Min = 0, Max = 500, Default = 80, Suffix = "ms", Step = 10, Flag = "combat_trigger_delay" })
-weaponSection:Keybind({ Text = "Aim Key", Default = Enum.UserInputType.MouseButton2, Mode = "Hold", Flag = "combat_aim_key" })
+weaponSection:Toggle({
+	Text = "Trigger Bot",
+	Description = "Fire while a target is under the crosshair",
+	Flag = "combat_trigger",
+})
+weaponSection:Slider({
+	Text = "Trigger Delay",
+	Min = 0,
+	Max = 500,
+	Default = 80,
+	Suffix = "ms",
+	Step = 10,
+	Flag = "combat_trigger_delay",
+})
+weaponSection:Keybind({
+	Text = "Aim Key",
+	Default = Enum.UserInputType.MouseButton2,
+	Mode = "Hold",
+	Flag = "combat_aim_key",
+})
 
 combatTab:Divider()
 combatTab:Button({
@@ -75,7 +95,14 @@ local movementSection = automationTab:Collapsible("Movement", { DefaultOpen = tr
 movementSection:Toggle({ Text = "Auto Sprint", Default = true, Flag = "auto_sprint" })
 movementSection:Toggle({ Text = "Auto Jump", Flag = "auto_jump" })
 movementSection:Checkbox({ Text = "Avoid Players", Default = true, Flag = "auto_avoid_players" })
-movementSection:Slider({ Text = "Walk Speed", Min = 16, Max = 100, Default = 24, Suffix = " studs", Flag = "auto_walk_speed" })
+movementSection:Slider({
+	Text = "Walk Speed",
+	Min = 16,
+	Max = 100,
+	Default = 24,
+	Suffix = " studs",
+	Flag = "auto_walk_speed",
+})
 movementSection:Dropdown({
 	Text = "Movement Mode",
 	Options = { "Legit", "Balanced", "Aggressive" },
@@ -100,7 +127,15 @@ farmingSection:Dropdown({
 	AllowNone = false,
 	Flag = "auto_route",
 })
-farmingSection:Slider({ Text = "Action Delay", Min = 0.1, Max = 2, Default = 0.5, Suffix = "s", Step = 0.1, Flag = "auto_delay" })
+farmingSection:Slider({
+	Text = "Action Delay",
+	Min = 0.1,
+	Max = 2,
+	Default = 0.5,
+	Suffix = "s",
+	Step = 0.1,
+	Flag = "auto_delay",
+})
 farmingSection:Input({
 	Text = "Stop After",
 	Description = "Leave blank to run continuously",
@@ -188,7 +223,11 @@ componentsTab:Divider()
 
 local controlsSection = componentsTab:Collapsible("Controls", { DefaultOpen = true })
 controlsSection:Toggle({ Text = "Toggle", Description = "Animated on/off control", Default = true })
-controlsSection:Checkbox({ Text = "Checkbox", Description = "Accent color indicates the selected state", Default = true })
+controlsSection:Checkbox({
+	Text = "Checkbox",
+	Description = "Accent color indicates the selected state",
+	Default = true,
+})
 controlsSection:Slider({ Text = "Slider", Min = 0, Max = 10, Default = 6, Suffix = "/10" })
 controlsSection:Dropdown({ Text = "Single Dropdown", Options = { "Alpha", "Beta", "Gamma" }, Default = "Beta" })
 controlsSection:Dropdown({
@@ -209,10 +248,34 @@ controlsSection:Button({
 })
 
 local feedbackSection = componentsTab:Collapsible("Notifications", { DefaultOpen = false })
-feedbackSection:Button({ Text = "Success", Icon = "circle-check", Callback = function() notify("Success", "Everything completed successfully.", "Success") end })
-feedbackSection:Button({ Text = "Information", Icon = "info", Callback = function() notify("Information", "This is an informational message.", "Info") end })
-feedbackSection:Button({ Text = "Warning", Icon = "triangle-alert", Callback = function() notify("Warning", "Review this action before continuing.", "Warning") end })
-feedbackSection:Button({ Text = "Error", Icon = "circle-x", Callback = function() notify("Error", "The demo error notification is working.", "Error") end })
+feedbackSection:Button({
+	Text = "Success",
+	Icon = "circle-check",
+	Callback = function()
+		notify("Success", "Everything completed successfully.", "Success")
+	end,
+})
+feedbackSection:Button({
+	Text = "Information",
+	Icon = "info",
+	Callback = function()
+		notify("Information", "This is an informational message.", "Info")
+	end,
+})
+feedbackSection:Button({
+	Text = "Warning",
+	Icon = "triangle-alert",
+	Callback = function()
+		notify("Warning", "Review this action before continuing.", "Warning")
+	end,
+})
+feedbackSection:Button({
+	Text = "Error",
+	Icon = "circle-x",
+	Callback = function()
+		notify("Error", "The demo error notification is working.", "Error")
+	end,
+})
 
 -- About
 local aboutTab = menu:Tab({ Text = "About", Icon = "info", Tooltip = "Library information" })
