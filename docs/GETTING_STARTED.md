@@ -1,6 +1,6 @@
 # Getting Started with FyyUI
 
-> Applies to FyyUI v0.17.0 · Updated 2026-07-24
+> Applies to FyyUI v0.18.0 · Updated 2026-07-25
 
 This guide gets a local FyyUI menu running in Roblox Studio in a few minutes.
 
@@ -11,6 +11,15 @@ This guide gets a local FyyUI menu running in Roblox Studio in a few minutes.
 - Use Roblox Studio Play mode to verify interaction, touch layout, and input behavior.
 
 ## Create your first menu
+
+Tabs follow creation order, so Config can be placed between normal tabs:
+
+```lua
+menu:Tab({ Text = "Main", Icon = "home" })
+menu:Tab({ Text = "Automation", Icon = "zap" })
+menu:ConfigTab({ Text = "Config", Icon = "settings-2" })
+menu:Tab({ Text = "About", Icon = "info" })
+```
 
 ```lua
 local FyyUI = require(script.Parent.FyyUI)

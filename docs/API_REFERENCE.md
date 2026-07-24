@@ -1,8 +1,8 @@
 # FyyUI API Reference
 
-> Applies to FyyUI v0.17.0 · Updated 2026-07-24
+> Applies to FyyUI v0.18.0 · Updated 2026-07-25
 
-This reference describes the public FyyUI v0.17.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
+This reference describes the public FyyUI v0.18.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
 
 ## Module
 
@@ -72,6 +72,28 @@ handle:Dismiss()
 Notifications render as bottom-right cards with Lucide status icons and a duration progress line. `Title` and `Content` are preferred; `Text` remains a backward-compatible content alias. Supported types are `Info`, `Success`, `Warning`, and `Error`. Use a positive `Duration` for auto-dismiss, `0` for a persistent card, or dismiss the returned handle yourself. Notifications intentionally have no close button.
 
 ## Tabs and collapsibles
+
+### Ordered Config Tab
+
+`menu:ConfigTab(options)` creates a standard sidebar tab at the exact point where it is called. Its Configurations, Autoload, and Import & Export sections start open.
+
+```lua
+menu:Tab({ Text = "Main" })
+menu:Tab({ Text = "Automation" })
+local configs = menu:ConfigTab({
+    Text = "Config",
+    Icon = "settings-2",
+    Folder = "FyyUI/Configs",
+    DefaultProfile = "Default",
+    AutoLoad = true,
+    LoadCallbacks = false,
+})
+menu:Tab({ Text = "About" })
+```
+
+Controller methods: `Save(name?)`, `Load(name?)`, `Delete(name?)`, `Refresh(preferred?)`, `GetProfiles()`, `SetAutoload(name?)`, `ClearAutoload()`, and `Destroy()`.
+
+Provide `Storage = { List, Read, Write, Delete }` for a custom persistence backend. Otherwise FyyUI uses common executor filesystem APIs when available. JSON import/export remains visible without persistent storage.
 
 `menu:Tab({ Text = "Main", Icon = "home" })` returns a tab. Tabs provide:
 

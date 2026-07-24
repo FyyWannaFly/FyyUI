@@ -1,6 +1,24 @@
 # Configuration and Persistence
 
-> Applies to FyyUI v0.17.0 · Updated 2026-07-24
+## Config Tab
+
+Create a profile manager anywhere in the tab order:
+
+```lua
+local configs = menu:ConfigTab({
+    Text = "Config",
+    Folder = "FyyUI/MyHub",
+    DefaultProfile = "Default",
+    AutoLoad = true,
+    LoadCallbacks = false,
+})
+```
+
+Saved profiles contain controls with unique `Flag` values. Autoload defers unknown flags, so controls created after the Config Tab still receive saved values. Profile names are restricted to letters, numbers, spaces, `_`, and `-` and cannot escape the configured folder.
+
+Persistent profiles require `isfolder`, `makefolder`, `isfile`, `readfile`, `writefile`, `listfiles`, and `delfile`, or a custom storage adapter. Storage failures are returned instead of crashing the menu.
+
+> Applies to FyyUI v0.18.0 · Updated 2026-07-25
 
 FyyUI exports controls with a `Flag`. Keep each flag unique and stable across releases.
 
@@ -17,7 +35,7 @@ Zero-argument export remains the compatible v1 format:
 ```lua
 {
 	Schema = "FyyUI.Config.v1",
-	Version = "0.17.0",
+Version = "0.18.0",
 	Values = {
 		music = true,
 		volume = 50,
