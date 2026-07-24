@@ -2,7 +2,7 @@
 
 FyyUI is a local Roblox Luau UI library for tabs, controls, command-palette navigation, responsive layouts, and persisted settings.
 
-Current release: **v0.15.2**.
+Current release: **v0.16.0**.
 
 ## Quick start
 
@@ -54,7 +54,7 @@ FyyUI automatically loads the Lucide icon provider from the configured GitHub so
 
 ## Release highlights
 
-v0.15.2 fixes notification expiry, places the duration line inside each card, restores icons for every severity, and replaces compressed minimize transitions with a dark fade/scale animation and popup-style restore.
+v0.16.0 adds responsive 1:1 Columns to Tabs and Collapsibles, including compact stacking and independent Collapsible flows, and removes notification exit jumps by freezing the exiting card before a smooth rightward fade.
 
 ## License and contributions
 
