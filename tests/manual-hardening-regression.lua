@@ -6,7 +6,7 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.15.2", "library version must identify the notification and minimize polish release")
+	assert(FyyUI.Version == "0.16.0", "library version must identify the responsive columns release")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
@@ -28,7 +28,7 @@ return function(FyyUI)
 	assert(menu.TouchTargetSize == 36 and not menu._reducedMotion, "touch and motion defaults must be stable")
 	local legacyConfig = menu:ExportConfig()
 	assert(
-		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.15.2",
+		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.16.0",
 		"zero-argument config export must retain the v1 contract"
 	)
 	assert(not pcall(function()
@@ -102,6 +102,24 @@ return function(FyyUI)
 		Default = { "One", "Unknown" },
 	})
 	local single = tab:Dropdown({ Flag = "single", Options = { "One", "Two" }, Default = "One" })
+	local columns = tab:Columns({ Ratio = { 1, 1 }, Gap = 8, StackOnCompact = true })
+	local leftColumn = columns:Column()
+	local rightColumn = columns:Column()
+	assert(
+		leftColumn and rightColumn and columns:Column(1) == leftColumn,
+		"columns must expose independent child containers"
+	)
+	local columnToggle = leftColumn:Toggle({ Text = "Column toggle" })
+	local columnDropdown = rightColumn:Dropdown({ Text = "Column dropdown", Options = { "One", "Two" } })
+	local columnPanel = leftColumn:Collapsible("Column panel", { DefaultOpen = true })
+	local nestedColumns = columnPanel:Columns({ Gap = 6 })
+	assert(
+		columnToggle and columnDropdown and columnPanel and nestedColumns:Column(),
+		"columns must expose standard factories and support nesting inside collapsibles"
+	)
+	local nestedFromColumn = rightColumn:Columns({ Gap = 4 })
+	assert(nestedFromColumn and nestedFromColumn:Column(), "columns must support nested columns directly")
+	assert(columns:_isCompact() == menu._compact, "columns must follow the menu compact state")
 	assert(multi:_displayText() == "One", "one multi selection must display the first selected option")
 	multi:SetValue("Two", true)
 	assert(multi:_displayText() == "One +1", "multi summary must display the first option plus additional count")
@@ -155,7 +173,7 @@ return function(FyyUI)
 	-- v2 is explicitly selected, JSON-safe, and never partially mutates on malformed input.
 	local v2 = menu:ExportConfig({ SchemaVersion = 2 })
 	assert(
-		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.15.2",
+		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.16.0",
 		"explicit v2 export must use the versioned JSON-safe envelope"
 	)
 	assert(v2.Values.numeric == "", "v2 export must preserve blank numeric inputs")

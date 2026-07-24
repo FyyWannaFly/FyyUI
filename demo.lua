@@ -221,6 +221,34 @@ componentsTab:BoldLabel({ Text = "Component Gallery", Description = "A clean pre
 componentsTab:Label({ Text = "Use this tab as a quick API reference while building your own menu." })
 componentsTab:Divider()
 
+local componentColumns = componentsTab:Columns({ Ratio = { 1, 1 }, Gap = 8 })
+local componentLeft = componentColumns:Column()
+local componentRight = componentColumns:Column()
+
+componentLeft:Toggle({ Text = "Left Toggle", Description = "Independent left-column flow", Default = true })
+componentLeft:Slider({ Text = "Left Slider", Min = 0, Max = 100, Default = 65, Suffix = "%" })
+componentRight:Dropdown({ Text = "Right Dropdown", Options = { "Alpha", "Beta", "Gamma" }, Default = "Beta" })
+componentRight:Checkbox({
+	Text = "Right Checkbox",
+	Description = "Cards stay aligned without equal-height panels",
+	Default = true,
+})
+
+local panelColumns = componentsTab:Columns({ Gap = 8 })
+local panelLeft = panelColumns:Column()
+local panelRight = panelColumns:Column()
+local leftPanel = panelLeft:Collapsible("Left Panel", { DefaultOpen = true })
+local rightPanel = panelRight:Collapsible("Right Panel", { DefaultOpen = true })
+leftPanel:Toggle({ Text = "Auto Collect", Default = true })
+leftPanel:Dropdown({ Text = "Collect Type", Options = { "Coins", "Gems", "Crates" }, Default = "Coins" })
+leftPanel:Slider({ Text = "Collect Range", Min = 10, Max = 100, Default = 45, Suffix = " studs" })
+rightPanel:Checkbox({ Text = "Show Markers", Default = true })
+rightPanel:Button({ Text = "Refresh Markers", Icon = "refresh-cw" })
+
+local nestedColumns = leftPanel:Columns({ Gap = 6 })
+nestedColumns:Column():Checkbox({ Text = "Left Filter", Default = true })
+nestedColumns:Column():Checkbox({ Text = "Right Filter", Default = false })
+
 local controlsSection = componentsTab:Collapsible("Controls", { DefaultOpen = true })
 controlsSection:Toggle({ Text = "Toggle", Description = "Animated on/off control", Default = true })
 controlsSection:Checkbox({
