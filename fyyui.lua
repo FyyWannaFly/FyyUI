@@ -6324,7 +6324,20 @@ return (function()
 			-- Capture current on-screen position BEFORE any parent/size changes
 			local absPos = frame.AbsolutePosition
 
-			-- Remove from active stack
+			local exitFrame
+			if not self._reducedMotion then
+				-- Clone before touching the live stack. Reparenting the live card can expose
+				-- one layout frame from the bottom-anchored NotifBox, which looks like an
+				-- upward jump. The clone starts directly in screen space instead.
+				exitFrame = frame:Clone()
+				exitFrame.Name = "NotificationExit"
+				exitFrame.AnchorPoint = Vector2.new(0, 0)
+				exitFrame.Position = UDim2.fromOffset(absPos.X, absPos.Y)
+				exitFrame.Parent = self._notifGui
+			end
+
+			-- Remove the live card from the active stack only after the exit clone is
+			-- ready at the exact same screen position.
 			for i, rec in ipairs(self._activeNotifs) do
 				if rec.frame == frame then
 					table.remove(self._activeNotifs, i)
@@ -6333,12 +6346,8 @@ return (function()
 			end
 
 			if not self._reducedMotion then
-				-- Reparent to _notifGui to freeze position independent of NotifBox
-				-- AnchorPoint=(1,1) on NotifBox means box shrink shifts children's
-				-- absolute Y even if their local Position is unchanged.
-				frame.AnchorPoint = Vector2.new(0, 0)
-				frame.Parent = self._notifGui
-				frame.Position = UDim2.fromOffset(absPos.X, absPos.Y)
+				frame:Destroy()
+				record.frame = nil
 
 				-- Schedule reflow with generation/token so concurrent dismissals
 				-- collapse into a single reflow (only the latest runs)
@@ -6351,39 +6360,34 @@ return (function()
 					self:_reflowNotifs(true)
 				end)
 
-				-- Wait one rendered frame after reparenting so TweenService captures
-				-- the new screen-space position instead of the old stack-local one.
-				task.spawn(function()
-					game:GetService("RunService").Heartbeat:Wait()
-					if self._destroyed or not frame or frame.Parent ~= self._notifGui then
-						return
-					end
-					frame.Position = UDim2.fromOffset(absPos.X, absPos.Y)
-
-					-- Exit: slide right 40px, frozen Y, Quint In, fade
-					self:_transition(
-						frame,
-						0.3,
-						{
-							Position = UDim2.fromOffset(absPos.X + 40, absPos.Y),
-							BackgroundTransparency = 1,
-						},
-						Enum.EasingStyle.Quint,
-						Enum.EasingDirection.In,
-						function()
-							if frame and frame.Parent then
-								frame:Destroy()
-							end
-						end
-					)
-					-- Fade children
-					for _, child in ipairs(frame:GetChildren()) do
-						if child:IsA("TextLabel") or child:IsA("ImageLabel") then
-							local prop = child:IsA("TextLabel") and "TextTransparency" or "ImageTransparency"
-							self:_transition(child, 0.2, { [prop] = 1 })
+				-- Exit: slide only on X. Y remains the captured screen coordinate for
+				-- the complete lifetime of the clone.
+				self:_transition(
+					exitFrame,
+					0.3,
+					{
+						Position = UDim2.fromOffset(absPos.X + 40, absPos.Y),
+						BackgroundTransparency = 1,
+					},
+					Enum.EasingStyle.Quint,
+					Enum.EasingDirection.In,
+					function()
+						if exitFrame and exitFrame.Parent then
+							exitFrame:Destroy()
 						end
 					end
-				end)
+				)
+				for _, child in ipairs(exitFrame:GetDescendants()) do
+					if child:IsA("TextLabel") then
+						self:_transition(child, 0.2, { TextTransparency = 1 })
+					elseif child:IsA("ImageLabel") then
+						self:_transition(child, 0.2, { ImageTransparency = 1 })
+					elseif child:IsA("Frame") then
+						self:_transition(child, 0.2, { BackgroundTransparency = 1 })
+					elseif child:IsA("UIStroke") then
+						self:_transition(child, 0.2, { Transparency = 1 })
+					end
+				end
 			else
 				-- ReducedMotion: destroy + reflow immediately
 				if frame then
