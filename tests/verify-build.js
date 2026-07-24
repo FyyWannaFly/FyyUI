@@ -9,6 +9,13 @@ const childProcess = require("node:child_process");
 const root = path.resolve(__dirname, "..");
 const bundlePath = path.join(root, "fyyui.lua");
 
+function runBuild(...arguments_) {
+	const result = childProcess.spawnSync(process.execPath, [path.join(root, "scripts", "build.js"), ...arguments_], {
+		stdio: "inherit",
+	});
+	assert.equal(result.status, 0, `build command failed with status ${result.status}`);
+}
+
 function hashBundle() {
 	return crypto.createHash("sha256").update(fs.readFileSync(bundlePath)).digest("hex");
 }
@@ -25,9 +32,9 @@ for (const directory of ["components", "layout", "navigation", "menu"]) {
 sources.push(path.join(root, "src", "bootstrap.lua"), path.join(root, "src", "export.lua"));
 assert.equal(sources.length, 19, "the modular architecture must contain exactly 19 Luau source files");
 
-childProcess.execFileSync(process.execPath, [path.join(root, "scripts", "build.js"), "--check"], { stdio: "inherit" });
+runBuild("--check");
 const before = hashBundle();
-childProcess.execFileSync(process.execPath, [path.join(root, "scripts", "build.js")], { stdio: "inherit" });
+runBuild();
 const after = hashBundle();
 assert.equal(after, before, "rebuilding must produce byte-identical deterministic output");
 
