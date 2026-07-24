@@ -23,6 +23,23 @@ return function(FyyUI)
 	})
 	assert(menu:GetScale() == 1.35, "constructor scale must be clamped")
 	assert(
+		menu.TitleLogo
+			and menu.TitleLogo.Image == "rbxassetid://90892630150011"
+			and menu._minFrame.Icon.Image == "rbxassetid://90051950241069"
+			and menu.Topbar:FindFirstChild("TitleSep") == nil,
+		"topbar and floating icons must use the branded assets without the old vertical separator"
+	)
+	assert(menu.Title.Text:find("<font", 1, true), "Fyy title prefix must use theme accent RichText")
+	assert(
+		menu:SetTheme("Light") and menu.Title.Text:find(menu.Theme.Accent:ToHex(), 1, true),
+		"Fyy title prefix must follow runtime theme changes"
+	)
+	assert(menu:SetTitle("Custom Menu") and not menu.Title.Text:find("<font", 1, true), "custom titles must stay plain")
+	assert(
+		menu:SetTitle("FyyCommunity") and menu.Title.Text:find("<font", 1, true),
+		"Fyy titles must retain accent styling"
+	)
+	assert(
 		menu.Responsive and menu.CompactBreakpoint == 640 and menu.SafePadding == 12,
 		"responsive defaults must be stable"
 	)
