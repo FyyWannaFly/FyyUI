@@ -111,11 +111,21 @@ return function(FyyUI)
 	)
 	local columnToggle = leftColumn:Toggle({ Text = "Column toggle" })
 	local columnDropdown = rightColumn:Dropdown({ Text = "Column dropdown", Options = { "One", "Two" } })
+	local columnSlider = leftColumn:Slider({ Text = "Column slider", Default = 50 })
 	local columnPanel = leftColumn:Collapsible("Column panel", { DefaultOpen = true })
+	local nestedColumnSlider = columnPanel:Slider({ Text = "Nested column slider", Description = "Track below text" })
 	local nestedColumns = columnPanel:Columns({ Gap = 6 })
 	assert(
 		columnToggle and columnDropdown and columnPanel and nestedColumns:Column(),
 		"columns must expose standard factories and support nesting inside collapsibles"
+	)
+	assert(
+		columnSlider._inOneToOneColumn and nestedColumnSlider._inOneToOneColumn,
+		"sliders under 1:1 columns must use the lower-row layout"
+	)
+	assert(
+		columnSlider.Track.Size.X.Scale == 1 and columnSlider.Track.Position.Y.Scale == 1,
+		"1:1 column slider track must span the lower row"
 	)
 	local nestedFromColumn = rightColumn:Columns({ Gap = 4 })
 	assert(nestedFromColumn and nestedFromColumn:Column(), "columns must support nested columns directly")
@@ -135,6 +145,11 @@ return function(FyyUI)
 	local numeric = tab:Input({ Flag = "numeric", Numeric = true, Default = "" })
 	local collapsible = tab:Collapsible("Rapid toggles")
 	collapsible:Toggle({ Text = "Nested" })
+	local regularSlider = collapsible:Slider({ Text = "Regular slider" })
+	assert(
+		not regularSlider._inOneToOneColumn and regularSlider.Track.Size.X.Scale == 0,
+		"sliders outside 1:1 columns must keep the standard right-side layout"
+	)
 	tab:Button({ Text = "Theme regression button" })
 	tab:Label({ Text = "Theme regression label" })
 	tab:BoldLabel({ Text = "Theme regression bold label" })
