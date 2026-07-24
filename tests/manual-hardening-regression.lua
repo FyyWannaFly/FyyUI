@@ -6,7 +6,7 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.15.1", "library version must identify the notification syntax hotfix")
+	assert(FyyUI.Version == "0.15.2", "library version must identify the notification and minimize polish release")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
@@ -28,7 +28,7 @@ return function(FyyUI)
 	assert(menu.TouchTargetSize == 36 and not menu._reducedMotion, "touch and motion defaults must be stable")
 	local legacyConfig = menu:ExportConfig()
 	assert(
-		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.15.1",
+		legacyConfig.Schema == "FyyUI.Config.v1" and legacyConfig.Version == "0.15.2",
 		"zero-argument config export must retain the v1 contract"
 	)
 	assert(not pcall(function()
@@ -155,7 +155,7 @@ return function(FyyUI)
 	-- v2 is explicitly selected, JSON-safe, and never partially mutates on malformed input.
 	local v2 = menu:ExportConfig({ SchemaVersion = 2 })
 	assert(
-		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.15.1",
+		v2.Schema == "FyyUI.Config.v2" and v2.SchemaVersion == 2 and v2.Version == "0.15.2",
 		"explicit v2 export must use the versioned JSON-safe envelope"
 	)
 	assert(v2.Values.numeric == "", "v2 export must preserve blank numeric inputs")

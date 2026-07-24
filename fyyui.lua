@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.15.1
+FyyUI v0.15.2
 	Roblox UI Library
 	@github FyyWannaFly/FyyUI
 	
@@ -164,7 +164,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.15.1"
+	local LIBRARY_VERSION = "0.15.2"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -3213,80 +3213,64 @@ return (function()
 		local hasDesc = opts.Description ~= nil and opts.Description ~= ""
 		local h = hasDesc and theme.DescHeight or theme.ElementHeight
 		local btn = {}
-		btn.Container = U.Create(
-			"ImageButton",
-			{
-				Name = "Button",
-				Size = UDim2.new(1, -12, 0, h + 6),
-				Position = UDim2.fromOffset(6, 0),
-				BackgroundColor3 = theme.Element,
-				BackgroundTransparency = 0,
-				AutoButtonColor = false,
-				BorderSizePixel = 0,
-				Parent = self.Content,
-			}
-		)
+		btn.Container = U.Create("ImageButton", {
+			Name = "Button",
+			Size = UDim2.new(1, -12, 0, h + 6),
+			Position = UDim2.fromOffset(6, 0),
+			BackgroundColor3 = theme.Element,
+			BackgroundTransparency = 0,
+			AutoButtonColor = false,
+			BorderSizePixel = 0,
+			Parent = self.Content,
+		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn.Container })
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = btn.Container })
-		renderIcon(
-			btn.Container,
-			opts.Icon or "mouse-pointer-2",
-			{
-				Name = "Pointer",
-				Size = UDim2.fromOffset(42, 42),
-				Position = UDim2.new(1, -48, 0.5, -16),
-				ImageTransparency = 0.5,
-			}
-		)
+		renderIcon(btn.Container, opts.Icon or "mouse-pointer-2", {
+			Name = "Pointer",
+			Size = UDim2.fromOffset(42, 42),
+			Position = UDim2.new(1, -48, 0.5, -16),
+			ImageTransparency = 0.5,
+		})
 		local ix = 10
 		if hasDesc then
-			U.Create(
-				"TextLabel",
-				{
-					Name = "Text",
-					Size = UDim2.new(1, -20, 0, 20),
-					Position = UDim2.fromOffset(ix, 5),
-					BackgroundTransparency = 1,
-					Text = opts.Text or "Button",
-					Font = theme.Font,
-					TextSize = theme.FontSize,
-					TextColor3 = opts.Color or theme.TextPrimary,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					Parent = btn.Container,
-				}
-			)
-			U.Create(
-				"TextLabel",
-				{
-					Name = "Description",
-					Size = UDim2.new(1, -20, 0, 16),
-					Position = UDim2.fromOffset(ix, 27),
-					BackgroundTransparency = 1,
-					Text = opts.Description,
-					Font = theme.Font,
-					TextSize = theme.FontSizeSmall,
-					TextColor3 = theme.TextMuted,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					RichText = true,
-					Parent = btn.Container,
-				}
-			)
+			U.Create("TextLabel", {
+				Name = "Text",
+				Size = UDim2.new(1, -20, 0, 20),
+				Position = UDim2.fromOffset(ix, 5),
+				BackgroundTransparency = 1,
+				Text = opts.Text or "Button",
+				Font = theme.Font,
+				TextSize = theme.FontSize,
+				TextColor3 = opts.Color or theme.TextPrimary,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Parent = btn.Container,
+			})
+			U.Create("TextLabel", {
+				Name = "Description",
+				Size = UDim2.new(1, -20, 0, 16),
+				Position = UDim2.fromOffset(ix, 27),
+				BackgroundTransparency = 1,
+				Text = opts.Description,
+				Font = theme.Font,
+				TextSize = theme.FontSizeSmall,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				RichText = true,
+				Parent = btn.Container,
+			})
 		else
-			U.Create(
-				"TextLabel",
-				{
-					Name = "Text",
-					Size = UDim2.new(1, -20, 0, 20),
-					Position = UDim2.fromOffset(ix, (h + 6 - 20) / 2 + 1),
-					BackgroundTransparency = 1,
-					Text = opts.Text or "Button",
-					Font = theme.Font,
-					TextSize = theme.FontSize,
-					TextColor3 = opts.Color or theme.TextPrimary,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					Parent = btn.Container,
-				}
-			)
+			U.Create("TextLabel", {
+				Name = "Text",
+				Size = UDim2.new(1, -20, 0, 20),
+				Position = UDim2.fromOffset(ix, (h + 6 - 20) / 2 + 1),
+				BackgroundTransparency = 1,
+				Text = opts.Text or "Button",
+				Font = theme.Font,
+				TextSize = theme.FontSize,
+				TextColor3 = opts.Color or theme.TextPrimary,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Parent = btn.Container,
+			})
 		end
 		local _sc = U.Create("UIScale", { Parent = btn.Container })
 		btn.Container.MouseEnter:Connect(function()
@@ -3359,39 +3343,33 @@ return (function()
 			"Frame",
 			{ Name = "Label", Size = UDim2.new(1, 0, 0, h), BackgroundTransparency = 1, Parent = self.Content }
 		)
-		lbl.TextLabel = U.Create(
-			"TextLabel",
-			{
-				Name = "Text",
-				Size = UDim2.new(1, 0, 0, hasDesc and 20 or h),
-				Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 20) / 2 + 1),
+		lbl.TextLabel = U.Create("TextLabel", {
+			Name = "Text",
+			Size = UDim2.new(1, 0, 0, hasDesc and 20 or h),
+			Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 20) / 2 + 1),
+			BackgroundTransparency = 1,
+			Text = opts.Text or "",
+			Font = theme.Font,
+			TextSize = _lblTextSize,
+			TextColor3 = _lblColor or theme.TextSecondary,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			RichText = true,
+			Parent = lbl.Container,
+		})
+		if hasDesc then
+			U.Create("TextLabel", {
+				Name = "Description",
+				Size = UDim2.new(1, 0, 0, 16),
+				Position = UDim2.fromOffset(0, 24),
 				BackgroundTransparency = 1,
-				Text = opts.Text or "",
+				Text = opts.Description,
 				Font = theme.Font,
-				TextSize = _lblTextSize,
-				TextColor3 = _lblColor or theme.TextSecondary,
+				TextSize = theme.FontSizeSmall,
+				TextColor3 = theme.TextMuted,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				RichText = true,
 				Parent = lbl.Container,
-			}
-		)
-		if hasDesc then
-			U.Create(
-				"TextLabel",
-				{
-					Name = "Description",
-					Size = UDim2.new(1, 0, 0, 16),
-					Position = UDim2.fromOffset(0, 24),
-					BackgroundTransparency = 1,
-					Text = opts.Description,
-					Font = theme.Font,
-					TextSize = theme.FontSizeSmall,
-					TextColor3 = theme.TextMuted,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					RichText = true,
-					Parent = lbl.Container,
-				}
-			)
+			})
 		end
 		lbl.Destroy = function()
 			if lbl.Container then
@@ -3432,39 +3410,33 @@ return (function()
 			"Frame",
 			{ Name = "BoldLabel", Size = UDim2.new(1, 0, 0, h), BackgroundTransparency = 1, Parent = self.Content }
 		)
-		lbl.TextLabel = U.Create(
-			"TextLabel",
-			{
-				Name = "Text",
-				Size = UDim2.new(1, 0, 0, hasDesc and 22 or h),
-				Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 22) / 2 + 1),
+		lbl.TextLabel = U.Create("TextLabel", {
+			Name = "Text",
+			Size = UDim2.new(1, 0, 0, hasDesc and 22 or h),
+			Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 22) / 2 + 1),
+			BackgroundTransparency = 1,
+			Text = opts.Text or "",
+			Font = theme.FontBold,
+			TextSize = _blblTextSize,
+			TextColor3 = _blblColor or theme.TextPrimary,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			RichText = true,
+			Parent = lbl.Container,
+		})
+		if hasDesc then
+			U.Create("TextLabel", {
+				Name = "Description",
+				Size = UDim2.new(1, 0, 0, 16),
+				Position = UDim2.fromOffset(0, 24),
 				BackgroundTransparency = 1,
-				Text = opts.Text or "",
-				Font = theme.FontBold,
-				TextSize = _blblTextSize,
-				TextColor3 = _blblColor or theme.TextPrimary,
+				Text = opts.Description,
+				Font = theme.Font,
+				TextSize = theme.FontSizeSmall,
+				TextColor3 = theme.TextMuted,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				RichText = true,
 				Parent = lbl.Container,
-			}
-		)
-		if hasDesc then
-			U.Create(
-				"TextLabel",
-				{
-					Name = "Description",
-					Size = UDim2.new(1, 0, 0, 16),
-					Position = UDim2.fromOffset(0, 24),
-					BackgroundTransparency = 1,
-					Text = opts.Description,
-					Font = theme.Font,
-					TextSize = theme.FontSizeSmall,
-					TextColor3 = theme.TextMuted,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					RichText = true,
-					Parent = lbl.Container,
-				}
-			)
+			})
 		end
 		lbl.Destroy = function()
 			if lbl.Container then
@@ -3495,18 +3467,15 @@ return (function()
 			return nil, "destroyed"
 		end
 		local div = {}
-		div.Container = U.Create(
-			"Frame",
-			{
-				Name = "Divider",
-				Size = UDim2.new(1, -20, 0, 1),
-				Position = UDim2.fromOffset(10, 0),
-				BackgroundColor3 = self.Theme.Border,
-				BackgroundTransparency = 0.5,
-				BorderSizePixel = 0,
-				Parent = self.Content,
-			}
-		)
+		div.Container = U.Create("Frame", {
+			Name = "Divider",
+			Size = UDim2.new(1, -20, 0, 1),
+			Position = UDim2.fromOffset(10, 0),
+			BackgroundColor3 = self.Theme.Border,
+			BackgroundTransparency = 0.5,
+			BorderSizePixel = 0,
+			Parent = self.Content,
+		})
 		div.ApplyTheme = function(_, t)
 			t = t or _
 			if div.Container then
@@ -3987,6 +3956,7 @@ return (function()
 			BorderSizePixel = 0,
 			Parent = self.Gui,
 		})
+		self._baseBackgroundTransparency = self.Frame.BackgroundTransparency
 		U.Create("UICorner", { CornerRadius = UDim.new(0, theme.CornerRadius), Parent = self.Frame })
 
 		self._uiScale = U.Create("UIScale", { Parent = self.Frame, Scale = self.Scale })
@@ -5420,9 +5390,9 @@ return (function()
 		-- Type configuration: accent + Lucide icon
 		local typeDefs = {
 			Info = { accent = Color3.fromRGB(0, 130, 250), icon = "info" },
-			Success = { accent = Color3.fromRGB(0, 180, 80), icon = "check-circle" },
-			Warning = { accent = Color3.fromRGB(220, 180, 40), icon = "alert-triangle" },
-			Error = { accent = Color3.fromRGB(220, 60, 60), icon = "x-circle" },
+			Success = { accent = Color3.fromRGB(0, 180, 80), icon = "circle-check" },
+			Warning = { accent = Color3.fromRGB(220, 180, 40), icon = "triangle-alert" },
+			Error = { accent = Color3.fromRGB(220, 60, 60), icon = "circle-x" },
 		}
 		local cfg = typeDefs[notifType] or typeDefs.Info
 		local iconData = resolveIcon(cfg.icon)
@@ -5457,6 +5427,7 @@ return (function()
 			Size = UDim2.fromOffset(CARD_W, cardH),
 			BackgroundColor3 = theme.Element,
 			BorderSizePixel = 0,
+			ClipsDescendants = true,
 			Parent = self.NotifBox,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = frame })
@@ -5518,12 +5489,13 @@ return (function()
 		-- Progress track + fill (bottom of card)
 		local progressTrack = U.Create("Frame", {
 			Name = "ProgressTrack",
-			Size = UDim2.new(1, 0, 0, 3),
-			Position = UDim2.fromOffset(0, cardH - 3),
+			Size = UDim2.new(1, -(PAD * 2), 0, 3),
+			Position = UDim2.fromOffset(PAD, cardH - 9),
 			BackgroundColor3 = theme.ElementHover,
 			BorderSizePixel = 0,
 			Parent = frame,
 		})
+		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = progressTrack })
 		local progressFill = U.Create("Frame", {
 			Name = "ProgressFill",
 			Size = UDim2.new(1, 0, 1, 0),
@@ -5532,6 +5504,7 @@ return (function()
 			BorderSizePixel = 0,
 			Parent = progressTrack,
 		})
+		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = progressFill })
 
 		-- ── Entrance setup ──
 		local ts = game:GetService("TweenService")
@@ -5695,6 +5668,7 @@ return (function()
 				if self._destroyed or dismissed or not frame or not frame.Parent then
 					return
 				end
+				dismissTask = nil
 				dismiss()
 			end)
 		end
@@ -5790,7 +5764,7 @@ return (function()
 			-- Update frame size
 			frame.Size = UDim2.fromOffset(CARD_W, newCardH)
 			record.h = newCardH
-			progressTrack.Position = UDim2.fromOffset(0, newCardH - 3)
+			progressTrack.Position = UDim2.fromOffset(PAD, newCardH - 9)
 
 			-- Reflow siblings
 			self:_reflowNotifs(not self._reducedMotion)
@@ -5932,6 +5906,39 @@ return (function()
 		end
 	end
 
+	function Menu:_setMenuTransitionVisual(scale, backgroundTransparency, shadowTransparency, outlineTransparency)
+		if self._uiScale then
+			self._uiScale.Scale = scale or self.Scale
+		end
+		if self.Frame and backgroundTransparency ~= nil then
+			self.Frame.BackgroundTransparency = backgroundTransparency
+		end
+		if self._shadow and shadowTransparency ~= nil then
+			self._shadow.BackgroundTransparency = shadowTransparency
+		end
+		local outline = self.Frame and self.Frame:FindFirstChildOfClass("UIStroke")
+		if outline and outlineTransparency ~= nil then
+			outline.Transparency = outlineTransparency
+		end
+	end
+
+	function Menu:_refreshRestoredLayout()
+		self:_applyResponsiveLayout(true)
+		if not self.ContentArea then
+			return
+		end
+		for _, child in ipairs(self.ContentArea:GetChildren()) do
+			if child:IsA("ScrollingFrame") then
+				local layout = child:FindFirstChildOfClass("UIListLayout")
+				if layout then
+					local padding = child:FindFirstChildOfClass("UIPadding")
+					local paddingY = padding and (padding.PaddingTop.Offset + padding.PaddingBottom.Offset) or 0
+					child.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + paddingY)
+				end
+			end
+		end
+	end
+
 	function Menu:_minimize()
 		if self._destroyed then
 			return
@@ -5945,12 +5952,14 @@ return (function()
 		self._minPrevSize = self.Frame.Size
 		self._minPrevPos = self.Frame.Position
 
-		local iconPos = self._minFrame and (self._minSavedPos or self._minFrame.Position)
-			or (self._noLogoSavedPos or UDim2.new(0.5, -25, 0.5, -25))
-
 		self._minimizeToken = (self._minimizeToken or 0) + 1
 		local minimizeToken = self._minimizeToken
+		local pending = self._shadow and 3 or 2
 		local function finishMinimize()
+			pending -= 1
+			if pending > 0 then
+				return
+			end
 			if self._destroyed or self._minimizeToken ~= minimizeToken or not self.Minimized or not self.Visible then
 				return
 			end
@@ -5964,10 +5973,21 @@ return (function()
 				self.Gui.Enabled = false
 			end
 		end
-		self:_transition(self.Frame, 0.3, {
-			Size = UDim2.fromOffset(60, 60),
-			Position = iconPos,
-		}, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut, finishMinimize)
+		self:_transition(self.Frame, 0.22, {
+			Position = self.Frame.Position + UDim2.fromOffset(0, 8),
+			BackgroundTransparency = math.min(1, self._baseBackgroundTransparency + 0.72),
+		}, Enum.EasingStyle.Quad, Enum.EasingDirection.In, finishMinimize)
+		self:_transition(
+			self._uiScale,
+			0.22,
+			{ Scale = self.Scale * 0.96 },
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.In,
+			finishMinimize
+		)
+		if self._shadow then
+			self:_transition(self._shadow, 0.18, { BackgroundTransparency = 1 }, nil, nil, finishMinimize)
+		end
 	end
 
 	function Menu:_restore()
@@ -5978,24 +5998,17 @@ return (function()
 		local restoreToken = self._minimizeToken
 		self.Minimized = false
 
-		local iconPos = self._minFrame and (self._minSavedPos or self._minFrame.Position)
-			or (self._noLogoSavedPos or UDim2.new(0.5, -25, 0.5, -25))
-
-		self.Frame.Size = UDim2.fromOffset(60, 60)
-		self.Frame.Position = iconPos
+		local restorePos = self._minPrevPos or self._initialPos
+		self.Frame.Size = self._minPrevSize or self._initialSize
+		self.Frame.Position = restorePos + UDim2.fromOffset(0, 8)
+		self:_setMenuTransitionVisual(self.Scale * 0.96, math.min(1, self._baseBackgroundTransparency + 0.72), 1, 1)
 		self.Gui.Enabled = true
-		-- Internals stay hidden (set by _minimize) until expansion tween completes
+		self:_refreshRestoredLayout()
 
-		self:_transition(
-			self.Frame,
-			0.3,
-			{
-				Size = self._minPrevSize or self._initialSize,
-				Position = self._minPrevPos or self._initialPos,
-			},
-			Enum.EasingStyle.Quart,
-			Enum.EasingDirection.InOut,
-			function()
+		local pending = self._shadow and 3 or 2
+		local function finishRestore()
+			pending -= 1
+			if pending <= 0 then
 				if self._destroyed or self._minimizeToken ~= restoreToken then
 					return
 				end
@@ -6006,21 +6019,7 @@ return (function()
 				if self._noLogoRestoreGui then
 					self._noLogoRestoreGui.Enabled = false
 				end
-				-- Refresh tab canvas sizes after layout settles
-				if self.ContentArea then
-					for _, child in ipairs(self.ContentArea:GetChildren()) do
-						if child:IsA("ScrollingFrame") then
-							local layout = child:FindFirstChildOfClass("UIListLayout")
-							if layout then
-								local padding = child:FindFirstChildOfClass("UIPadding")
-								local paddingY = padding and (padding.PaddingTop.Offset + padding.PaddingBottom.Offset)
-									or 0
-								child.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + paddingY)
-							end
-						end
-					end
-				end
-				-- Refresh Collapsible sizes in active tab
+				self:_refreshRestoredLayout()
 				local activeTab = self.ActiveTab
 				if activeTab and activeTab.Components then
 					for _, comp in ipairs(activeTab.Components) do
@@ -6030,7 +6029,26 @@ return (function()
 					end
 				end
 			end
+		end
+		self:_transition(
+			self.Frame,
+			0.24,
+			{ Position = restorePos, BackgroundTransparency = self._baseBackgroundTransparency },
+			Enum.EasingStyle.Quint,
+			Enum.EasingDirection.Out,
+			finishRestore
 		)
+		self:_transition(
+			self._uiScale,
+			0.24,
+			{ Scale = self.Scale },
+			Enum.EasingStyle.Quint,
+			Enum.EasingDirection.Out,
+			finishRestore
+		)
+		if self._shadow then
+			self:_transition(self._shadow, 0.22, { BackgroundTransparency = 0.55 }, nil, nil, finishRestore)
+		end
 	end
 
 	function Menu:_toggleMaximize()
@@ -6187,6 +6205,7 @@ return (function()
 				end
 			else
 				self.Gui.Enabled = true
+				self:_setMenuTransitionVisual(self.Scale, self._baseBackgroundTransparency, 0.55, 0.25)
 				self:_setInternalsVisible(true)
 			end
 			if self._notifGui then
