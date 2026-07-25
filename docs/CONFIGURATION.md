@@ -18,7 +18,7 @@ Saved profiles contain controls with unique `Flag` values. Autoload defers unkno
 
 Persistent profiles require `isfolder`, `makefolder`, `isfile`, `readfile`, `writefile`, `listfiles`, and `delfile`, or a custom storage adapter. Storage failures are returned instead of crashing the menu.
 
-> Applies to FyyUI v0.18.3 · Updated 2026-07-26
+> Applies to FyyUI v0.18.4 · Updated 2026-07-26
 
 FyyUI exports controls with a `Flag`. Keep each flag unique and stable across releases.
 
@@ -35,7 +35,7 @@ Zero-argument export remains the compatible v1 format:
 ```lua
 {
 	Schema = "FyyUI.Config.v1",
-Version = "0.18.3",
+Version = "0.18.4",
 	Values = {
 		music = true,
 		volume = 50,
