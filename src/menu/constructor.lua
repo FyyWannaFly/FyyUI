@@ -251,6 +251,7 @@ function Menu.new(options, theme)
 	self._paletteSelectedIndex = 0
 	self._overviewConns = {}
 	self._destroyCallbacks = {}
+	self._minimizeChangedCallbacks = {}
 	self._inputCapturePrefix = ("FyyUI_%s_%s"):format(
 		tostring(self):gsub("[^%w]", ""),
 		tostring(os.clock()):gsub("%D", "")
@@ -612,6 +613,11 @@ function Menu.new(options, theme)
 					end
 				end
 				attempt += 1
+			end
+		end)
+		logo:GetPropertyChangedSignal("IsLoaded"):Connect(function()
+			if logo.Parent and not self._destroyed and not logo.IsLoaded then
+				logo.Image = assets[1]
 			end
 		end)
 		return logo

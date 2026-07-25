@@ -167,6 +167,15 @@ function Menu:_setMinIconTransparency(transparency, duration)
 	end
 end
 
+function Menu:_emitMinimizeChanged(minimized)
+	for _, callback in ipairs(self._minimizeChangedCallbacks or {}) do
+		local ok, err = pcall(callback, minimized)
+		if not ok then
+			warn("FyyUI minimize callback failed: " .. tostring(err))
+		end
+	end
+end
+
 function Menu:_setMenuTransitionVisual(scale, backgroundTransparency, shadowTransparency, outlineTransparency)
 	if self._uiScale then
 		self._uiScale.Scale = scale or self.Scale
@@ -213,6 +222,7 @@ function Menu:_minimize()
 	self:_closeTransientUi()
 	self:_setInternalsVisible(false)
 	self.Minimized = true
+	self:_emitMinimizeChanged(true)
 	self._minPrevSize = self.Frame.Size
 	self._minPrevPos = self.Frame.Position
 
@@ -754,6 +764,17 @@ function Menu:OnDestroy(callback)
 	return true
 end
 
+function Menu:OnMinimizeChanged(callback)
+	if type(callback) ~= "function" then
+		return false, "expected function"
+	end
+	if self._destroyed then
+		return false, "destroyed"
+	end
+	table.insert(self._minimizeChangedCallbacks, callback)
+	return true
+end
+
 function Menu:Destroy()
 	if self._destroyed then
 		return
@@ -761,8 +782,10 @@ function Menu:Destroy()
 	self:_closeTransientUi()
 	self:_releaseAllInputCaptures()
 	self._destroyed = true
+	self._minimizeChangedCallbacks = {}
 	self.Visible = false
 	self.Minimized = false
+	self:_emitMinimizeChanged(false)
 	self._minimizeToken = (self._minimizeToken or 0) + 1
 	if self._activeNotifs then
 		local activeNotifs = table.clone(self._activeNotifs)
