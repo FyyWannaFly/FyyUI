@@ -1,6 +1,6 @@
 # Getting Started with FyyUI
 
-> Applies to FyyUI v0.18.0 · Updated 2026-07-25
+> Applies to FyyUI v0.18.1 · Updated 2026-07-25
 
 This guide gets a local FyyUI menu running in Roblox Studio in a few minutes.
 
@@ -27,7 +27,7 @@ local FyyUI = require(script.Parent.FyyUI)
 local menu = FyyUI.Menu({
 	Title = "Player Settings",
 	Theme = "Dark",
-    Size = UDim2.fromOffset(645, 365),
+    Size = UDim2.fromOffset(601, 344),
 	Resizable = true,
 	Responsive = true,
 	CompactBreakpoint = 640,

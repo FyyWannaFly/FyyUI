@@ -1,8 +1,8 @@
 # FyyUI API Reference
 
-> Applies to FyyUI v0.18.0 · Updated 2026-07-25
+> Applies to FyyUI v0.18.1 · Updated 2026-07-25
 
-This reference describes the public FyyUI v0.18.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
+This reference describes the public FyyUI v0.18.1 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
 
 ## Module
 

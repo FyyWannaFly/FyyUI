@@ -6,7 +6,7 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.18.0", "library version must identify the config tab release")
+	assert(FyyUI.Version == "0.18.1", "library version must identify the patch release")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
