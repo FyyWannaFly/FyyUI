@@ -3,3 +3,9 @@
 Thumbs.db
 *.log
 *Hub.lua
+.omo/
+opencode.json.*
+*.clean
+*.test.json
+output_obfuscated.lua
+Violance_disctrict/
