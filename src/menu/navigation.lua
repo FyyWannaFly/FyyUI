@@ -388,22 +388,20 @@ function Menu:HideDropdownPopup()
 	end
 	if self._activePopupFrame then
 		local popup = self._activePopupFrame
-		local placement = self._activePopupPlacement
-		local bounds = self._activePopupBounds
 		self._activePopupFrame = nil
-		self._activePopupPlacement = nil
-		self._activePopupBounds = nil
 		local curSize = popup.Size
-		local closeProps = { Size = UDim2.fromOffset(0, curSize.Y.Offset) }
-		if placement == "InteriorRight" and bounds then
-			local rightX = bounds.X + bounds.Width
-			closeProps.Position = UDim2.fromOffset(rightX, bounds.Y)
-		end
-		self:_transition(popup, 0.2, closeProps, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
-			pcall(function()
-				popup:Destroy()
-			end)
-		end)
+		self:_transition(
+			popup,
+			0.2,
+			{ Size = UDim2.fromOffset(0, curSize.Y.Offset) },
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.In,
+			function()
+				pcall(function()
+					popup:Destroy()
+				end)
+			end
+		)
 	end
 	if self._activePopupOverlay then
 		self._activePopupOverlay:Destroy()
