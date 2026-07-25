@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.18.1
+FyyUI v0.18.3
 Copyright (c) 2026 FyyWannaFly. All rights reserved.
 Licensed for limited personal use under the repository LICENSE.
 Unauthorized copying, modification, or redistribution is prohibited.
@@ -159,7 +159,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.18.2"
+	local LIBRARY_VERSION = "0.18.3"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -4561,6 +4561,7 @@ return (function()
 		self._paletteResultButtons = {}
 		self._paletteSelectedIndex = 0
 		self._overviewConns = {}
+		self._destroyCallbacks = {}
 		self._inputCapturePrefix = ("FyyUI_%s_%s"):format(
 			tostring(self):gsub("[^%w]", ""),
 			tostring(os.clock()):gsub("%D", "")
@@ -4882,62 +4883,74 @@ return (function()
 			or type(options.Logo) == "string" and options.Logo
 			or nil
 
-		-- Preload logo assets biar gagal load
+		-- Keep logo instances type-stable while the assets load in the background.
 		local _titleLogoAsset = "rbxassetid://90892630150011"
-		task.spawn(function()
-			pcall(function()
-				game:GetService("ContentProvider"):PreloadAsync({ _logoImage or _titleLogoAsset })
-			end)
-		end)
+		local function createLogo(parent, name, assets, size, position, anchorPoint, zidx)
+			local logo = U.Create("ImageLabel", {
+				Name = name,
+				Size = size,
+				Position = position,
+				AnchorPoint = anchorPoint or Vector2.zero,
+				BackgroundTransparency = 1,
+				Image = assets[1],
+				ImageTransparency = 1,
+				ScaleType = Enum.ScaleType.Fit,
+				ZIndex = zidx,
+				Parent = parent,
+			})
+			local fallback = U.Create("TextLabel", {
+				Name = "Fallback",
+				Size = UDim2.fromScale(1, 1),
+				BackgroundColor3 = theme.Accent,
+				BackgroundTransparency = 0.15,
+				BorderSizePixel = 0,
+				Text = "F",
+				Font = Enum.Font.BuilderSansExtraBold,
+				TextSize = math.max(12, math.floor(size.Y.Offset * 0.55)),
+				TextColor3 = Color3.fromRGB(255, 255, 255),
+				TextXAlignment = Enum.TextXAlignment.Center,
+				TextYAlignment = Enum.TextYAlignment.Center,
+				ZIndex = zidx + 1,
+				Parent = logo,
+			})
+			U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fallback })
 
-		-- Helper: fallback circle kalo image gagal
-		local function createIconSafe(parent, logoAsset, size, position, zidx)
-			local ok = pcall(function()
-				game:GetService("ContentProvider"):PreloadAsync({ logoAsset })
+			task.spawn(function()
+				local contentProvider = game:GetService("ContentProvider")
+				local retryDelays = { 0, 1, 2, 4, 8 }
+				local attempt = 1
+				while logo.Parent and not self._destroyed do
+					if retryDelays[attempt] and retryDelays[attempt] > 0 then
+						task.wait(retryDelays[attempt])
+					elseif attempt > #retryDelays then
+						task.wait(15)
+					end
+					for _, asset in ipairs(assets) do
+						local loaded = true
+						local statusObserved = false
+						pcall(function()
+							contentProvider:PreloadAsync({ asset }, function(_, status)
+								statusObserved = true
+								loaded = status == Enum.AssetFetchStatus.Success
+							end)
+						end)
+						if (loaded or not statusObserved) and logo.Parent and not self._destroyed then
+							logo.Image = asset
+							logo.ImageTransparency = 0
+							fallback.Visible = false
+							return
+						end
+					end
+					attempt += 1
+				end
 			end)
-			if ok then
-				return U.Create("ImageLabel", {
-					Name = "TitleLogo",
-					Size = size,
-					Position = position,
-					BackgroundTransparency = 1,
-					Image = logoAsset,
-					ScaleType = Enum.ScaleType.Fit,
-					ZIndex = zidx,
-					Parent = parent,
-				})
-			else
-				-- Fallback: colored circle
-				local fallback = U.Create("Frame", {
-					Name = "TitleLogo",
-					Size = size,
-					Position = position,
-					BackgroundColor3 = theme.Accent,
-					BackgroundTransparency = 0.3,
-					BorderSizePixel = 0,
-					ZIndex = zidx,
-					Parent = parent,
-				})
-				U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fallback })
-				local letter = U.Create("TextLabel", {
-					Size = UDim2.fromScale(1, 1),
-					BackgroundTransparency = 1,
-					Text = "F",
-					Font = Enum.Font.GothamBold,
-					TextSize = size.Y.Offset * 0.6,
-					TextColor3 = Color3.fromRGB(255, 255, 255),
-					TextXAlignment = Enum.TextXAlignment.Center,
-					TextYAlignment = Enum.TextYAlignment.Center,
-					ZIndex = zidx + 1,
-					Parent = fallback,
-				})
-				return fallback
-			end
+			return logo
 		end
 
-		self.TitleLogo = createIconSafe(self.Topbar, _titleLogoAsset,
+		self.TitleLogo = createLogo(self.Topbar, "TitleLogo", { _titleLogoAsset, "rbxassetid://90051950241069" },
 			UDim2.fromOffset(22, 22),
 			UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 22) / 2)),
+			nil,
 			2
 		)
 
@@ -5134,34 +5147,19 @@ return (function()
 			self._minScale = U.Create("UIScale", { Parent = self._minFrame, Scale = 1 })
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = self._minFrame })
 			U.Create("UIStroke", { Color = theme.Accent, Thickness = 2, Parent = self._minFrame })
-			local minIcon do
-				local ok = pcall(function()
-					game:GetService("ContentProvider"):PreloadAsync({ _logoImage })
-				end)
-				if ok then
-					minIcon = U.Create("ImageLabel", {
-						Name = "Icon",
-						Size = UDim2.new(1, -4, 1, -4),
-						Position = UDim2.fromScale(0.5, 0.5),
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundTransparency = 1,
-						Image = _logoImage,
-						ScaleType = Enum.ScaleType.Fit,
-						Parent = self._minFrame,
-					})
-				else
-					minIcon = U.Create("Frame", {
-						Name = "Icon",
-						Size = UDim2.new(1, -4, 1, -4),
-						Position = UDim2.fromScale(0.5, 0.5),
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundColor3 = theme.Accent,
-						BackgroundTransparency = 0.2,
-						BorderSizePixel = 0,
-						Parent = self._minFrame,
-					})
-				end
+			local minAssets = { _logoImage }
+			if _logoImage ~= "rbxassetid://90051950241069" then
+				table.insert(minAssets, "rbxassetid://90051950241069")
 			end
+			local minIcon = createLogo(
+				self._minFrame,
+				"Icon",
+				minAssets,
+				UDim2.new(1, -4, 1, -4),
+				UDim2.fromScale(0.5, 0.5),
+				Vector2.new(0.5, 0.5),
+				1
+			)
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = minIcon })
 
 			-- Dragging with click/drag distinction
@@ -7691,6 +7689,26 @@ return (function()
 		end
 	end
 
+	function Menu:_setMinIconTransparency(transparency, duration)
+		local icon = self._minFrame and self._minFrame:FindFirstChild("Icon")
+		if not icon then
+			return
+		end
+		local fallback = icon:FindFirstChild("Fallback")
+		if duration then
+			self:_transition(icon, duration, { ImageTransparency = transparency }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			if fallback then
+				self:_transition(fallback, duration, { TextTransparency = transparency, BackgroundTransparency = math.max(0.15, transparency) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			end
+		else
+			icon.ImageTransparency = transparency
+			if fallback then
+				fallback.TextTransparency = transparency
+				fallback.BackgroundTransparency = math.max(0.15, transparency)
+			end
+		end
+	end
+
 	function Menu:_setMenuTransitionVisual(scale, backgroundTransparency, shadowTransparency, outlineTransparency)
 		if self._uiScale then
 			self._uiScale.Scale = scale or self.Scale
@@ -7762,10 +7780,7 @@ return (function()
 				if self._minScale then
 					self._minScale.Scale = 1
 				end
-				local icon = self._minFrame:FindFirstChild("Icon")
-				if icon then
-					icon.ImageTransparency = 0
-				end
+				self:_setMinIconTransparency(0)
 				self._minGui.Enabled = true
 				self._minGui.Parent = self.GuiParent
 				self.Gui.Enabled = false
@@ -7815,7 +7830,6 @@ return (function()
 		self:_refreshRestoredLayout()
 		if self._minFrame and self._minGui and self._minGui.Enabled then
 			self._minFrame.Active = false
-			local icon = self._minFrame:FindFirstChild("Icon")
 			self:_transition(
 				self._minFrame,
 				0.12,
@@ -7826,9 +7840,7 @@ return (function()
 			if self._minScale then
 				self:_transition(self._minScale, 0.12, { Scale = 0.9 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 			end
-			if icon then
-				self:_transition(icon, 0.1, { ImageTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-			end
+			self:_setMinIconTransparency(1, 0.1)
 			local function hideMinimizeGui()
 				if self._destroyed or self._minimizeToken ~= restoreToken then
 					return
@@ -7870,10 +7882,7 @@ return (function()
 					if self._minScale then
 						self._minScale.Scale = 1
 					end
-					local icon = self._minFrame:FindFirstChild("Icon")
-					if icon then
-						icon.ImageTransparency = 0
-					end
+					self:_setMinIconTransparency(0)
 				end
 				if self._noLogoRestoreGui then
 					self._noLogoRestoreGui.Enabled = false
@@ -8264,12 +8273,27 @@ return (function()
 		end)
 		makeBtn("Yes", 140, Color3.fromRGB(170, 45, 45), Color3.fromRGB(210, 60, 60), function()
 			closePopup(function()
-				self:SetVisible(false)
+				self:Destroy()
 			end)
 		end)
 		if self._confirmFocusReturn then
 			game:GetService("GuiService").SelectedObject = noButton
 		end
+	end
+
+	function Menu:OnDestroy(callback)
+		if type(callback) ~= "function" then
+			return false, "expected function"
+		end
+		if self._destroyed then
+			local ok, err = pcall(callback)
+			if not ok then
+				warn("FyyUI OnDestroy callback failed: " .. tostring(err))
+			end
+			return false, "destroyed"
+		end
+		table.insert(self._destroyCallbacks, callback)
+		return true
 	end
 
 	function Menu:Destroy()
@@ -8279,6 +8303,8 @@ return (function()
 		self:_closeTransientUi()
 		self:_releaseAllInputCaptures()
 		self._destroyed = true
+		self.Visible = false
+		self.Minimized = false
 		self._minimizeToken = (self._minimizeToken or 0) + 1
 		if self._activeNotifs then
 			local activeNotifs = table.clone(self._activeNotifs)
@@ -8430,6 +8456,15 @@ return (function()
 		if self.Gui then
 			self.Gui:Destroy()
 			self.Gui = nil
+		end
+
+		local destroyCallbacks = self._destroyCallbacks or {}
+		self._destroyCallbacks = {}
+		for _, callback in ipairs(destroyCallbacks) do
+			local ok, err = pcall(callback)
+			if not ok then
+				warn("FyyUI OnDestroy callback failed: " .. tostring(err))
+			end
 		end
 	end
 	function Menu:_ApplyTheme(theme)
