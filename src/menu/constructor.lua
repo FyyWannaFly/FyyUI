@@ -473,6 +473,7 @@ function Menu.new(options, theme)
 				Position = UDim2.fromScale(0.5, 0.5),
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				ImageColor3 = Color3.fromRGB(60, 60, 72),
+				ZIndex = 4,
 			})
 			b.Activated:Connect(action)
 			rightMargin = rightMargin + hitSize + spacing
@@ -521,6 +522,7 @@ function Menu.new(options, theme)
 				BackgroundTransparency = 1,
 				ImageColor3 = Color3.fromRGB(150, 150, 165),
 				Image = WIN_ICONS[name],
+				ZIndex = 4,
 				Parent = b,
 			})
 			b.MouseEnter:Connect(function()
