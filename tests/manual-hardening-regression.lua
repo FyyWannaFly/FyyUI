@@ -6,7 +6,7 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.18.1", "library version must identify the patch release")
+	assert(FyyUI.Version == "0.18.3", "library version must identify the patch release")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
@@ -76,10 +76,14 @@ return function(FyyUI)
 	assert(menu:GetScale() == 1.35, "constructor scale must be clamped")
 	assert(
 		menu.TitleLogo
+			and menu.TitleLogo:IsA("ImageLabel")
 			and menu.TitleLogo.Image == "rbxassetid://90892630150011"
+			and menu.TitleLogo:FindFirstChild("Fallback")
+			and menu._minFrame.Icon:IsA("ImageLabel")
 			and menu._minFrame.Icon.Image == "rbxassetid://90051950241069"
+			and menu._minFrame.Icon:FindFirstChild("Fallback")
 			and menu.Topbar:FindFirstChild("TitleSep") == nil,
-		"topbar and floating icons must use the branded assets without the old vertical separator"
+		"topbar and floating icons must keep stable image labels with branded fallbacks"
 	)
 	assert(
 		menu.TitleLogo.Size == UDim2.fromOffset(22, 22)
@@ -502,8 +506,13 @@ return function(FyyUI)
 	end), "zero slider step must fail early")
 
 	menu:OpenCommandPalette()
+	menu:_captureInput("RegressionCapture", { Enum.UserInputType.MouseWheel })
 	menu:SetVisible(false)
-	assert(not menu._paletteOpen and menu._paletteOverlay == nil, "hidden menu must close the command palette")
+	assert(
+		not menu._paletteOpen and menu._paletteOverlay == nil and next(menu._capturedActions) == nil,
+		"hidden menu must close transient UI and release every input capture"
+	)
+	menu:SetVisible(true)
 
 	toggle:Destroy()
 	local changed, err = toggle:SetValue(false)
@@ -533,7 +542,18 @@ return function(FyyUI)
 		assert(not menu._minGui.Enabled, "floating icon must hide before menu restore finishes")
 	end
 
+	local destroyCalls = 0
+	assert(menu:OnDestroy(function()
+		destroyCalls += 1
+	end), "destroy callback must register while the menu is alive")
 	menu:Destroy()
+	menu:Destroy()
+	assert(
+		destroyCalls == 1 and menu._destroyed and menu.Visible == false and menu.Gui == nil,
+		"destroy must finalize menu state and invoke cleanup callbacks exactly once"
+	)
+	local visibleOk, visibleErr = menu:ToggleVisibility()
+	assert(visibleOk == false and visibleErr == "destroyed", "destroyed menu must not reopen")
 	local themeOk, themeErr = menu:SetTheme("Dark")
 	assert(themeOk == false and themeErr == "destroyed", "destroyed menu theme methods must be guarded")
 	local configOk, configErr = menu:ImportConfig({ Values = {} })
