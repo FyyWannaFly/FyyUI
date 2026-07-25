@@ -160,18 +160,10 @@ function Menu:_setMinIconTransparency(transparency, duration)
 	if not icon then
 		return
 	end
-	local fallback = icon:FindFirstChild("Fallback")
 	if duration then
 		self:_transition(icon, duration, { ImageTransparency = transparency }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		if fallback then
-			self:_transition(fallback, duration, { TextTransparency = transparency, BackgroundTransparency = math.max(0.15, transparency) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		end
 	else
 		icon.ImageTransparency = transparency
-		if fallback then
-			fallback.TextTransparency = transparency
-			fallback.BackgroundTransparency = math.max(0.15, transparency)
-		end
 	end
 end
 

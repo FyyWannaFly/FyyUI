@@ -582,28 +582,11 @@ function Menu.new(options, theme)
 			AnchorPoint = anchorPoint or Vector2.zero,
 			BackgroundTransparency = 1,
 			Image = assets[1],
-			ImageTransparency = 1,
+			ImageTransparency = 0,
 			ScaleType = Enum.ScaleType.Fit,
 			ZIndex = zidx,
 			Parent = parent,
 		})
-		local fallback = U.Create("TextLabel", {
-			Name = "Fallback",
-			Size = UDim2.fromScale(1, 1),
-			BackgroundColor3 = theme.Accent,
-			BackgroundTransparency = 0.15,
-			BorderSizePixel = 0,
-			Text = "F",
-			Font = Enum.Font.BuilderSansExtraBold,
-			TextSize = math.max(12, math.floor(size.Y.Offset * 0.55)),
-			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextXAlignment = Enum.TextXAlignment.Center,
-			TextYAlignment = Enum.TextYAlignment.Center,
-			ZIndex = zidx + 1,
-			Parent = logo,
-		})
-		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fallback })
-
 		task.spawn(function()
 			local contentProvider = game:GetService("ContentProvider")
 			local retryDelays = { 0, 1, 2, 4, 8 }
@@ -625,8 +608,6 @@ function Menu.new(options, theme)
 					end)
 					if (loaded or not statusObserved) and logo.Parent and not self._destroyed then
 						logo.Image = asset
-						logo.ImageTransparency = 0
-						fallback.Visible = false
 						return
 					end
 				end
