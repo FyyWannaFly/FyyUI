@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.18.4
+FyyUI v0.18.5
 Copyright (c) 2026 FyyWannaFly. All rights reserved.
 Licensed for limited personal use under the repository LICENSE.
 Unauthorized copying, modification, or redistribution is prohibited.
@@ -159,7 +159,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.18.4"
+	local LIBRARY_VERSION = "0.18.5"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -4562,6 +4562,7 @@ return (function()
 		self._paletteSelectedIndex = 0
 		self._overviewConns = {}
 		self._destroyCallbacks = {}
+		self._minimizeChangedCallbacks = {}
 		self._inputCapturePrefix = ("FyyUI_%s_%s"):format(
 			tostring(self):gsub("[^%w]", ""),
 			tostring(os.clock()):gsub("%D", "")
@@ -4923,6 +4924,11 @@ return (function()
 						end
 					end
 					attempt += 1
+				end
+			end)
+			logo:GetPropertyChangedSignal("IsLoaded"):Connect(function()
+				if logo.Parent and not self._destroyed and not logo.IsLoaded then
+					logo.Image = assets[1]
 				end
 			end)
 			return logo
@@ -7682,6 +7688,15 @@ return (function()
 		end
 	end
 
+	function Menu:_emitMinimizeChanged(minimized)
+		for _, callback in ipairs(self._minimizeChangedCallbacks or {}) do
+			local ok, err = pcall(callback, minimized)
+			if not ok then
+				warn("FyyUI minimize callback failed: " .. tostring(err))
+			end
+		end
+	end
+
 	function Menu:_setMenuTransitionVisual(scale, backgroundTransparency, shadowTransparency, outlineTransparency)
 		if self._uiScale then
 			self._uiScale.Scale = scale or self.Scale
@@ -7728,6 +7743,7 @@ return (function()
 		self:_closeTransientUi()
 		self:_setInternalsVisible(false)
 		self.Minimized = true
+		self:_emitMinimizeChanged(true)
 		self._minPrevSize = self.Frame.Size
 		self._minPrevPos = self.Frame.Position
 
@@ -8269,6 +8285,17 @@ return (function()
 		return true
 	end
 
+	function Menu:OnMinimizeChanged(callback)
+		if type(callback) ~= "function" then
+			return false, "expected function"
+		end
+		if self._destroyed then
+			return false, "destroyed"
+		end
+		table.insert(self._minimizeChangedCallbacks, callback)
+		return true
+	end
+
 	function Menu:Destroy()
 		if self._destroyed then
 			return
@@ -8276,8 +8303,10 @@ return (function()
 		self:_closeTransientUi()
 		self:_releaseAllInputCaptures()
 		self._destroyed = true
+		self._minimizeChangedCallbacks = {}
 		self.Visible = false
 		self.Minimized = false
+		self:_emitMinimizeChanged(false)
 		self._minimizeToken = (self._minimizeToken or 0) + 1
 		if self._activeNotifs then
 			local activeNotifs = table.clone(self._activeNotifs)
