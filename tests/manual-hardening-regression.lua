@@ -6,7 +6,7 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.18.4", "library version must identify the patch release")
+	assert(FyyUI.Version == "0.18.5", "library version must identify the patch release")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
@@ -533,10 +533,18 @@ return function(FyyUI)
 	menu:_minimize()
 	assert(menu._minPrevSize == originalSize, "minimize must be idempotent")
 	if menu._minFrame then
+		local minimizeEvents = {}
+		assert(menu:OnMinimizeChanged(function(minimized)
+			table.insert(minimizeEvents, minimized)
+		end), "minimize callback must register while the menu is alive")
+		menu:_minimize()
+		assert(minimizeEvents[1] == true, "minimize callback must observe topbar/programmatic minimize")
+		task.wait(0.3)
 		assert(menu._minFrame.Position == menu._minInitialPos, "first floating icon position must be left-center")
 		menu._minGui.Enabled = true
 		menu.Gui.Enabled = false
 		menu:_restore()
+		assert(minimizeEvents[2] == false, "minimize callback must observe restore")
 		assert(menu._restoring and not menu._minFrame.Active, "floating icon must disable immediately during restore")
 		task.wait(0.14)
 		assert(not menu._minGui.Enabled, "floating icon must hide before menu restore finishes")
