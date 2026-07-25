@@ -1,8 +1,8 @@
 # FyyUI API Reference
 
-> Applies to FyyUI v0.18.1 · Updated 2026-07-25
+> Applies to FyyUI v0.18.3 · Updated 2026-07-26
 
-This reference describes the public FyyUI v0.18.1 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
+This reference describes the public FyyUI v0.18.3 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
 
 ## Module
 
@@ -60,6 +60,7 @@ local FyyUI = require(script.Parent.FyyUI)
 | `menu:ExportConfig(options)`, `ImportConfig(snapshot, options)` | Table persistence. |
 | `menu:ExportConfigJSON()`, `ImportConfigJSON(json, options)` | JSON-safe persistence. |
 | `menu:Destroy()` | Cleans UI and tracked connections. |
+| `menu:OnDestroy(callback)` | Registers a callback that runs once after the menu's owned UI and connections are destroyed. |
 
 ### Notifications
 
