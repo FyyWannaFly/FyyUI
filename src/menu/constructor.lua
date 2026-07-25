@@ -335,7 +335,7 @@ function Menu.new(options, theme)
 			options.Size.Y.Offset + options.Size.Y.Scale * viewport.Y
 		)
 	else
-		size = Vector2.new(645, 365)
+		size = Vector2.new(601, 344)
 	end
 	size = Vector2.new(
 		math.clamp(size.X, self.MinSize.X, self.MaxSize.X),
@@ -579,7 +579,7 @@ function Menu.new(options, theme)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://90892630150011",
 		ScaleType = Enum.ScaleType.Fit,
-		ZIndex = 2,
+		ZIndex = 3,
 		Parent = self.Topbar,
 	})
 
@@ -599,7 +599,7 @@ function Menu.new(options, theme)
 		TextColor3 = theme.Accent,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Visible = false,
-		ZIndex = 2,
+		ZIndex = 3,
 		Parent = self.Topbar,
 	})
 	self.Title = U.Create("TextLabel", {
@@ -612,7 +612,7 @@ function Menu.new(options, theme)
 		TextSize = titleSize,
 		TextColor3 = theme.TextPrimary,
 		TextXAlignment = titleAlign == "Right" and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
-		ZIndex = 2,
+		ZIndex = 3,
 		Parent = self.Topbar,
 	})
 	self._refreshTitle = function()

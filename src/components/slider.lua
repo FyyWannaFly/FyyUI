@@ -115,12 +115,24 @@ function Slider.new(parent, options, theme)
 	end
 
 	local dragging = false
+	local activeTrackTouch = false
+	local function valueFromInput(input)
+		local absPos = self.Track.AbsolutePosition.X
+		local size = self.Track.AbsoluteSize.X
+		if size <= 0 then
+			return nil
+		end
+		local pct = math.clamp((input.Position.X - absPos) / size, 0, 1)
+		local val = self.Min + (self.Max - self.Min) * pct
+		return math.clamp(roundToStep(val), self.Min, self.Max)
+	end
 	self.Knob.InputBegan:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
+		local t = input.UserInputType
+		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
 			dragging = true
+			if t == Enum.UserInputType.Touch then
+				activeTrackTouch = true
+			end
 		end
 	end)
 	local dragCon
@@ -128,55 +140,43 @@ function Slider.new(parent, options, theme)
 		if processed then
 			return
 		end
-		if
-			(input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch)
-			and dragging
-		then
-			local absPos = self.Track.AbsolutePosition.X
-			local size = self.Track.AbsoluteSize.X
-			if size <= 0 then
-				return
+		local t = input.UserInputType
+		if dragging and (t == Enum.UserInputType.MouseMovement or (t == Enum.UserInputType.Touch)) then
+			local val = valueFromInput(input)
+			if val then
+				self:SetValue(val)
 			end
-			local pct = math.clamp((input.Position.X - absPos) / size, 0, 1)
-			local val = self.Min + (self.Max - self.Min) * pct
-			val = math.clamp(roundToStep(val), self.Min, self.Max)
-			self:SetValue(val)
 		end
 	end)
 	self.Knob.InputEnded:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
+		local t = input.UserInputType
+		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
 			dragging = false
+			activeTrackTouch = false
 		end
 	end)
 	-- Service-level InputEnded: catches mouse-up even when pointer is no longer over the knob
 	self._sliderEndCon = uis.InputEnded:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
+		local t = input.UserInputType
+		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
 			dragging = false
+			activeTrackTouch = false
 		end
 	end)
 	self._dragCon = dragCon
 
-	-- Click on track to jump
+	-- Track input: jump on click or drag on touch
 	self.Track.InputBegan:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			local absPos = self.Track.AbsolutePosition.X
-			local size = self.Track.AbsoluteSize.X
-			if size <= 0 then
-				return
+		local t = input.UserInputType
+		if t == Enum.UserInputType.Touch then
+			dragging = true
+			activeTrackTouch = true
+		end
+		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+			local val = valueFromInput(input)
+			if val then
+				self:SetValue(val)
 			end
-			local pct = math.clamp((input.Position.X - absPos) / size, 0, 1)
-			local val = self.Min + (self.Max - self.Min) * pct
-			val = math.clamp(roundToStep(val), self.Min, self.Max)
-			self:SetValue(val)
 		end
 	end)
 
