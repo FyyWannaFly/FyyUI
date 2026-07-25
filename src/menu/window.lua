@@ -155,6 +155,26 @@ function Menu:_setInternalsVisible(visible)
 	end
 end
 
+function Menu:_setMinIconTransparency(transparency, duration)
+	local icon = self._minFrame and self._minFrame:FindFirstChild("Icon")
+	if not icon then
+		return
+	end
+	local fallback = icon:FindFirstChild("Fallback")
+	if duration then
+		self:_transition(icon, duration, { ImageTransparency = transparency }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		if fallback then
+			self:_transition(fallback, duration, { TextTransparency = transparency, BackgroundTransparency = math.max(0.15, transparency) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		end
+	else
+		icon.ImageTransparency = transparency
+		if fallback then
+			fallback.TextTransparency = transparency
+			fallback.BackgroundTransparency = math.max(0.15, transparency)
+		end
+	end
+end
+
 function Menu:_setMenuTransitionVisual(scale, backgroundTransparency, shadowTransparency, outlineTransparency)
 	if self._uiScale then
 		self._uiScale.Scale = scale or self.Scale
@@ -226,10 +246,7 @@ function Menu:_minimize()
 			if self._minScale then
 				self._minScale.Scale = 1
 			end
-			local icon = self._minFrame:FindFirstChild("Icon")
-			if icon then
-				icon.ImageTransparency = 0
-			end
+			self:_setMinIconTransparency(0)
 			self._minGui.Enabled = true
 			self._minGui.Parent = self.GuiParent
 			self.Gui.Enabled = false
@@ -279,7 +296,6 @@ function Menu:_restore()
 	self:_refreshRestoredLayout()
 	if self._minFrame and self._minGui and self._minGui.Enabled then
 		self._minFrame.Active = false
-		local icon = self._minFrame:FindFirstChild("Icon")
 		self:_transition(
 			self._minFrame,
 			0.12,
@@ -290,9 +306,7 @@ function Menu:_restore()
 		if self._minScale then
 			self:_transition(self._minScale, 0.12, { Scale = 0.9 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 		end
-		if icon then
-			self:_transition(icon, 0.1, { ImageTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		end
+		self:_setMinIconTransparency(1, 0.1)
 		local function hideMinimizeGui()
 			if self._destroyed or self._minimizeToken ~= restoreToken then
 				return
@@ -334,10 +348,7 @@ function Menu:_restore()
 				if self._minScale then
 					self._minScale.Scale = 1
 				end
-				local icon = self._minFrame:FindFirstChild("Icon")
-				if icon then
-					icon.ImageTransparency = 0
-				end
+				self:_setMinIconTransparency(0)
 			end
 			if self._noLogoRestoreGui then
 				self._noLogoRestoreGui.Enabled = false
@@ -728,12 +739,27 @@ function Menu:_confirmClose()
 	end)
 	makeBtn("Yes", 140, Color3.fromRGB(170, 45, 45), Color3.fromRGB(210, 60, 60), function()
 		closePopup(function()
-			self:SetVisible(false)
+			self:Destroy()
 		end)
 	end)
 	if self._confirmFocusReturn then
 		game:GetService("GuiService").SelectedObject = noButton
 	end
+end
+
+function Menu:OnDestroy(callback)
+	if type(callback) ~= "function" then
+		return false, "expected function"
+	end
+	if self._destroyed then
+		local ok, err = pcall(callback)
+		if not ok then
+			warn("FyyUI OnDestroy callback failed: " .. tostring(err))
+		end
+		return false, "destroyed"
+	end
+	table.insert(self._destroyCallbacks, callback)
+	return true
 end
 
 function Menu:Destroy()
@@ -743,6 +769,8 @@ function Menu:Destroy()
 	self:_closeTransientUi()
 	self:_releaseAllInputCaptures()
 	self._destroyed = true
+	self.Visible = false
+	self.Minimized = false
 	self._minimizeToken = (self._minimizeToken or 0) + 1
 	if self._activeNotifs then
 		local activeNotifs = table.clone(self._activeNotifs)
@@ -894,5 +922,14 @@ function Menu:Destroy()
 	if self.Gui then
 		self.Gui:Destroy()
 		self.Gui = nil
+	end
+
+	local destroyCallbacks = self._destroyCallbacks or {}
+	self._destroyCallbacks = {}
+	for _, callback in ipairs(destroyCallbacks) do
+		local ok, err = pcall(callback)
+		if not ok then
+			warn("FyyUI OnDestroy callback failed: " .. tostring(err))
+		end
 	end
 end
