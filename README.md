@@ -2,7 +2,7 @@
 
 A polished Roblox Luau interface library focused on responsive layouts, consistent controls, smooth window behavior, and a compact one-file distribution.
 
-**Current release:** `v0.18.4`
+**Current release:** `v0.18.5`
 
 ## Highlights
 
