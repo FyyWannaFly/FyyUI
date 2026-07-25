@@ -111,7 +111,7 @@ end
 
 function Menu:_closeTransientUi()
 	self:HideDropdownPopup()
-	self:_releaseInput("OverviewWheel")
+	self:_releaseAllInputCaptures()
 	self:CloseCommandPalette()
 	self._tooltipPending = false
 	self._tooltipTarget = nil

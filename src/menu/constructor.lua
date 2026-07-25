@@ -571,16 +571,64 @@ function Menu.new(options, theme)
 		or type(options.Logo) == "string" and options.Logo
 		or nil
 
-	self.TitleLogo = U.Create("ImageLabel", {
-		Name = "TitleLogo",
-		Size = UDim2.fromOffset(22, 22),
-		Position = UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 22) / 2)),
-		BackgroundTransparency = 1,
-		Image = "rbxassetid://90892630150011",
-		ScaleType = Enum.ScaleType.Fit,
-		ZIndex = 2,
-		Parent = self.Topbar,
-	})
+	-- Preload logo assets biar gagal load
+	local _titleLogoAsset = "rbxassetid://90892630150011"
+	task.spawn(function()
+		pcall(function()
+			game:GetService("ContentProvider"):PreloadAsync({ _logoImage or _titleLogoAsset })
+		end)
+	end)
+
+	-- Helper: fallback circle kalo image gagal
+	local function createIconSafe(parent, logoAsset, size, position, zidx)
+		local ok = pcall(function()
+			game:GetService("ContentProvider"):PreloadAsync({ logoAsset })
+		end)
+		if ok then
+			return U.Create("ImageLabel", {
+				Name = "TitleLogo",
+				Size = size,
+				Position = position,
+				BackgroundTransparency = 1,
+				Image = logoAsset,
+				ScaleType = Enum.ScaleType.Fit,
+				ZIndex = zidx,
+				Parent = parent,
+			})
+		else
+			-- Fallback: colored circle
+			local fallback = U.Create("Frame", {
+				Name = "TitleLogo",
+				Size = size,
+				Position = position,
+				BackgroundColor3 = theme.Accent,
+				BackgroundTransparency = 0.3,
+				BorderSizePixel = 0,
+				ZIndex = zidx,
+				Parent = parent,
+			})
+			U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fallback })
+			local letter = U.Create("TextLabel", {
+				Size = UDim2.fromScale(1, 1),
+				BackgroundTransparency = 1,
+				Text = "F",
+				Font = Enum.Font.GothamBold,
+				TextSize = size.Y.Offset * 0.6,
+				TextColor3 = Color3.fromRGB(255, 255, 255),
+				TextXAlignment = Enum.TextXAlignment.Center,
+				TextYAlignment = Enum.TextYAlignment.Center,
+				ZIndex = zidx + 1,
+				Parent = fallback,
+			})
+			return fallback
+		end
+	end
+
+	self.TitleLogo = createIconSafe(self.Topbar, _titleLogoAsset,
+		UDim2.fromOffset(22, 22),
+		UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 22) / 2)),
+		2
+	)
 
 	-- Title
 	self._titleText = options.Title or "FyyUI"
@@ -775,16 +823,34 @@ function Menu.new(options, theme)
 		self._minScale = U.Create("UIScale", { Parent = self._minFrame, Scale = 1 })
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = self._minFrame })
 		U.Create("UIStroke", { Color = theme.Accent, Thickness = 2, Parent = self._minFrame })
-		local minIcon = U.Create("ImageLabel", {
-			Name = "Icon",
-			Size = UDim2.new(1, -4, 1, -4),
-			Position = UDim2.fromScale(0.5, 0.5),
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			BackgroundTransparency = 1,
-			Image = _logoImage,
-			ScaleType = Enum.ScaleType.Fit,
-			Parent = self._minFrame,
-		})
+		local minIcon do
+			local ok = pcall(function()
+				game:GetService("ContentProvider"):PreloadAsync({ _logoImage })
+			end)
+			if ok then
+				minIcon = U.Create("ImageLabel", {
+					Name = "Icon",
+					Size = UDim2.new(1, -4, 1, -4),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundTransparency = 1,
+					Image = _logoImage,
+					ScaleType = Enum.ScaleType.Fit,
+					Parent = self._minFrame,
+				})
+			else
+				minIcon = U.Create("Frame", {
+					Name = "Icon",
+					Size = UDim2.new(1, -4, 1, -4),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundColor3 = theme.Accent,
+					BackgroundTransparency = 0.2,
+					BorderSizePixel = 0,
+					Parent = self._minFrame,
+				})
+			end
+		end
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = minIcon })
 
 		-- Dragging with click/drag distinction

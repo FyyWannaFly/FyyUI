@@ -579,10 +579,7 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create(
-			"UIStroke",
-			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
-		)
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
@@ -767,10 +764,7 @@ return (function()
 			isFiniteNumber(self.Min) and isFiniteNumber(self.Max) and self.Min <= self.Max,
 			"FyyUI Slider: Min and Max must be finite numbers with Min <= Max"
 		)
-		assert(
-			isFiniteNumber(self.Step) and self.Step > 0,
-			"FyyUI Slider: Step must be a finite number greater than zero"
-		)
+		assert(isFiniteNumber(self.Step) and self.Step > 0, "FyyUI Slider: Step must be a finite number greater than zero")
 		local default = options.Default == nil and self.Min or options.Default
 		assert(isFiniteNumber(default), "FyyUI Slider: Default must be a finite number")
 		self.Value = math.clamp(default, self.Min, self.Max)
@@ -797,10 +791,7 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create(
-			"UIStroke",
-			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
-		)
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
@@ -1112,10 +1103,7 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create(
-			"UIStroke",
-			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
-		)
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		U.Create("TextLabel", {
 			Name = "Label",
@@ -1645,10 +1633,7 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create(
-			"UIStroke",
-			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
-		)
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		-- Label
 		self.Label = U.Create("TextLabel", {
@@ -1973,10 +1958,7 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create(
-			"UIStroke",
-			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
-		)
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		-- Label
 		self.Label = U.Create("TextLabel", {
@@ -2193,10 +2175,7 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create(
-			"UIStroke",
-			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
-		)
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		-- Box
 		local boxSize = 20
@@ -3003,10 +2982,7 @@ return (function()
 			Parent = parent,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create(
-			"UIStroke",
-			{ Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container }
-		)
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
 
 		-- Header button
 		self.Header = U.Create("ImageButton", {
@@ -3893,11 +3869,9 @@ return (function()
 				btn._scaleTween:Cancel()
 			end
 			btn.Container.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-			btn._scaleTween = game:GetService("TweenService"):Create(
-				_scale,
-				TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{ Scale = 0.97 }
-			)
+			btn._scaleTween =
+				game:GetService("TweenService")
+					:Create(_scale, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 0.97 })
 			btn._scaleTween:Play()
 		end)
 		btn.Container.MouseButton1Up:Connect(function()
@@ -4611,10 +4585,7 @@ return (function()
 			"FyyUI Menu: MinSize and MaxSize must be Vector2 values"
 		)
 		assert(
-			isFiniteNumber(self.MinSize.X)
-				and isFiniteNumber(self.MinSize.Y)
-				and self.MinSize.X > 0
-				and self.MinSize.Y > 0,
+			isFiniteNumber(self.MinSize.X) and isFiniteNumber(self.MinSize.Y) and self.MinSize.X > 0 and self.MinSize.Y > 0,
 			"FyyUI Menu: MinSize must be positive"
 		)
 		assert(
@@ -4738,8 +4709,7 @@ return (function()
 				end
 				local s = self.Frame.Size
 				self._shadow.Size = UDim2.fromOffset(s.X.Offset + 16, s.Y.Offset + 16)
-				self._shadow.Position =
-					UDim2.fromOffset(self.Frame.Position.X.Offset - 8, self.Frame.Position.Y.Offset - 8)
+				self._shadow.Position = UDim2.fromOffset(self.Frame.Position.X.Offset - 8, self.Frame.Position.Y.Offset - 8)
 			end
 		end
 
@@ -4912,16 +4882,64 @@ return (function()
 			or type(options.Logo) == "string" and options.Logo
 			or nil
 
-		self.TitleLogo = U.Create("ImageLabel", {
-			Name = "TitleLogo",
-			Size = UDim2.fromOffset(22, 22),
-			Position = UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 22) / 2)),
-			BackgroundTransparency = 1,
-			Image = "rbxassetid://90892630150011",
-			ScaleType = Enum.ScaleType.Fit,
-			ZIndex = 2,
-			Parent = self.Topbar,
-		})
+		-- Preload logo assets biar gagal load
+		local _titleLogoAsset = "rbxassetid://90892630150011"
+		task.spawn(function()
+			pcall(function()
+				game:GetService("ContentProvider"):PreloadAsync({ _logoImage or _titleLogoAsset })
+			end)
+		end)
+
+		-- Helper: fallback circle kalo image gagal
+		local function createIconSafe(parent, logoAsset, size, position, zidx)
+			local ok = pcall(function()
+				game:GetService("ContentProvider"):PreloadAsync({ logoAsset })
+			end)
+			if ok then
+				return U.Create("ImageLabel", {
+					Name = "TitleLogo",
+					Size = size,
+					Position = position,
+					BackgroundTransparency = 1,
+					Image = logoAsset,
+					ScaleType = Enum.ScaleType.Fit,
+					ZIndex = zidx,
+					Parent = parent,
+				})
+			else
+				-- Fallback: colored circle
+				local fallback = U.Create("Frame", {
+					Name = "TitleLogo",
+					Size = size,
+					Position = position,
+					BackgroundColor3 = theme.Accent,
+					BackgroundTransparency = 0.3,
+					BorderSizePixel = 0,
+					ZIndex = zidx,
+					Parent = parent,
+				})
+				U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fallback })
+				local letter = U.Create("TextLabel", {
+					Size = UDim2.fromScale(1, 1),
+					BackgroundTransparency = 1,
+					Text = "F",
+					Font = Enum.Font.GothamBold,
+					TextSize = size.Y.Offset * 0.6,
+					TextColor3 = Color3.fromRGB(255, 255, 255),
+					TextXAlignment = Enum.TextXAlignment.Center,
+					TextYAlignment = Enum.TextYAlignment.Center,
+					ZIndex = zidx + 1,
+					Parent = fallback,
+				})
+				return fallback
+			end
+		end
+
+		self.TitleLogo = createIconSafe(self.Topbar, _titleLogoAsset,
+			UDim2.fromOffset(22, 22),
+			UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 22) / 2)),
+			2
+		)
 
 		-- Title
 		self._titleText = options.Title or "FyyUI"
@@ -5116,25 +5134,40 @@ return (function()
 			self._minScale = U.Create("UIScale", { Parent = self._minFrame, Scale = 1 })
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = self._minFrame })
 			U.Create("UIStroke", { Color = theme.Accent, Thickness = 2, Parent = self._minFrame })
-			local minIcon = U.Create("ImageLabel", {
-				Name = "Icon",
-				Size = UDim2.new(1, -4, 1, -4),
-				Position = UDim2.fromScale(0.5, 0.5),
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				BackgroundTransparency = 1,
-				Image = _logoImage,
-				ScaleType = Enum.ScaleType.Fit,
-				Parent = self._minFrame,
-			})
+			local minIcon do
+				local ok = pcall(function()
+					game:GetService("ContentProvider"):PreloadAsync({ _logoImage })
+				end)
+				if ok then
+					minIcon = U.Create("ImageLabel", {
+						Name = "Icon",
+						Size = UDim2.new(1, -4, 1, -4),
+						Position = UDim2.fromScale(0.5, 0.5),
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						BackgroundTransparency = 1,
+						Image = _logoImage,
+						ScaleType = Enum.ScaleType.Fit,
+						Parent = self._minFrame,
+					})
+				else
+					minIcon = U.Create("Frame", {
+						Name = "Icon",
+						Size = UDim2.new(1, -4, 1, -4),
+						Position = UDim2.fromScale(0.5, 0.5),
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						BackgroundColor3 = theme.Accent,
+						BackgroundTransparency = 0.2,
+						BorderSizePixel = 0,
+						Parent = self._minFrame,
+					})
+				end
+			end
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = minIcon })
 
 			-- Dragging with click/drag distinction
 			local dragging, dragStart, startPos, didDrag
 			self._minFrame.InputBegan:Connect(function(i)
-				if
-					i.UserInputType == Enum.UserInputType.MouseButton1
-					or i.UserInputType == Enum.UserInputType.Touch
-				then
+				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
 					if self._restoring then
 						return
 					end
@@ -5145,10 +5178,7 @@ return (function()
 				end
 			end)
 			self._minFrame.InputEnded:Connect(function(i)
-				if
-					i.UserInputType == Enum.UserInputType.MouseButton1
-					or i.UserInputType == Enum.UserInputType.Touch
-				then
+				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
 					dragging = false
 					if not didDrag then
 						self:_restore()
@@ -5158,10 +5188,7 @@ return (function()
 			self._minDragInputCon = game:GetService("UserInputService").InputChanged:Connect(function(i)
 				if
 					dragging
-					and (
-						i.UserInputType == Enum.UserInputType.MouseMovement
-						or i.UserInputType == Enum.UserInputType.Touch
-					)
+					and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch)
 				then
 					local delta = i.Position - dragStart
 					if delta.Magnitude > 5 then
@@ -5202,10 +5229,7 @@ return (function()
 			-- No-logo drag parity: allow repositioning the restore button
 			local nlDragging, nlDragStart, nlStartPos, nlDidDrag
 			self._noLogoRestoreBtn.InputBegan:Connect(function(i)
-				if
-					i.UserInputType == Enum.UserInputType.MouseButton1
-					or i.UserInputType == Enum.UserInputType.Touch
-				then
+				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
 					if self._restoring then
 						return
 					end
@@ -5216,10 +5240,7 @@ return (function()
 				end
 			end)
 			self._noLogoRestoreBtn.InputEnded:Connect(function(i)
-				if
-					i.UserInputType == Enum.UserInputType.MouseButton1
-					or i.UserInputType == Enum.UserInputType.Touch
-				then
+				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
 					nlDragging = false
 					if not nlDidDrag then
 						self:_restore()
@@ -5229,10 +5250,7 @@ return (function()
 			self._noLogoDragCon = game:GetService("UserInputService").InputChanged:Connect(function(i)
 				if
 					nlDragging
-					and (
-						i.UserInputType == Enum.UserInputType.MouseMovement
-						or i.UserInputType == Enum.UserInputType.Touch
-					)
+					and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch)
 				then
 					local delta = i.Position - nlDragStart
 					if delta.Magnitude > 5 then
@@ -5505,8 +5523,7 @@ return (function()
 		local textService = game:GetService("TextService")
 		local longestOptionWidth = 0
 		for _, option in ipairs(opts) do
-			local measured =
-				textService:GetTextSize(tostring(option), theme.FontSize, theme.Font, Vector2.new(1000, 100)).X
+			local measured = textService:GetTextSize(tostring(option), theme.FontSize, theme.Font, Vector2.new(1000, 100)).X
 			longestOptionWidth = math.max(longestOptionWidth, measured)
 		end
 		local PANEL_CHROME = 78
@@ -5729,13 +5746,7 @@ return (function()
 		}
 		if placement == "InteriorRight" then
 			local initialX = px + w
-			popup:TweenPosition(
-				UDim2.fromOffset(initialX, py),
-				Enum.EasingDirection.Out,
-				Enum.EasingStyle.Quad,
-				0,
-				true
-			)
+			popup:TweenPosition(UDim2.fromOffset(initialX, py), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0, true)
 			popup.Position = UDim2.fromOffset(initialX, py)
 			self:_transition(popup, 0.25, {
 				Size = UDim2.fromOffset(w, clampedH),
@@ -5766,8 +5777,7 @@ return (function()
 				if not activePopup then
 					return
 				end
-				local point, popupPos, popupSize =
-					input.Position, activePopup.AbsolutePosition, activePopup.AbsoluteSize
+				local point, popupPos, popupSize = input.Position, activePopup.AbsolutePosition, activePopup.AbsoluteSize
 				local insidePopup = point.X >= popupPos.X
 					and point.X <= popupPos.X + popupSize.X
 					and point.Y >= popupPos.Y
@@ -6948,11 +6958,7 @@ return (function()
 			Icon = "save",
 			Callback = function()
 				local ok, result = controller:Save()
-				controller:_notify(
-					ok and "Config Saved" or "Save Failed",
-					tostring(result),
-					ok and "Success" or "Error"
-				)
+				controller:_notify(ok and "Config Saved" or "Save Failed", tostring(result), ok and "Success" or "Error")
 			end,
 		})
 		profileActions:Column(2):Button({
@@ -7087,10 +7093,7 @@ return (function()
 		local title = options.Title or ""
 		local content = options.Content or (options.Text and tostring(options.Text)) or ""
 		local duration = options.Duration == nil and 3 or options.Duration
-		assert(
-			isFiniteNumber(duration) and duration >= 0,
-			"FyyUI Notify: Duration must be a non-negative finite number"
-		)
+		assert(isFiniteNumber(duration) and duration >= 0, "FyyUI Notify: Duration must be a non-negative finite number")
 		local notifType = options.Type or "Info"
 		local theme = self.Theme
 
@@ -7605,8 +7608,7 @@ return (function()
 			if (isMouseDrag and t == Enum.UserInputType.MouseMovement) or isTouchDrag then
 				local delta = input.Position - ds
 				-- Clamp so at least CLAMP_MARGIN px of the frame stays visible in the viewport
-				local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
-					or Vector2.new(1920, 1080)
+				local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
 				local fs = frame.AbsoluteSize
 				local rawX = sp.X.Scale * viewport.X + sp.X.Offset + delta.X
 				local rawY = sp.Y.Scale * viewport.Y + sp.Y.Offset + delta.Y
@@ -7645,7 +7647,7 @@ return (function()
 
 	function Menu:_closeTransientUi()
 		self:HideDropdownPopup()
-		self:_releaseInput("OverviewWheel")
+		self:_releaseAllInputCaptures()
 		self:CloseCommandPalette()
 		self._tooltipPending = false
 		self._tooltipTarget = nil
@@ -8031,9 +8033,7 @@ return (function()
 			-- Mouse: any MouseButton1 release stops resize.
 			-- Touch: only the specific initiating touch release stops resize.
 			if resizing then
-				if
-					t == Enum.UserInputType.MouseButton1 or (t == Enum.UserInputType.Touch and input == resizeInputObj)
-				then
+				if t == Enum.UserInputType.MouseButton1 or (t == Enum.UserInputType.Touch and input == resizeInputObj) then
 					resizing = false
 					resizeInputObj = nil
 				end
@@ -8156,10 +8156,7 @@ return (function()
 			Parent = frame,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = popup })
-		U.Create(
-			"UIStroke",
-			{ Color = Color3.fromRGB(255, 255, 255), Transparency = 0.88, Thickness = 1, Parent = popup }
-		)
+		U.Create("UIStroke", { Color = Color3.fromRGB(255, 255, 255), Transparency = 0.88, Thickness = 1, Parent = popup })
 
 		-- Title
 		U.Create("TextLabel", {
