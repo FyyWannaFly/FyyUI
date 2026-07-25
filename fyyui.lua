@@ -159,7 +159,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.18.1"
+	local LIBRARY_VERSION = "0.18.2"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
