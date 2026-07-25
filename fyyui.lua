@@ -897,11 +897,14 @@ return (function()
 		end)
 		local dragCon
 		dragCon = uis.InputChanged:Connect(function(input, processed)
-			if processed then
+			local t = input.UserInputType
+			if t ~= Enum.UserInputType.MouseMovement and t ~= Enum.UserInputType.Touch then
 				return
 			end
-			local t = input.UserInputType
-			if dragging and (t == Enum.UserInputType.MouseMovement or (t == Enum.UserInputType.Touch)) then
+			if dragging then
+				if processed and t == Enum.UserInputType.MouseMovement then
+					return
+				end
 				local val = valueFromInput(input)
 				if val then
 					self:SetValue(val)
@@ -4765,7 +4768,7 @@ return (function()
 			Text = "",
 			AutoButtonColor = false,
 			Active = true,
-			ZIndex = 2,
+			ZIndex = 1,
 			Parent = self.Topbar,
 		})
 
@@ -4917,7 +4920,7 @@ return (function()
 			BackgroundTransparency = 1,
 			Image = "rbxassetid://90892630150011",
 			ScaleType = Enum.ScaleType.Fit,
-			ZIndex = 3,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 
@@ -4937,7 +4940,7 @@ return (function()
 			TextColor3 = theme.Accent,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Visible = false,
-			ZIndex = 3,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 		self.Title = U.Create("TextLabel", {
@@ -4950,7 +4953,7 @@ return (function()
 			TextSize = titleSize,
 			TextColor3 = theme.TextPrimary,
 			TextXAlignment = titleAlign == "Right" and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
-			ZIndex = 3,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 		self._refreshTitle = function()
