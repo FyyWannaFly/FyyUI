@@ -1,4 +1,4 @@
-local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua?v=0.18.1-drag-fix")
+local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua?v=0.18.0-config-tab")
 local chunk, compileError = loadstring(source)
 assert(chunk, "FyyUI compile error: " .. tostring(compileError))
 local FyyUI = chunk()
@@ -6,7 +6,7 @@ local FyyUI = chunk()
 local menu = FyyUI.Menu({
 	Title = "FyyCommunity",
 	Theme = "Amoled",
-	Size = UDim2.fromOffset(601, 344),
+	Size = UDim2.fromOffset(645, 365),
 	Resizable = true,
 	HasOutline = true,
 	Stats = {

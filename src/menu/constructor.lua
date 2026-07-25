@@ -419,12 +419,15 @@ function Menu.new(options, theme)
 		BorderSizePixel = 0,
 		Parent = self.Topbar,
 	})
-	self.TopbarDragSurface = U.Create("Frame", {
+	self.TopbarDragSurface = U.Create("TextButton", {
 		Name = "DragSurface",
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.new(1, -160, 1, 0),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
 		Active = true,
+		ZIndex = 1,
 		Parent = self.Topbar,
 	})
 
