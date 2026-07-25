@@ -16,10 +16,9 @@ function Menu:_createOverview()
 	root.CanvasSize = UDim2.fromOffset(0, 0)
 	root.Active = true
 	local overviewHovered = false
-	local function releaseOverviewInput()
+	local function releaseOverviewWheel()
 		overviewHovered = false
 		self:_releaseInput("OverviewWheel")
-		self:_releaseInput("OverviewTouch")
 	end
 	table.insert(
 		overviewConns,
@@ -27,18 +26,10 @@ function Menu:_createOverview()
 			if self.ActiveTab == tab and self.Visible and not self.Minimized then
 				overviewHovered = true
 				self:_captureInput("OverviewWheel", { Enum.UserInputType.MouseWheel })
-				self:_captureInput("OverviewTouch", { Enum.UserInputType.Touch })
 			end
 		end)
 	)
-	table.insert(
-		overviewConns,
-		root.MouseLeave:Connect(function()
-			if overviewHovered then
-				releaseOverviewInput()
-			end
-		end)
-	)
+	table.insert(overviewConns, root.MouseLeave:Connect(releaseOverviewWheel))
 	for _, child in ipairs(root:GetChildren()) do
 		if child:IsA("UIListLayout") or child:IsA("UIPadding") then
 			child:Destroy()
@@ -436,7 +427,7 @@ function Menu:_createOverview()
 				end
 			end
 		end
-		releaseOverviewInput()
+		releaseOverviewWheel()
 		table.clear(overviewConns)
 		if self._overviewTab == overview then
 			self._overviewTab = nil

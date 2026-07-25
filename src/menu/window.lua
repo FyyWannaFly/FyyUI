@@ -196,7 +196,6 @@ function Menu:_minimize()
 		return true
 	end
 	self:_releaseInput("OverviewWheel")
-	self:_releaseInput("OverviewTouch")
 	self:_releaseInput("WindowDrag")
 	self:_closeTransientUi()
 	self:_setInternalsVisible(false)

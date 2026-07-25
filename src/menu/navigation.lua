@@ -45,7 +45,6 @@ function Menu:SelectTab(tab)
 	self:HideDropdownPopup()
 	if self.ActiveTab and self.ActiveTab._isOverview then
 		self:_releaseInput("OverviewWheel")
-		self:_releaseInput("OverviewTouch")
 	end
 	local offsetY = 36
 
@@ -166,20 +165,6 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 	local popupParent = self.Frame
 
 	-- Create popup with 0 width → tween to slide in from right
-	if placement == "InteriorRight" then
-		self._popupCloser = U.Create("ImageButton", {
-			Name = "DropdownCloser",
-			Size = UDim2.new(1, 0, 1, 0),
-			BackgroundTransparency = 1,
-			AutoButtonColor = false,
-			Modal = true,
-			ZIndex = 9999,
-			Parent = self.Frame,
-		})
-		self._popupCloser.Activated:Connect(function()
-			self:HideDropdownPopup()
-		end)
-	end
 	local popup = U.Create("Frame", {
 		Name = "DropdownPopup",
 		Size = UDim2.fromOffset(0, clampedH),
@@ -335,17 +320,7 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 		Height = clampedH,
 		Placement = placement,
 	}
-	if placement == "InteriorRight" then
-		local initialX = px + w
-		popup:TweenPosition(UDim2.fromOffset(initialX, py), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0, true)
-		popup.Position = UDim2.fromOffset(initialX, py)
-		self:_transition(popup, 0.25, {
-			Size = UDim2.fromOffset(w, clampedH),
-			Position = UDim2.fromOffset(px, py),
-		})
-	else
-		self:_transition(popup, 0.25, { Size = UDim2.fromOffset(w, clampedH) })
-	end
+	self:_transition(popup, 0.25, { Size = UDim2.fromOffset(w, clampedH) })
 	if self._popupFocusReturn and firstOptionButton then
 		game:GetService("GuiService").SelectedObject = firstOptionButton
 	end
@@ -406,10 +381,6 @@ function Menu:HideDropdownPopup()
 	if self._activePopupOverlay then
 		self._activePopupOverlay:Destroy()
 		self._activePopupOverlay = nil
-	end
-	if self._popupCloser then
-		self._popupCloser:Destroy()
-		self._popupCloser = nil
 	end
 	self._activePopupModal = nil
 	self._activePopupPlacement = nil

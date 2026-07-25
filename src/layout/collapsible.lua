@@ -61,7 +61,7 @@ function Collapsible.new(parent, title, options, theme)
 
 	-- Content area (children go here)
 	-- NOTE: Children already have their own 6px outer inset (width 1,-12 + position 6).
-	-- Content only provides deliberate top/bottom gaps and left/right safe padding.
+	-- Content only provides deliberate top/bottom gaps; no left/right UIPadding.
 	self.Content = U.Create("Frame", {
 		Name = "Content",
 		Size = UDim2.new(1, 0, 0, 0),
@@ -78,8 +78,6 @@ function Collapsible.new(parent, title, options, theme)
 	local contentPadding = U.Create("UIPadding", {
 		PaddingTop = UDim.new(0, 6),
 		PaddingBottom = UDim.new(0, 6),
-		PaddingLeft = UDim.new(0, 4),
-		PaddingRight = UDim.new(0, 4),
 		Parent = self.Content,
 	})
 	self._layout = layout
