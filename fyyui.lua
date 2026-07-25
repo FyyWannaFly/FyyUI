@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.18.3
+FyyUI v0.18.4
 Copyright (c) 2026 FyyWannaFly. All rights reserved.
 Licensed for limited personal use under the repository LICENSE.
 Unauthorized copying, modification, or redistribution is prohibited.
@@ -159,7 +159,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.18.3"
+	local LIBRARY_VERSION = "0.18.4"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -4893,28 +4893,11 @@ return (function()
 				AnchorPoint = anchorPoint or Vector2.zero,
 				BackgroundTransparency = 1,
 				Image = assets[1],
-				ImageTransparency = 1,
+				ImageTransparency = 0,
 				ScaleType = Enum.ScaleType.Fit,
 				ZIndex = zidx,
 				Parent = parent,
 			})
-			local fallback = U.Create("TextLabel", {
-				Name = "Fallback",
-				Size = UDim2.fromScale(1, 1),
-				BackgroundColor3 = theme.Accent,
-				BackgroundTransparency = 0.15,
-				BorderSizePixel = 0,
-				Text = "F",
-				Font = Enum.Font.BuilderSansExtraBold,
-				TextSize = math.max(12, math.floor(size.Y.Offset * 0.55)),
-				TextColor3 = Color3.fromRGB(255, 255, 255),
-				TextXAlignment = Enum.TextXAlignment.Center,
-				TextYAlignment = Enum.TextYAlignment.Center,
-				ZIndex = zidx + 1,
-				Parent = logo,
-			})
-			U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fallback })
-
 			task.spawn(function()
 				local contentProvider = game:GetService("ContentProvider")
 				local retryDelays = { 0, 1, 2, 4, 8 }
@@ -4936,8 +4919,6 @@ return (function()
 						end)
 						if (loaded or not statusObserved) and logo.Parent and not self._destroyed then
 							logo.Image = asset
-							logo.ImageTransparency = 0
-							fallback.Visible = false
 							return
 						end
 					end
@@ -7694,18 +7675,10 @@ return (function()
 		if not icon then
 			return
 		end
-		local fallback = icon:FindFirstChild("Fallback")
 		if duration then
 			self:_transition(icon, duration, { ImageTransparency = transparency }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-			if fallback then
-				self:_transition(fallback, duration, { TextTransparency = transparency, BackgroundTransparency = math.max(0.15, transparency) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-			end
 		else
 			icon.ImageTransparency = transparency
-			if fallback then
-				fallback.TextTransparency = transparency
-				fallback.BackgroundTransparency = math.max(0.15, transparency)
-			end
 		end
 	end
 
