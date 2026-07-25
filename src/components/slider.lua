@@ -137,14 +137,11 @@ function Slider.new(parent, options, theme)
 	end)
 	local dragCon
 	dragCon = uis.InputChanged:Connect(function(input, processed)
-		local t = input.UserInputType
-		if t ~= Enum.UserInputType.MouseMovement and t ~= Enum.UserInputType.Touch then
+		if processed then
 			return
 		end
-		if dragging then
-			if processed and t == Enum.UserInputType.MouseMovement then
-				return
-			end
+		local t = input.UserInputType
+		if dragging and (t == Enum.UserInputType.MouseMovement or (t == Enum.UserInputType.Touch)) then
 			local val = valueFromInput(input)
 			if val then
 				self:SetValue(val)
