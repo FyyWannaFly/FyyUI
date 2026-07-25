@@ -875,24 +875,12 @@ return (function()
 		end
 
 		local dragging = false
-		local activeTrackTouch = false
-		local function valueFromInput(input)
-			local absPos = self.Track.AbsolutePosition.X
-			local size = self.Track.AbsoluteSize.X
-			if size <= 0 then
-				return nil
-			end
-			local pct = math.clamp((input.Position.X - absPos) / size, 0, 1)
-			local val = self.Min + (self.Max - self.Min) * pct
-			return math.clamp(roundToStep(val), self.Min, self.Max)
-		end
 		self.Knob.InputBegan:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
 				dragging = true
-				if t == Enum.UserInputType.Touch then
-					activeTrackTouch = true
-				end
 			end
 		end)
 		local dragCon
@@ -900,43 +888,57 @@ return (function()
 			if processed then
 				return
 			end
-			local t = input.UserInputType
-			if dragging and (t == Enum.UserInputType.MouseMovement or (t == Enum.UserInputType.Touch)) then
-				local val = valueFromInput(input)
-				if val then
-					self:SetValue(val)
+			if
+				(
+					input.UserInputType == Enum.UserInputType.MouseMovement
+					or input.UserInputType == Enum.UserInputType.Touch
+				) and dragging
+			then
+				local absPos = self.Track.AbsolutePosition.X
+				local size = self.Track.AbsoluteSize.X
+				if size <= 0 then
+					return
 				end
+				local pct = math.clamp((input.Position.X - absPos) / size, 0, 1)
+				local val = self.Min + (self.Max - self.Min) * pct
+				val = math.clamp(roundToStep(val), self.Min, self.Max)
+				self:SetValue(val)
 			end
 		end)
 		self.Knob.InputEnded:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
 				dragging = false
-				activeTrackTouch = false
 			end
 		end)
 		-- Service-level InputEnded: catches mouse-up even when pointer is no longer over the knob
 		self._sliderEndCon = uis.InputEnded:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
 				dragging = false
-				activeTrackTouch = false
 			end
 		end)
 		self._dragCon = dragCon
 
-		-- Track input: jump on click or drag on touch
+		-- Click on track to jump
 		self.Track.InputBegan:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.Touch then
-				dragging = true
-				activeTrackTouch = true
-			end
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-				local val = valueFromInput(input)
-				if val then
-					self:SetValue(val)
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			then
+				local absPos = self.Track.AbsolutePosition.X
+				local size = self.Track.AbsoluteSize.X
+				if size <= 0 then
+					return
 				end
+				local pct = math.clamp((input.Position.X - absPos) / size, 0, 1)
+				local val = self.Min + (self.Max - self.Min) * pct
+				val = math.clamp(roundToStep(val), self.Min, self.Max)
+				self:SetValue(val)
 			end
 		end)
 
@@ -4917,7 +4919,7 @@ return (function()
 			BackgroundTransparency = 1,
 			Image = "rbxassetid://90892630150011",
 			ScaleType = Enum.ScaleType.Fit,
-			ZIndex = 3,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 
@@ -4937,7 +4939,7 @@ return (function()
 			TextColor3 = theme.Accent,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Visible = false,
-			ZIndex = 3,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 		self.Title = U.Create("TextLabel", {
@@ -4950,7 +4952,7 @@ return (function()
 			TextSize = titleSize,
 			TextColor3 = theme.TextPrimary,
 			TextXAlignment = titleAlign == "Right" and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left,
-			ZIndex = 3,
+			ZIndex = 2,
 			Parent = self.Topbar,
 		})
 		self._refreshTitle = function()
@@ -5785,22 +5787,20 @@ return (function()
 		end
 		if self._activePopupFrame then
 			local popup = self._activePopupFrame
-			local placement = self._activePopupPlacement
-			local bounds = self._activePopupBounds
 			self._activePopupFrame = nil
-			self._activePopupPlacement = nil
-			self._activePopupBounds = nil
 			local curSize = popup.Size
-			local closeProps = { Size = UDim2.fromOffset(0, curSize.Y.Offset) }
-			if placement == "InteriorRight" and bounds then
-				local rightX = bounds.X + bounds.Width
-				closeProps.Position = UDim2.fromOffset(rightX, bounds.Y)
-			end
-			self:_transition(popup, 0.2, closeProps, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
-				pcall(function()
-					popup:Destroy()
-				end)
-			end)
+			self:_transition(
+				popup,
+				0.2,
+				{ Size = UDim2.fromOffset(0, curSize.Y.Offset) },
+				Enum.EasingStyle.Quad,
+				Enum.EasingDirection.In,
+				function()
+					pcall(function()
+						popup:Destroy()
+					end)
+				end
+			)
 		end
 		if self._activePopupOverlay then
 			self._activePopupOverlay:Destroy()
