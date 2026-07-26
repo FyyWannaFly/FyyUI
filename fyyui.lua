@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.18.5
+FyyUI v0.18.6
 Copyright (c) 2026 FyyWannaFly. All rights reserved.
 Licensed for limited personal use under the repository LICENSE.
 Unauthorized copying, modification, or redistribution is prohibited.
@@ -159,7 +159,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.18.5"
+	local LIBRARY_VERSION = "0.18.6"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -4491,6 +4491,36 @@ return (function()
 	end
 
 	function Menu.new(options, theme)
+		local titleLogoAsset = "rbxassetid://90892630150011"
+		local defaultFloatingLogoAsset = "rbxassetid://90051950241069"
+		local floatingLogoAsset = options.Logo == true and defaultFloatingLogoAsset
+			or type(options.Logo) == "string" and options.Logo
+			or nil
+		local preloadAssets = { titleLogoAsset }
+		if floatingLogoAsset then table.insert(preloadAssets, floatingLogoAsset) end
+		local contentProvider = game:GetService("ContentProvider")
+		local pending = {}
+		for _, asset in ipairs(preloadAssets) do pending[asset] = true end
+		local preloadStartedAt = os.clock()
+		while next(pending) and os.clock() - preloadStartedAt < 15 do
+			local observed = {}
+			pcall(function()
+				contentProvider:PreloadAsync(preloadAssets, function(asset, status)
+					observed[asset] = true
+					if status == Enum.AssetFetchStatus.Success then pending[asset] = nil end
+				end)
+			end)
+			for _, asset in ipairs(preloadAssets) do
+				if not observed[asset] and contentProvider:GetAssetFetchStatus(asset) == Enum.AssetFetchStatus.Success then
+					pending[asset] = nil
+				end
+			end
+			if next(pending) then task.wait(0.25) end
+		end
+		if next(pending) then
+			warn("FyyUI: logo preload timed out; continuing with Roblox asset loading")
+		end
+
 		local self = setmetatable({}, Menu)
 		self.Options = options
 		self.Theme = theme
@@ -4880,12 +4910,10 @@ return (function()
 		end
 
 		-- Logo image for floating minimize icon (true=default, string=custom, nil=false)
-		local _logoImage = options.Logo == true and "rbxassetid://90051950241069"
-			or type(options.Logo) == "string" and options.Logo
-			or nil
+		local _logoImage = floatingLogoAsset
 
 		-- Keep logo instances type-stable while the assets load in the background.
-		local _titleLogoAsset = "rbxassetid://90892630150011"
+		local _titleLogoAsset = titleLogoAsset
 		local function createLogo(parent, name, assets, size, position, anchorPoint, zidx)
 			local logo = U.Create("ImageLabel", {
 				Name = name,
@@ -4899,38 +4927,6 @@ return (function()
 				ZIndex = zidx,
 				Parent = parent,
 			})
-			task.spawn(function()
-				local contentProvider = game:GetService("ContentProvider")
-				local retryDelays = { 0, 1, 2, 4, 8 }
-				local attempt = 1
-				while logo.Parent and not self._destroyed do
-					if retryDelays[attempt] and retryDelays[attempt] > 0 then
-						task.wait(retryDelays[attempt])
-					elseif attempt > #retryDelays then
-						task.wait(15)
-					end
-					for _, asset in ipairs(assets) do
-						local loaded = true
-						local statusObserved = false
-						pcall(function()
-							contentProvider:PreloadAsync({ asset }, function(_, status)
-								statusObserved = true
-								loaded = status == Enum.AssetFetchStatus.Success
-							end)
-						end)
-						if (loaded or not statusObserved) and logo.Parent and not self._destroyed then
-							logo.Image = asset
-							return
-						end
-					end
-					attempt += 1
-				end
-			end)
-			logo:GetPropertyChangedSignal("IsLoaded"):Connect(function()
-				if logo.Parent and not self._destroyed and not logo.IsLoaded then
-					logo.Image = assets[1]
-				end
-			end)
 			return logo
 		end
 
