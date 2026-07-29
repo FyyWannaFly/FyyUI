@@ -34,6 +34,33 @@ function Menu:_transition(instance, duration, properties, style, direction, onCo
 	return tween
 end
 
+-- Resets any window-control button (Close/Maximize/Minimize) stuck in a hover
+-- state — e.g. when a button is clicked and the topbar is hidden/re-shown
+-- (minimize/restore) without a MouseLeave ever firing on it. Safe to call from
+-- anywhere (constructor.lua button handlers, window.lua minimize/restore).
+function Menu:_resetWinHover()
+	if not self.Topbar then
+		return
+	end
+	for _, child in ipairs(self.Topbar:GetChildren()) do
+		if child:IsA("ImageButton") then
+			self:_transition(child, 0.12, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			local stroke = child:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				self:_transition(stroke, 0.12, { Transparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			end
+			local icon = child:FindFirstChild("Icon")
+			if icon then
+				self:_transition(icon, 0.12, { ImageColor3 = Color3.fromRGB(150, 150, 165) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+				local scale = icon:FindFirstChildOfClass("UIScale")
+				if scale then
+					self:_transition(scale, 0.12, { Scale = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+				end
+			end
+		end
+	end
+end
+
 -- Selection is opt-in and menu-scoped: never replace text entry or keybind capture.
 function Menu:_nextSelectionOrder()
 	self._selectionOrder = (self._selectionOrder or 0) + 1
@@ -548,12 +575,26 @@ function Menu.new(options, theme)
 				Size = UDim2.fromOffset(44, 44),
 				Position = UDim2.new(1, xOff, 0, 0),
 				BackgroundTransparency = 1,
+				BackgroundColor3 = hoverC,
 				AutoButtonColor = false,
 				ZIndex = 3,
 				Parent = self.Topbar,
 			})
 			self:_makeSelectable(b)
-			U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = b })
+			U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = b })
+			-- Soft glow ring that fades in on hover instead of a flat filled square
+			local stroke = U.Create("UIStroke", {
+				Color = hoverC,
+				Thickness = 1,
+				Transparency = 1,
+				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+				Parent = b,
+			})
+			U.Create("UIGradient", {
+				Color = ColorSequence.new(hoverC, Color3.new(1, 1, 1)),
+				Rotation = 90,
+				Parent = stroke,
+			})
 			local icon = U.Create("ImageLabel", {
 				Name = "Icon",
 				Size = UDim2.fromOffset(18, 18),
@@ -565,42 +606,35 @@ function Menu.new(options, theme)
 				ZIndex = 4,
 				Parent = b,
 			})
+			local iconScale = U.Create("UIScale", { Scale = 1, Parent = icon })
 			b.MouseEnter:Connect(function()
-				b.BackgroundTransparency = 0
-				b.BackgroundColor3 = hoverC
-				icon.ImageColor3 = Color3.fromRGB(225, 225, 235)
+				self:_transition(b, 0.15, { BackgroundTransparency = 0.15 }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				self:_transition(stroke, 0.15, { Transparency = 0.45 }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				self:_transition(icon, 0.15, { ImageColor3 = Color3.fromRGB(235, 235, 245) }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				self:_transition(iconScale, 0.2, { Scale = 1.15 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 			end)
 			b.MouseLeave:Connect(function()
-				b.BackgroundTransparency = 1
-				icon.ImageColor3 = Color3.fromRGB(150, 150, 165)
+				self:_transition(b, 0.18, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+				self:_transition(stroke, 0.18, { Transparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+				self:_transition(icon, 0.18, { ImageColor3 = Color3.fromRGB(150, 150, 165) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+				self:_transition(iconScale, 0.18, { Scale = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 			end)
 			b.Activated:Connect(action)
 			return b
-		end
-		-- Helper: reset window button hover states
-		local function resetWinHover()
-			for _, child in ipairs(self.Topbar:GetChildren()) do
-				if child:IsA("ImageButton") then
-					child.BackgroundTransparency = 1
-					local ic = child:FindFirstChild("Icon")
-					if ic then
-						ic.ImageColor3 = Color3.fromRGB(150, 150, 165)
-					end
-				end
-			end
 		end
 		winBtn("Close", function()
 			self:_confirmClose()
 		end, -44, Color3.fromRGB(200, 60, 60))
 		winBtn("Maximize", function()
-			resetWinHover()
+			self:_resetWinHover()
 			self:_toggleMaximize()
 		end, -88, Color3.fromRGB(45, 45, 55))
 		winBtn("Minimize", function()
 			if self.Minimized then
-				resetWinHover()
+				self:_resetWinHover()
 				self:_restore()
 			else
+				self:_resetWinHover()
 				self:_minimize()
 			end
 		end, -132, Color3.fromRGB(45, 45, 55))

@@ -216,6 +216,7 @@ function Menu:_minimize()
 	if self.Minimized then
 		return true
 	end
+	self:_resetWinHover()
 	self:_releaseInput("OverviewWheel")
 	self:_releaseInput("OverviewTouch")
 	self:_releaseInput("WindowDrag")
@@ -282,6 +283,7 @@ function Menu:_restore()
 	if self._destroyed or self._restoring or not self.Minimized then
 		return
 	end
+	self:_resetWinHover()
 	self._restoring = true
 	self._minimizeToken = (self._minimizeToken or 0) + 1
 	local restoreToken = self._minimizeToken
