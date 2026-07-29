@@ -158,9 +158,9 @@ local MAX_CONFIG_ARRAY_ITEMS = 256
 local MAX_CONFIG_STRING_BYTES = 16 * 1024
 local MAX_CONFIG_NODES = 8192
 
---[[ Icon Module (Lucide/Solar/etc.) — auto-load from GitHub ]]
+--[[ Icon Module (Lucide/Solar/etc.) — embedded vendored registry with remote split override ]]
 local IconModule = nil
-local DEFAULT_ICON_URL = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua"
+local DEFAULT_ICON_URL = "https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/vendor/footagesus-icons/lucide/dist/Icons.lua"
 
 local function loadRemoteIconModule(url)
 	url = url or DEFAULT_ICON_URL
@@ -203,7 +203,10 @@ local function loadRemoteIconModule(url)
 	return true, module
 end
 
-loadRemoteIconModule(DEFAULT_ICON_URL)
+-- IconModule is first populated by the embedded vendored registry (icons_registry chunk in build),
+-- then a background fetch attempts to override it with the remote split registry from GitHub.
+-- On fetch failure the embedded fallback table is preserved silently.
+-- loadRemoteIconModule remains available as an optional override via FyyUI.LoadRemoteIconModule().
 
 local function isFiniteNumber(value)
 	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge

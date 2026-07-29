@@ -28,6 +28,31 @@ const SOURCES = [
 	"src/export.lua",
 ];
 
+const VENDOR_ICONS = path.join(ROOT, "vendor/footagesus-icons/lucide/dist/Icons.lua");
+
+function buildRegistryChunk() {
+	if (!fs.existsSync(VENDOR_ICONS)) {
+		console.warn("WARN: Vendored Icons.lua not found at " + VENDOR_ICONS + "; icon registry will be empty.");
+		return "--[[ Icon Registry — NOT AVAILABLE (vendor missing) ]]\nIconModule = {}\n";
+	}
+	let content = fs.readFileSync(VENDOR_ICONS, "utf8").trim();
+	// Strip leading comments and "return" so the table literal can be assigned inline
+	content = content.replace(/^(?:\s*--[^\n]*\n?)*\s*return\s+/, "");
+	return [
+		`--[[ Vendored Icon Registry — Footagesus/Icons (MIT) ]]`,
+		`-- Vendored from Footagesus/Icons (MIT) -- https://github.com/Footagesus/Icons`,
+		`-- FyyUI custom logos (fyyui-title-logo, fyyui-floating-logo) are embedded directly in Icons.lua`,
+		`do`,
+		`\tIconModule = ${content}`,
+		`end`,
+		`-- Spawn remote fetch after embedded assignment; success overrides, failure keeps fallback.`,
+		`task.spawn(function()`,
+		`\tlocal ok, err = loadRemoteIconModule()`,
+		`\tif not ok then end -- silence fetch failure`,
+		`end)`,
+	].join("\n");
+}
+
 const HEADER = `--[[
 FyyUI v0.18.6
 Copyright (c) 2026 FyyWannaFly. All rights reserved.
@@ -58,6 +83,9 @@ function build() {
 		}
 		return indent(fs.readFileSync(absolutePath, "utf8"));
 	});
+	// Inject vendored icon registry after bootstrap.lua (index 0)
+	const registryChunk = buildRegistryChunk();
+	chunks.splice(1, 0, indent(registryChunk));
 	return `${HEADER}${chunks.join("\n")}\nend)()\n`;
 }
 

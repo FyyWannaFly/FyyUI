@@ -180,12 +180,20 @@ function Menu:_bindResponsiveViewport()
 end
 
 function Menu.new(options, theme)
-	local titleLogoAsset = "rbxassetid://90892630150011"
-	local defaultFloatingLogoAsset = "rbxassetid://90051950241069"
-	local floatingLogoAsset = options.Logo == true and defaultFloatingLogoAsset
-		or type(options.Logo) == "string" and options.Logo
-		or nil
-	local preloadAssets = { titleLogoAsset }
+	-- Resolve logo assets through the local named icon registry (entries in Icons.lua)
+	local titleLogoResolved = resolveIcon("fyyui-title-logo")
+	local defaultFloatingResolved = resolveIcon("fyyui-floating-logo")
+	local titleLogoAsset = titleLogoResolved and titleLogoResolved.Image
+	local defaultFloatingLogoAsset = defaultFloatingResolved and defaultFloatingResolved.Image
+	local floatingLogoAsset
+	if options.Logo == true then
+		floatingLogoAsset = defaultFloatingLogoAsset
+	elseif type(options.Logo) == "string" then
+		local resolved = resolveIcon(options.Logo)
+		floatingLogoAsset = (resolved and resolved.Image) or options.Logo
+	end
+	local preloadAssets = {}
+	if titleLogoAsset then table.insert(preloadAssets, titleLogoAsset) end
 	if floatingLogoAsset then table.insert(preloadAssets, floatingLogoAsset) end
 	local contentProvider = game:GetService("ContentProvider")
 	local pending = {}
@@ -619,12 +627,14 @@ function Menu.new(options, theme)
 		return logo
 	end
 
-	self.TitleLogo = createLogo(self.Topbar, "TitleLogo", { _titleLogoAsset, "rbxassetid://90051950241069" },
-		UDim2.fromOffset(22, 22),
-		UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 22) / 2)),
-		nil,
-		2
-	)
+	if _titleLogoAsset then
+		self.TitleLogo = createLogo(self.Topbar, "TitleLogo", { _titleLogoAsset, defaultFloatingLogoAsset },
+			UDim2.fromOffset(22, 22),
+			UDim2.fromOffset(leftMargin + 12, math.floor((theme.TopbarHeight - 22) / 2)),
+			nil,
+			2
+		)
+	end
 
 	-- Title
 	self._titleText = options.Title or "FyyUI"
@@ -820,8 +830,8 @@ function Menu.new(options, theme)
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = self._minFrame })
 		U.Create("UIStroke", { Color = theme.Accent, Thickness = 2, Parent = self._minFrame })
 		local minAssets = { _logoImage }
-		if _logoImage ~= "rbxassetid://90051950241069" then
-			table.insert(minAssets, "rbxassetid://90051950241069")
+		if _logoImage ~= defaultFloatingLogoAsset then
+			table.insert(minAssets, defaultFloatingLogoAsset)
 		end
 		local minIcon = createLogo(
 			self._minFrame,

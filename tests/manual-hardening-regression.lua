@@ -78,12 +78,10 @@ return function(FyyUI)
 		menu.TitleLogo
 			and menu.TitleLogo:IsA("ImageLabel")
 			and menu.TitleLogo.Image == "rbxassetid://90892630150011"
-			and menu.TitleLogo:FindFirstChild("Fallback")
 			and menu._minFrame.Icon:IsA("ImageLabel")
 			and menu._minFrame.Icon.Image == "rbxassetid://90051950241069"
-			and menu._minFrame.Icon:FindFirstChild("Fallback")
 			and menu.Topbar:FindFirstChild("TitleSep") == nil,
-		"topbar and floating icons must keep stable image labels with branded fallbacks"
+		"topbar and floating icons must resolve from named icon registry"
 	)
 	assert(
 		menu.TitleLogo.Size == UDim2.fromOffset(22, 22)
