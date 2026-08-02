@@ -489,7 +489,7 @@ function Collapsible:Label(opts)
 		Text = opts.Text or "",
 		Font = theme.FontBold,
 		TextSize = _lblTextSize,
-		TextColor3 = _lblColor or theme.TextMuted,
+		TextColor3 = _lblColor or theme.TextSecondary,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		RichText = true,
 		Parent = lbl.Container,
@@ -521,7 +521,7 @@ function Collapsible:Label(opts)
 		end
 		lbl.TextLabel.Font = t.FontBold
 		lbl.TextLabel.TextSize = _lblTextSize
-		lbl.TextLabel.TextColor3 = _lblColor or t.TextMuted
+		lbl.TextLabel.TextColor3 = _lblColor or t.TextSecondary
 		local d = lbl.Container:FindFirstChild("Description")
 		if d then
 			d.Font = t.Font
