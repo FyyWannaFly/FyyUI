@@ -2600,7 +2600,7 @@ return (function()
 		end
 
 		local dragging = false
-		local activeTrackTouch = false
+		local activeInput = nil
 		local function valueFromInput(input)
 			local absPos = self.Track.AbsolutePosition.X
 			local size = self.Track.AbsoluteSize.X
@@ -2611,62 +2611,51 @@ return (function()
 			local val = self.Min + (self.Max - self.Min) * pct
 			return math.clamp(roundToStep(val), self.Min, self.Max)
 		end
-		self.Knob.InputBegan:Connect(function(input)
+		local function beginDrag(input)
 			local t = input.UserInputType
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-				dragging = true
-				if t == Enum.UserInputType.Touch then
-					activeTrackTouch = true
-				end
-			end
-		end)
-		local dragCon
-		dragCon = uis.InputChanged:Connect(function(input, processed)
-			local t = input.UserInputType
-			if t ~= Enum.UserInputType.MouseMovement and t ~= Enum.UserInputType.Touch then
+			if t ~= Enum.UserInputType.MouseButton1 and t ~= Enum.UserInputType.Touch then
 				return
 			end
-			if dragging then
-				if processed and t == Enum.UserInputType.MouseMovement then
-					return
-				end
+			dragging = true
+			activeInput = input
+			local val = valueFromInput(input)
+			if val then
+				self:SetValue(val)
+			end
+		end
+		self.Knob.InputBegan:Connect(beginDrag)
+		local dragCon
+		dragCon = uis.InputChanged:Connect(function(input)
+			local isMouseDrag = activeInput
+				and activeInput.UserInputType == Enum.UserInputType.MouseButton1
+				and input.UserInputType == Enum.UserInputType.MouseMovement
+			local isTouchDrag = activeInput
+				and activeInput.UserInputType == Enum.UserInputType.Touch
+				and input == activeInput
+			if dragging and (isMouseDrag or isTouchDrag) then
 				local val = valueFromInput(input)
 				if val then
 					self:SetValue(val)
 				end
 			end
 		end)
-		self.Knob.InputEnded:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+		local function endDrag(input)
+			if input == activeInput or input.UserInputType == Enum.UserInputType.MouseButton1 then
 				dragging = false
-				activeTrackTouch = false
+				activeInput = nil
 			end
-		end)
+		end
+		self.Knob.InputEnded:Connect(endDrag)
 		-- Service-level InputEnded: catches mouse-up even when pointer is no longer over the knob
 		self._sliderEndCon = uis.InputEnded:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-				dragging = false
-				activeTrackTouch = false
+			if input == activeInput or input.UserInputType == Enum.UserInputType.MouseButton1 then
+				endDrag(input)
 			end
 		end)
 		self._dragCon = dragCon
 
 		-- Track input: jump on click or drag on touch
-		self.Track.InputBegan:Connect(function(input)
-			local t = input.UserInputType
-			if t == Enum.UserInputType.Touch then
-				dragging = true
-				activeTrackTouch = true
-			end
-			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-				local val = valueFromInput(input)
-				if val then
-					self:SetValue(val)
-				end
-			end
-		end)
+		self.Track.InputBegan:Connect(beginDrag)
 
 		if self.HasDesc then
 			U.Create("TextLabel", {
@@ -5164,20 +5153,26 @@ return (function()
 		local h = hasDesc and theme.DescHeight or theme.ElementHeight
 		local lbl = {}
 		local _lblColor = opts.Color
-		local _lblTextSize = opts.TextSize or theme.FontSize
+		local _lblTextSize = opts.TextSize or theme.FontSizeSmall
 		lbl.Container = U.Create(
 			"Frame",
-			{ Name = "Label", Size = UDim2.new(1, 0, 0, h), BackgroundTransparency = 1, Parent = self.Content }
+			{
+				Name = "Label",
+				Size = UDim2.new(1, -20, 0, h),
+				Position = UDim2.fromOffset(10, 0),
+				BackgroundTransparency = 1,
+				Parent = self.Content,
+			}
 		)
 		lbl.TextLabel = U.Create("TextLabel", {
 			Name = "Text",
-			Size = UDim2.new(1, 0, 0, hasDesc and 20 or h),
-			Position = UDim2.fromOffset(0, hasDesc and 2 or (h - 20) / 2 + 1),
+			Size = UDim2.new(1, -4, 0, hasDesc and 20 or h),
+			Position = UDim2.fromOffset(4, hasDesc and 2 or (h - 20) / 2 + 1),
 			BackgroundTransparency = 1,
 			Text = opts.Text or "",
-			Font = theme.Font,
+			Font = theme.FontBold,
 			TextSize = _lblTextSize,
-			TextColor3 = _lblColor or theme.TextSecondary,
+			TextColor3 = _lblColor or theme.TextMuted,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			RichText = true,
 			Parent = lbl.Container,
@@ -5185,8 +5180,8 @@ return (function()
 		if hasDesc then
 			U.Create("TextLabel", {
 				Name = "Description",
-				Size = UDim2.new(1, 0, 0, 16),
-				Position = UDim2.fromOffset(0, 24),
+				Size = UDim2.new(1, -4, 0, 16),
+				Position = UDim2.fromOffset(4, 24),
 				BackgroundTransparency = 1,
 				Text = opts.Description,
 				Font = theme.Font,
@@ -5207,9 +5202,9 @@ return (function()
 			if not lbl.TextLabel then
 				return
 			end
-			lbl.TextLabel.Font = t.Font
+			lbl.TextLabel.Font = t.FontBold
 			lbl.TextLabel.TextSize = _lblTextSize
-			lbl.TextLabel.TextColor3 = _lblColor or t.TextSecondary
+			lbl.TextLabel.TextColor3 = _lblColor or t.TextMuted
 			local d = lbl.Container:FindFirstChild("Description")
 			if d then
 				d.Font = t.Font
