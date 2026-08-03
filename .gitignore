@@ -9,3 +9,4 @@ opencode.json.*
 *.test.json
 output_obfuscated.lua
 Violance_disctrict/
+loader.lua
