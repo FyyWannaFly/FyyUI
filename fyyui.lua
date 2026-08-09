@@ -1,5 +1,5 @@
 --[[
-FyyUI v0.18.6
+FyyUI v0.19.0
 Copyright (c) 2026 FyyWannaFly. All rights reserved.
 Licensed for limited personal use under the repository LICENSE.
 Unauthorized copying, modification, or redistribution is prohibited.
@@ -159,7 +159,7 @@ return (function()
 		return inst
 	end
 
-	local LIBRARY_VERSION = "0.18.6"
+	local LIBRARY_VERSION = "0.19.0"
 	local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 	local MAX_CONFIG_JSON_BYTES = 64 * 1024
 	local MAX_CONFIG_VALUES = 512
@@ -551,6 +551,122 @@ return (function()
 		if menu._activeDropdown == controller then
 			menu:HideDropdownPopup()
 		end
+	end
+
+	-- Custom component factories stay private; consumers interact through the
+	-- public RegisterComponent/UnregisterComponent methods on FyyUI.
+	local customComponentFactories = {}
+
+	local function registerCustomComponent(name, factory)
+		if type(name) ~= "string" or name == "" then
+			return false, "expected non-empty component name"
+		end
+		if type(factory) ~= "function" then
+			return false, "expected factory"
+		end
+		if customComponentFactories[name] then
+			return false, "already registered"
+		end
+		customComponentFactories[name] = factory
+		return true
+	end
+
+	local function unregisterCustomComponent(name)
+		if type(name) ~= "string" or name == "" then
+			return false, "expected non-empty component name"
+		end
+		if not customComponentFactories[name] then
+			return false, "unknown component"
+		end
+		customComponentFactories[name] = nil
+		return true
+	end
+
+	local function getCustomComponentFactory(name)
+		if type(name) ~= "string" or name == "" then
+			return nil, "expected non-empty component name"
+		end
+		return customComponentFactories[name], customComponentFactories[name] and nil or "unknown component"
+	end
+
+	local function mountCustomComponent(owner, parent, menu, theme, components, factory, options, afterMount)
+		if owner._destroyed then
+			return nil, "destroyed"
+		end
+		if type(factory) ~= "function" then
+			return nil, "expected factory"
+		end
+		if options ~= nil and type(options) ~= "table" then
+			return nil, "expected options table"
+		end
+
+		local mounted = false
+		local mountedController = nil
+		local function mount(controller)
+			if mounted then
+				return nil, "already mounted"
+			end
+			if type(controller) ~= "table" or typeof(controller.Container) ~= "Instance" then
+				return nil, "factory must return a controller with Container"
+			end
+			if controller.Container.Parent ~= parent then
+				return nil, "controller Container must be parented to context.Parent"
+			end
+
+			mounted = true
+			mountedController = controller
+			controller._fyyCustomMounted = true
+			local destroy = controller.Destroy
+			controller.Destroy = function(self, ...)
+				if self._fyyCustomDestroyed then
+					return
+				end
+				self._fyyCustomDestroyed = true
+				if menu then
+					menu:_untrackFlagged(self)
+				end
+				if destroy then
+					return destroy(self, ...)
+				end
+				if self.Container then
+					self.Container:Destroy()
+				end
+			end
+			table.insert(components, controller)
+			if controller.Flag and menu then
+				menu:_trackFlagged(controller)
+			end
+			if options and options.Tooltip and menu then
+				menu:BindTooltip(controller.Container, options.Tooltip)
+			end
+			if afterMount then
+				afterMount()
+			end
+			return controller
+		end
+
+		local context = {
+			Parent = parent,
+			Menu = menu,
+			Owner = owner,
+			Theme = theme,
+			Create = U.Create,
+			Mount = mount,
+		}
+		local ok, controller = xpcall(function()
+			return factory(context, options or {})
+		end, debug.traceback)
+		if not ok then
+			return nil, "factory failed: " .. tostring(controller)
+		end
+		if mounted then
+			return mountedController
+		end
+		local result, err = mount(controller)
+		if not result and type(controller) == "table" and typeof(controller.Container) == "Instance" and controller.Container.Parent == parent then
+			controller.Container:Destroy()
+		end
+		return result, err
 	end
 
 	-- Shared forward declarations for the mutually-recursive layout controllers.
@@ -2773,6 +2889,8 @@ return (function()
 			return false
 		end
 		self.Multi = options.Multi or false -- Multi-Select mode
+		assert(options.Searchbar == nil or type(options.Searchbar) == "boolean", "FyyUI Dropdown: Searchbar must be a boolean")
+		self.Searchbar = options.Searchbar == true
 		-- AllowNone: if false, single-select always retains a valid option when options exist
 		self.AllowNone = options.AllowNone
 		if self.AllowNone == nil then
@@ -2931,7 +3049,7 @@ return (function()
 				end
 				local shown = self._menu:ShowDropdownPopup(pos, siz, self.Options, self._selIdx, function(idx, val)
 					self:SetValue(val)
-				end, self.Multi, self)
+				end, self.Multi, self, self.Searchbar)
 				if shown then
 					self.Open = true
 					if self._arrow then
@@ -3202,7 +3320,7 @@ return (function()
 				end
 				local shown = self._menu:ShowDropdownPopup(pos, siz, options, selIdx, function(idx, val)
 					self:SetValue(val)
-				end, self.Multi, self)
+				end, self.Multi, self, self.Searchbar)
 				if shown then
 					self.Open = true
 					self._menu._activeDropdown = self
@@ -3274,6 +3392,13 @@ return (function()
 	end
 
 	function Dropdown:Refresh(options, preferredValue, noCallback)
+		if type(options) == "table" and options.Options then
+			assert(options.Searchbar == nil or type(options.Searchbar) == "boolean", "FyyUI Dropdown: Searchbar must be a boolean")
+			if options.Searchbar ~= nil then
+				self.Searchbar = options.Searchbar
+			end
+			return self:SetOptions(options.Options, preferredValue, noCallback)
+		end
 		if options ~= nil then
 			return self:SetOptions(options, preferredValue, noCallback)
 		else
@@ -4133,6 +4258,23 @@ return (function()
 		return self:_mount(TextInput.new(self.Content, opts, self.Theme), opts)
 	end
 
+	function Column:Custom(factory, opts)
+		return mountCustomComponent(self, self.Content, self._menu, self.Theme, self.Components, factory, opts, function()
+			self._columns:_updateHeight()
+		end)
+	end
+
+	function Column:Component(name, opts)
+		if destroyedFactoryResult(self) then
+			return nil, "destroyed"
+		end
+		local factory, err = getCustomComponentFactory(name)
+		if not factory then
+			return nil, err
+		end
+		return self:Custom(factory, opts)
+	end
+
 	function Column:Collapsible(title, opts)
 		if destroyedFactoryResult(self) then
 			return nil, "destroyed"
@@ -4986,6 +5128,21 @@ return (function()
 		end
 		self:_updateSize()
 		return c
+	end
+	function Collapsible:Custom(factory, opts)
+		return mountCustomComponent(self, self.Content, self._menu, self.Theme, self.Components, factory, opts, function()
+			self:_updateSize()
+		end)
+	end
+	function Collapsible:Component(name, opts)
+		if destroyedFactoryResult(self) then
+			return nil, "destroyed"
+		end
+		local factory, err = getCustomComponentFactory(name)
+		if not factory then
+			return nil, err
+		end
+		return self:Custom(factory, opts)
 	end
 	function Collapsible:Keybind(opts)
 		if destroyedFactoryResult(self) then
@@ -5886,6 +6043,21 @@ return (function()
 			self.Menu:BindTooltip(dd.Container, options.Tooltip)
 		end
 		return dd
+	end
+
+	function Tab:Custom(factory, options)
+		return mountCustomComponent(self, self.Container, self.Menu, self.Theme, self.Components, factory, options)
+	end
+
+	function Tab:Component(name, options)
+		if destroyedFactoryResult(self) then
+			return nil, "destroyed"
+		end
+		local factory, err = getCustomComponentFactory(name)
+		if not factory then
+			return nil, err
+		end
+		return self:Custom(factory, options)
 	end
 
 	function Tab:Keybind(options)
@@ -7250,7 +7422,7 @@ return (function()
 		end
 	end
 
-	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMulti, dd)
+	function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMulti, dd, searchbar)
 		if self._destroyed or not self.Gui or not self.Frame then
 			return false, "destroyed"
 		end
@@ -7269,6 +7441,7 @@ return (function()
 		atSize = typeof(atSize) == "Vector2" and atSize or Vector2.new(0, 0)
 		local py = 0
 		isMulti = isMulti or false
+		searchbar = searchbar == true
 		dd = dd or self._activeDropdown -- fallback to _activeDropdown if not passed
 
 		-- Determine panel width from the longest option, with room for the
@@ -7383,13 +7556,15 @@ return (function()
 			Parent = popup,
 		})
 
+		local searchHeight = searchbar and 36 or 0
 		local firstOptionButton
+		local optionButtons = {}
 		if #opts > 0 then
 			-- ScrollingFrame for option list (content-aware)
 			local optionList = U.Create("ScrollingFrame", {
 				Name = "OptionList",
-				Size = UDim2.new(1, -16, 1, -16),
-				Position = UDim2.fromOffset(8, 8),
+				Size = UDim2.new(1, -16, 1, -(16 + searchHeight)),
+				Position = UDim2.fromOffset(8, 8 + searchHeight),
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
 				ScrollBarThickness = 3,
@@ -7423,6 +7598,7 @@ return (function()
 					Parent = optionList,
 				})
 				self:_makeSelectable(btn)
+				table.insert(optionButtons, { Button = btn, Option = opt })
 				if not firstOptionButton then
 					firstOptionButton = btn
 				end
@@ -7471,6 +7647,55 @@ return (function()
 					end
 				end)
 			end
+			if searchbar then
+				local search = U.Create("TextBox", {
+					Name = "Search",
+					Size = UDim2.new(1, -16, 0, 28),
+					Position = UDim2.fromOffset(8, 8),
+					BackgroundColor3 = theme.Element,
+					BorderSizePixel = 0,
+					ClearTextOnFocus = false,
+					PlaceholderText = "Search...",
+					PlaceholderColor3 = theme.TextMuted,
+					Text = "",
+					Font = theme.Font,
+					TextSize = theme.FontSize,
+					TextColor3 = theme.TextPrimary,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					ZIndex = 10002,
+					Parent = content,
+				})
+				U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = search })
+				U.Create("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = search })
+				local noResults = U.Create("TextLabel", {
+					Name = "NoResults",
+					Size = UDim2.new(1, -16, 0, OPT_H),
+					Position = UDim2.fromOffset(8, 8 + searchHeight),
+					BackgroundTransparency = 1,
+					Text = "No results",
+					Font = theme.Font,
+					TextSize = theme.FontSize,
+					TextColor3 = theme.TextMuted,
+					TextXAlignment = Enum.TextXAlignment.Center,
+					Visible = false,
+					ZIndex = 10002,
+					Parent = content,
+				})
+				self._popupSearchCon = search:GetPropertyChangedSignal("Text"):Connect(function()
+					local needle = string.lower(search.Text)
+					local visible = 0
+					for _, record in ipairs(optionButtons) do
+						local matches = needle == "" or string.find(string.lower(tostring(record.Option)), needle, 1, true)
+						record.Button.Visible = matches ~= nil
+						if matches then visible = visible + 1 end
+					end
+					optionList.CanvasSize = UDim2.fromOffset(0, visible * OPT_H + math.max(0, visible - 1) * 2)
+					noResults.Visible = visible == 0
+				end)
+				task.defer(function()
+					if search.Parent then search:CaptureFocus() end
+				end)
+			end
 		else
 			-- Empty-state: centered in the panel area
 			U.Create("TextLabel", {
@@ -7509,7 +7734,7 @@ return (function()
 		else
 			self:_transition(popup, 0.25, { Size = UDim2.fromOffset(w, clampedH) })
 		end
-		if self._popupFocusReturn and firstOptionButton then
+		if self._popupFocusReturn and firstOptionButton and not searchbar then
 			game:GetService("GuiService").SelectedObject = firstOptionButton
 		end
 
@@ -7545,6 +7770,10 @@ return (function()
 	end
 
 	function Menu:HideDropdownPopup()
+		if self._popupSearchCon then
+			self._popupSearchCon:Disconnect()
+			self._popupSearchCon = nil
+		end
 		if self._popupUISCon then
 			self._popupUISCon:Disconnect()
 			self._popupUISCon = nil
@@ -11120,6 +11349,14 @@ return (function()
 	end
 	function FyyUI.GetIconModule()
 		return IconModule
+	end
+
+	function FyyUI.RegisterComponent(name, factory)
+		return registerCustomComponent(name, factory)
+	end
+
+	function FyyUI.UnregisterComponent(name)
+		return unregisterCustomComponent(name)
 	end
 
 	function FyyUI.Menu(options)
