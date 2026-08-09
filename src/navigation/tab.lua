@@ -517,6 +517,21 @@ function Tab:Dropdown(options)
 	return dd
 end
 
+function Tab:Custom(factory, options)
+	return mountCustomComponent(self, self.Container, self.Menu, self.Theme, self.Components, factory, options)
+end
+
+function Tab:Component(name, options)
+	if destroyedFactoryResult(self) then
+		return nil, "destroyed"
+	end
+	local factory, err = getCustomComponentFactory(name)
+	if not factory then
+		return nil, err
+	end
+	return self:Custom(factory, options)
+end
+
 function Tab:Keybind(options)
 	if destroyedFactoryResult(self) then
 		return nil, "destroyed"

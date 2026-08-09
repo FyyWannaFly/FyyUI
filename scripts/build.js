@@ -54,7 +54,7 @@ function buildRegistryChunk() {
 }
 
 const HEADER = `--[[
-FyyUI v0.18.6
+FyyUI v0.19.0
 Copyright (c) 2026 FyyWannaFly. All rights reserved.
 Licensed for limited personal use under the repository LICENSE.
 Unauthorized copying, modification, or redistribution is prohibited.

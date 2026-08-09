@@ -18,6 +18,8 @@ function Dropdown.new(parent, options, theme, menuRef)
 		return false
 	end
 	self.Multi = options.Multi or false -- Multi-Select mode
+	assert(options.Searchbar == nil or type(options.Searchbar) == "boolean", "FyyUI Dropdown: Searchbar must be a boolean")
+	self.Searchbar = options.Searchbar == true
 	-- AllowNone: if false, single-select always retains a valid option when options exist
 	self.AllowNone = options.AllowNone
 	if self.AllowNone == nil then
@@ -176,7 +178,7 @@ function Dropdown.new(parent, options, theme, menuRef)
 			end
 			local shown = self._menu:ShowDropdownPopup(pos, siz, self.Options, self._selIdx, function(idx, val)
 				self:SetValue(val)
-			end, self.Multi, self)
+			end, self.Multi, self, self.Searchbar)
 			if shown then
 				self.Open = true
 				if self._arrow then
@@ -447,7 +449,7 @@ function Dropdown:SetOptions(options, preferredValue, noCallback)
 			end
 			local shown = self._menu:ShowDropdownPopup(pos, siz, options, selIdx, function(idx, val)
 				self:SetValue(val)
-			end, self.Multi, self)
+			end, self.Multi, self, self.Searchbar)
 			if shown then
 				self.Open = true
 				self._menu._activeDropdown = self
@@ -519,6 +521,13 @@ function Dropdown:_optIndex(list, value)
 end
 
 function Dropdown:Refresh(options, preferredValue, noCallback)
+	if type(options) == "table" and options.Options then
+		assert(options.Searchbar == nil or type(options.Searchbar) == "boolean", "FyyUI Dropdown: Searchbar must be a boolean")
+		if options.Searchbar ~= nil then
+			self.Searchbar = options.Searchbar
+		end
+		return self:SetOptions(options.Options, preferredValue, noCallback)
+	end
 	if options ~= nil then
 		return self:SetOptions(options, preferredValue, noCallback)
 	else

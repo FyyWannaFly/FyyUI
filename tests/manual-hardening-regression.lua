@@ -6,7 +6,24 @@
 -- transient overlays were removed; those checks protect the lifecycle bug this
 -- release fixes.
 return function(FyyUI)
-	assert(FyyUI.Version == "0.18.6", "library version must identify the patch release")
+	assert(FyyUI.Version == "0.19.0", "library version must identify the patch release")
+	local customDestroyed = 0
+	assert(FyyUI.RegisterComponent("RegressionCustom", function(context)
+		local frame = context.Create("Frame", {
+			Name = "RegressionCustom",
+			Size = UDim2.new(1, -12, 0, 28),
+			BackgroundTransparency = 1,
+			Parent = context.Parent,
+		})
+		return {
+			Container = frame,
+			Destroy = function(self)
+				customDestroyed = customDestroyed + 1
+				self.Container:Destroy()
+			end,
+		}
+	end), "custom component registration must succeed")
+	assert(FyyUI.RegisterComponent("RegressionCustom", function() end) == false, "duplicate component registration must fail")
 	local originalIconModule = FyyUI.GetIconModule()
 	local remoteIconOk, remoteIconErr = FyyUI.LoadRemoteIconModule("https://example.invalid/icons.lua")
 	assert(remoteIconOk == false and type(remoteIconErr) == "string", "failed remote icon loading must return an error")
@@ -21,6 +38,17 @@ return function(FyyUI)
 		Logo = true,
 		Scale = 9, -- constructor must clamp to the supported range.
 	})
+	local customTab = menu:Tab({ Text = "Custom" })
+	local customComponent = customTab:Component("RegressionCustom")
+	assert(customComponent and customComponent.Container.Parent == customTab.Container, "registered component must mount in tab")
+	local oneOff = customTab:Custom(function(context)
+		return { Container = context.Create("Frame", { Parent = context.Parent }) }
+	end)
+	assert(oneOff and oneOff.Container.Parent == customTab.Container, "one-off component must mount in tab")
+	local searchable = customTab:Dropdown({ Text = "Search", Options = { "Alpha", "Beta" }, Searchbar = true })
+	assert(searchable.Searchbar, "searchable dropdown must retain Searchbar option")
+	local plain = customTab:Dropdown({ Text = "Plain", Options = { "Alpha" } })
+	assert(not plain.Searchbar, "dropdown search must remain opt-in")
 	local memoryFiles = {}
 	local storage = {
 		List = function()
@@ -216,6 +244,24 @@ return function(FyyUI)
 		false
 	)
 	assert(popupShown and menu._activePopupFrame, "dropdown popup must report successful UI creation")
+	assert(not menu._activePopupFrame:FindFirstChild("Content"):FindFirstChild("Search"), "default dropdown popup must not create a search field")
+	menu:HideDropdownPopup()
+	assert(
+		menu:ShowDropdownPopup(Vector2.new(0, 0), Vector2.new(36, 36), { "Alpha", "Beta" }, 0, function() end, false, nil, true),
+		"searchable dropdown popup must be created"
+	)
+	local searchPopup = menu._activePopupFrame:FindFirstChild("Content")
+	local searchBox = searchPopup and searchPopup:FindFirstChild("Search")
+	assert(searchBox and searchBox:IsA("TextBox"), "searchable dropdown popup must expose a search field")
+	searchBox.Text = "beta"
+	task.wait()
+	local visibleOptions = 0
+	for _, child in ipairs(searchPopup.OptionList:GetChildren()) do
+		if child.Name == "Option" and child.Visible then
+			visibleOptions += 1
+		end
+	end
+	assert(visibleOptions == 1, "search filtering must show only matching options")
 	menu:HideDropdownPopup()
 	local previousCompact = menu._compact
 	menu._compact = true

@@ -1,6 +1,6 @@
 # Getting Started with FyyUI
 
-> Applies to FyyUI v0.18.6 · Updated 2026-07-26
+> Applies to FyyUI v0.19.0 · Updated 2026-08-09
 
 This guide gets a local FyyUI menu running in Roblox Studio in a few minutes.
 
@@ -70,7 +70,7 @@ settings:Slider({
 
 settings:Dropdown({
 	Text = "Quality", Options = { "Low", "Medium", "High" },
-	Default = "High", Flag = "quality",
+	Default = "High", Flag = "quality", Searchbar = true,
 })
 
 settings:Input({ Text = "Display name", Placeholder = "Optional", Flag = "displayName" })
@@ -87,6 +87,19 @@ audio:Button({ Text = "Test sound", Callback = function() print("Play a preview"
 ```
 
 Tabs and collapsibles expose the same common control factories. See the [API reference](API_REFERENCE.md) for the complete list.
+
+## Add a custom component
+
+```lua
+local indicator = settings:Custom(function(context)
+	local frame = context.Create("Frame", {
+		Name = "Indicator", Size = UDim2.new(1, -12, 0, 32), BackgroundTransparency = 1, Parent = context.Parent,
+	})
+	return { Container = frame }
+end)
+```
+
+Use `FyyUI.RegisterComponent("Name", factory)` and `settings:Component("Name", options)` for reusable components.
 
 ## Save and restore settings
 

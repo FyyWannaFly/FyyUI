@@ -1,8 +1,8 @@
 # Accessibility and Device Support
 
-> Applies to FyyUI v0.18.6 · Updated 2026-07-26
+> Applies to FyyUI v0.19.0 · Updated 2026-08-09
 
-FyyUI v0.18.6 supports pointer, touch, keyboard, and gamepad-oriented interaction. The fixed Overview uses truncation instead of scrolling, and its Discord action participates in selection navigation. Responsive Columns stack vertically in compact layouts to preserve readable widths and touch targets. Test your own labels, custom colors, and callbacks because they can still affect usability.
+FyyUI v0.19.0 supports pointer, touch, keyboard, and gamepad-oriented interaction. The fixed Overview uses truncation instead of scrolling, and its Discord action participates in selection navigation. Responsive Columns stack vertically in compact layouts to preserve readable widths and touch targets. Searchable dropdowns preserve normal popup keyboard behavior after filtering. Test your own labels, custom colors, callbacks, and custom components because they can still affect usability.
 
 ## Responsive and touch layout
 

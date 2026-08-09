@@ -150,7 +150,7 @@ function U.Create(c, props, children)
 	return inst
 end
 
-local LIBRARY_VERSION = "0.18.6"
+local LIBRARY_VERSION = "0.19.0"
 local CONFIG_V2_SCHEMA = "FyyUI.Config.v2"
 local MAX_CONFIG_JSON_BYTES = 64 * 1024
 local MAX_CONFIG_VALUES = 512
@@ -542,6 +542,122 @@ local function cleanupController(controller)
 	if menu._activeDropdown == controller then
 		menu:HideDropdownPopup()
 	end
+end
+
+-- Custom component factories stay private; consumers interact through the
+-- public RegisterComponent/UnregisterComponent methods on FyyUI.
+local customComponentFactories = {}
+
+local function registerCustomComponent(name, factory)
+	if type(name) ~= "string" or name == "" then
+		return false, "expected non-empty component name"
+	end
+	if type(factory) ~= "function" then
+		return false, "expected factory"
+	end
+	if customComponentFactories[name] then
+		return false, "already registered"
+	end
+	customComponentFactories[name] = factory
+	return true
+end
+
+local function unregisterCustomComponent(name)
+	if type(name) ~= "string" or name == "" then
+		return false, "expected non-empty component name"
+	end
+	if not customComponentFactories[name] then
+		return false, "unknown component"
+	end
+	customComponentFactories[name] = nil
+	return true
+end
+
+local function getCustomComponentFactory(name)
+	if type(name) ~= "string" or name == "" then
+		return nil, "expected non-empty component name"
+	end
+	return customComponentFactories[name], customComponentFactories[name] and nil or "unknown component"
+end
+
+local function mountCustomComponent(owner, parent, menu, theme, components, factory, options, afterMount)
+	if owner._destroyed then
+		return nil, "destroyed"
+	end
+	if type(factory) ~= "function" then
+		return nil, "expected factory"
+	end
+	if options ~= nil and type(options) ~= "table" then
+		return nil, "expected options table"
+	end
+
+	local mounted = false
+	local mountedController = nil
+	local function mount(controller)
+		if mounted then
+			return nil, "already mounted"
+		end
+		if type(controller) ~= "table" or typeof(controller.Container) ~= "Instance" then
+			return nil, "factory must return a controller with Container"
+		end
+		if controller.Container.Parent ~= parent then
+			return nil, "controller Container must be parented to context.Parent"
+		end
+
+		mounted = true
+		mountedController = controller
+		controller._fyyCustomMounted = true
+		local destroy = controller.Destroy
+		controller.Destroy = function(self, ...)
+			if self._fyyCustomDestroyed then
+				return
+			end
+			self._fyyCustomDestroyed = true
+			if menu then
+				menu:_untrackFlagged(self)
+			end
+			if destroy then
+				return destroy(self, ...)
+			end
+			if self.Container then
+				self.Container:Destroy()
+			end
+		end
+		table.insert(components, controller)
+		if controller.Flag and menu then
+			menu:_trackFlagged(controller)
+		end
+		if options and options.Tooltip and menu then
+			menu:BindTooltip(controller.Container, options.Tooltip)
+		end
+		if afterMount then
+			afterMount()
+		end
+		return controller
+	end
+
+	local context = {
+		Parent = parent,
+		Menu = menu,
+		Owner = owner,
+		Theme = theme,
+		Create = U.Create,
+		Mount = mount,
+	}
+	local ok, controller = xpcall(function()
+		return factory(context, options or {})
+	end, debug.traceback)
+	if not ok then
+		return nil, "factory failed: " .. tostring(controller)
+	end
+	if mounted then
+		return mountedController
+	end
+	local result, err = mount(controller)
+	if not result and type(controller) == "table" and typeof(controller.Container) == "Instance" and controller.Container.Parent == parent then
+		controller.Container:Destroy()
+	end
+	return result, err
 end
 
 -- Shared forward declarations for the mutually-recursive layout controllers.

@@ -2,12 +2,13 @@
 
 A polished Roblox Luau interface library focused on responsive layouts, consistent controls, smooth window behavior, and a compact one-file distribution.
 
-**Current release:** `v0.18.6`
+**Current release:** `v0.19.0`
 
 ## Highlights
 
 - Responsive tabbed window with desktop, touch, keyboard, and gamepad support.
-- Toggle, checkbox, button, slider, dropdown, keybind, input, collapsible, and columns components.
+- Toggle, checkbox, button, slider, searchable dropdown, keybind, input, collapsible, and columns components.
+- Register reusable components or mount one-off custom components without editing FyyUI source.
 - Fixed premium Overview for profile, game, server, and optional Discord support details.
 - Command palette, tooltips, notifications, theme switching, reduced motion, and JSON configuration APIs.
 - Modular development source compiled into one deterministic `fyyui.lua` bundle.
@@ -58,6 +59,12 @@ main:Toggle({
 	Callback = function(value)
 		print("Enabled:", value)
 	end,
+})
+
+main:Dropdown({
+	Text = "Target",
+	Options = { "Megalodon", "Kraken", "Skeletal Leviathan" },
+	Searchbar = true,
 })
 ```
 

@@ -1,8 +1,8 @@
 # FyyUI API Reference
 
-> Applies to FyyUI v0.18.6 · Updated 2026-07-26
+> Applies to FyyUI v0.19.0 · Updated 2026-08-09
 
-This reference describes the public FyyUI v0.18.6 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
+This reference describes the public FyyUI v0.19.0 API. Destroyed menus, tabs, collapsibles, and controllers safely return `false, "destroyed"` or `nil, "destroyed"` instead of creating orphan UI.
 
 ## Module
 
@@ -18,6 +18,8 @@ local FyyUI = require(script.Parent.FyyUI)
 | `FyyUI.SetIconModule(module)` | Overrides the active icon provider. |
 | `FyyUI.GetIconModule()` | Reads the current icon provider. |
 | `FyyUI.LoadRemoteIconModule(url?)` | Downloads and executes an icon provider; defaults to the bundled Lucide source URL. |
+| `FyyUI.RegisterComponent(name, factory)` | Registers a reusable custom component factory. |
+| `FyyUI.UnregisterComponent(name)` | Removes a registered factory. |
 
 ## `FyyUI.Menu(options)`
 
@@ -159,14 +161,36 @@ slider:GetValue()
 ### Dropdown
 
 ```lua
-local dropdown = tab:Dropdown({ Text = "Mode", Options = { "A", "B" }, Default = "A" })
+local dropdown = tab:Dropdown({ Text = "Mode", Options = { "A", "B" }, Default = "A", Searchbar = true })
 dropdown:SetValue("B" [, noCallback])
 dropdown:SetOptions({ "A", "B", "C" } [, preferredValue] [, noCallback])
 dropdown:Refresh(options [, preferredValue] [, noCallback])
 dropdown:GetValue()
 ```
 
+Set `Searchbar = true` to add an opt-in case-insensitive substring filter to this dropdown popup. Filtering never mutates `Options`, selected values, callbacks, or config state. The query resets when the popup closes.
+
 Set `Multi = true` for an ordered array result and callback snapshot. Compact Multi selectors display the first selected option followed by the additional count, such as `Weapon +2`. Set `AllowNone = true` to allow no selection; clicking an active Single option again clears it and shows `Select...`. `AllowNone = false` keeps one valid option selected. `SetOptions` rejects non-table lists and does not fire callbacks when the selection is unchanged.
+
+### Custom components
+
+`Tab`, `Collapsible`, and `Column` expose `:Custom(factory, options)` and `:Component(name, options)`. Register reusable factories first, or mount a one-off factory directly:
+
+```lua
+FyyUI.RegisterComponent("Status", function(context, options)
+	local frame = context.Create("Frame", {
+		Name = "Status", Size = UDim2.new(1, -12, 0, 36), BackgroundTransparency = 1, Parent = context.Parent,
+	})
+	return { Container = frame }
+end)
+
+local status = tab:Component("Status")
+local oneOff = tab:Custom(function(context)
+	return { Container = context.Create("Frame", { Parent = context.Parent }) }
+end)
+```
+
+The factory receives `Parent`, `Menu`, `Owner`, `Theme`, `Create`, and `Mount`. It returns a controller with a `Container` parented to `context.Parent`; `Destroy` and `ApplyTheme` are optional. A controller may join the existing config system by implementing `Flag`, `GetValue`, and `SetValue`. Invalid factories/controllers return `nil, "reason"` and are not mounted.
 
 ### Keybind and input
 

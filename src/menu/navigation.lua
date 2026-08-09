@@ -87,7 +87,7 @@ function Menu:SelectTab(tab)
 	end
 end
 
-function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMulti, dd)
+function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMulti, dd, searchbar)
 	if self._destroyed or not self.Gui or not self.Frame then
 		return false, "destroyed"
 	end
@@ -106,6 +106,7 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 	atSize = typeof(atSize) == "Vector2" and atSize or Vector2.new(0, 0)
 	local py = 0
 	isMulti = isMulti or false
+	searchbar = searchbar == true
 	dd = dd or self._activeDropdown -- fallback to _activeDropdown if not passed
 
 	-- Determine panel width from the longest option, with room for the
@@ -220,13 +221,15 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 		Parent = popup,
 	})
 
+	local searchHeight = searchbar and 36 or 0
 	local firstOptionButton
+	local optionButtons = {}
 	if #opts > 0 then
 		-- ScrollingFrame for option list (content-aware)
 		local optionList = U.Create("ScrollingFrame", {
 			Name = "OptionList",
-			Size = UDim2.new(1, -16, 1, -16),
-			Position = UDim2.fromOffset(8, 8),
+			Size = UDim2.new(1, -16, 1, -(16 + searchHeight)),
+			Position = UDim2.fromOffset(8, 8 + searchHeight),
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			ScrollBarThickness = 3,
@@ -260,6 +263,7 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 				Parent = optionList,
 			})
 			self:_makeSelectable(btn)
+			table.insert(optionButtons, { Button = btn, Option = opt })
 			if not firstOptionButton then
 				firstOptionButton = btn
 			end
@@ -308,6 +312,55 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 				end
 			end)
 		end
+		if searchbar then
+			local search = U.Create("TextBox", {
+				Name = "Search",
+				Size = UDim2.new(1, -16, 0, 28),
+				Position = UDim2.fromOffset(8, 8),
+				BackgroundColor3 = theme.Element,
+				BorderSizePixel = 0,
+				ClearTextOnFocus = false,
+				PlaceholderText = "Search...",
+				PlaceholderColor3 = theme.TextMuted,
+				Text = "",
+				Font = theme.Font,
+				TextSize = theme.FontSize,
+				TextColor3 = theme.TextPrimary,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				ZIndex = 10002,
+				Parent = content,
+			})
+			U.Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = search })
+			U.Create("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), Parent = search })
+			local noResults = U.Create("TextLabel", {
+				Name = "NoResults",
+				Size = UDim2.new(1, -16, 0, OPT_H),
+				Position = UDim2.fromOffset(8, 8 + searchHeight),
+				BackgroundTransparency = 1,
+				Text = "No results",
+				Font = theme.Font,
+				TextSize = theme.FontSize,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				Visible = false,
+				ZIndex = 10002,
+				Parent = content,
+			})
+			self._popupSearchCon = search:GetPropertyChangedSignal("Text"):Connect(function()
+				local needle = string.lower(search.Text)
+				local visible = 0
+				for _, record in ipairs(optionButtons) do
+					local matches = needle == "" or string.find(string.lower(tostring(record.Option)), needle, 1, true)
+					record.Button.Visible = matches ~= nil
+					if matches then visible = visible + 1 end
+				end
+				optionList.CanvasSize = UDim2.fromOffset(0, visible * OPT_H + math.max(0, visible - 1) * 2)
+				noResults.Visible = visible == 0
+			end)
+			task.defer(function()
+				if search.Parent then search:CaptureFocus() end
+			end)
+		end
 	else
 		-- Empty-state: centered in the panel area
 		U.Create("TextLabel", {
@@ -346,7 +399,7 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 	else
 		self:_transition(popup, 0.25, { Size = UDim2.fromOffset(w, clampedH) })
 	end
-	if self._popupFocusReturn and firstOptionButton then
+	if self._popupFocusReturn and firstOptionButton and not searchbar then
 		game:GetService("GuiService").SelectedObject = firstOptionButton
 	end
 
@@ -382,6 +435,10 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 end
 
 function Menu:HideDropdownPopup()
+	if self._popupSearchCon then
+		self._popupSearchCon:Disconnect()
+		self._popupSearchCon = nil
+	end
 	if self._popupUISCon then
 		self._popupUISCon:Disconnect()
 		self._popupUISCon = nil

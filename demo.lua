@@ -1,4 +1,4 @@
-local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua?v=0.18.6")
+local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua?v=0.19.0")
 local chunk, compileError = loadstring(source)
 assert(chunk, "FyyUI compile error: " .. tostring(compileError))
 local FyyUI = chunk()
@@ -56,6 +56,7 @@ aimSection:Dropdown({
 	Options = { "Head", "Upper Torso", "Lower Torso", "Random" },
 	Default = "Head",
 	AllowNone = true,
+	Searchbar = true,
 	Flag = "combat_hit_part",
 })
 aimSection:Dropdown({

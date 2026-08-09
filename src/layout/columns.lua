@@ -111,6 +111,23 @@ function Column:Input(opts)
 	return self:_mount(TextInput.new(self.Content, opts, self.Theme), opts)
 end
 
+function Column:Custom(factory, opts)
+	return mountCustomComponent(self, self.Content, self._menu, self.Theme, self.Components, factory, opts, function()
+		self._columns:_updateHeight()
+	end)
+end
+
+function Column:Component(name, opts)
+	if destroyedFactoryResult(self) then
+		return nil, "destroyed"
+	end
+	local factory, err = getCustomComponentFactory(name)
+	if not factory then
+		return nil, err
+	end
+	return self:Custom(factory, opts)
+end
+
 function Column:Collapsible(title, opts)
 	if destroyedFactoryResult(self) then
 		return nil, "destroyed"

@@ -304,6 +304,21 @@ function Collapsible:Dropdown(opts)
 	self:_updateSize()
 	return c
 end
+function Collapsible:Custom(factory, opts)
+	return mountCustomComponent(self, self.Content, self._menu, self.Theme, self.Components, factory, opts, function()
+		self:_updateSize()
+	end)
+end
+function Collapsible:Component(name, opts)
+	if destroyedFactoryResult(self) then
+		return nil, "destroyed"
+	end
+	local factory, err = getCustomComponentFactory(name)
+	if not factory then
+		return nil, err
+	end
+	return self:Custom(factory, opts)
+end
 function Collapsible:Keybind(opts)
 	if destroyedFactoryResult(self) then
 		return nil, "destroyed"

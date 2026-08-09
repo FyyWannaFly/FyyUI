@@ -12,6 +12,14 @@ function FyyUI.GetIconModule()
 	return IconModule
 end
 
+function FyyUI.RegisterComponent(name, factory)
+	return registerCustomComponent(name, factory)
+end
+
+function FyyUI.UnregisterComponent(name)
+	return unregisterCustomComponent(name)
+end
+
 function FyyUI.Menu(options)
 	options = options or {}
 	local name = options.Theme or "Dark"
