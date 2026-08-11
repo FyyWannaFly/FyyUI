@@ -400,20 +400,48 @@ function Menu:ShowDropdownPopup(atPos, atSize, opts, selectedIdx, onClick, isMul
 		game:GetService("GuiService").SelectedObject = firstOptionButton
 	end
 
-	-- Close on click outside (generation-guarded: stale invocations after a new popup are no-ops)
+	-- Close on click outside (generation-guarded: stale invocations after a new popup are no-ops).
+	-- Touch: a swipe that starts outside the popup is a scroll gesture, not a
+	-- dismiss — only a stationary tap (released within the deadzone) closes it.
 	local closeGen = self._popupGen
+	local touchPending, touchStartPos
 	self._popupUISCon = uis.InputBegan:Connect(function(input, gpe)
 		if gpe then
 			return
 		end
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			task.wait()
 			if closeGen ~= self._popupGen then
 				return
 			end -- popup was replaced while yielding
+			local activePopup = self._activePopupFrame
+			if not activePopup then
+				return
+			end
+			local point, popupPos, popupSize = input.Position, activePopup.AbsolutePosition, activePopup.AbsoluteSize
+			local insidePopup = point.X >= popupPos.X
+				and point.X <= popupPos.X + popupSize.X
+				and point.Y >= popupPos.Y
+				and point.Y <= popupPos.Y + popupSize.Y
+			if not insidePopup then
+				self:HideDropdownPopup()
+			end
+		elseif input.UserInputType == Enum.UserInputType.Touch then
+			touchPending = input
+			touchStartPos = input.Position
+		end
+	end)
+	self._popupTouchMoveCon = uis.InputChanged:Connect(function(input)
+		if touchPending and input == touchPending and (input.Position - touchStartPos).Magnitude > 10 then
+			touchPending = nil
+		end
+	end)
+	self._popupTouchEndCon = uis.InputEnded:Connect(function(input)
+		if touchPending and input == touchPending then
+			touchPending = nil
+			if closeGen ~= self._popupGen then
+				return
+			end
 			local activePopup = self._activePopupFrame
 			if not activePopup then
 				return
@@ -435,6 +463,14 @@ function Menu:HideDropdownPopup()
 	if self._popupSearchCon then
 		self._popupSearchCon:Disconnect()
 		self._popupSearchCon = nil
+	end
+	if self._popupTouchMoveCon then
+		self._popupTouchMoveCon:Disconnect()
+		self._popupTouchMoveCon = nil
+	end
+	if self._popupTouchEndCon then
+		self._popupTouchEndCon:Disconnect()
+		self._popupTouchEndCon = nil
 	end
 	if self._popupUISCon then
 		self._popupUISCon:Disconnect()

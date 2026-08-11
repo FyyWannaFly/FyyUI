@@ -116,6 +116,9 @@ function Slider.new(parent, options, theme)
 
 	local dragging = false
 	local activeInput = nil
+	-- Touch tap-vs-drag discrimination: a release with no meaningful movement
+	-- is a tap (jump value); movement past the deadzone becomes a drag.
+	local touchPending, touchStartPos, touchStartTime
 	local function valueFromInput(input)
 		local absPos = self.Track.AbsolutePosition.X
 		local size = self.Track.AbsoluteSize.X
@@ -128,14 +131,18 @@ function Slider.new(parent, options, theme)
 	end
 	local function beginDrag(input)
 		local t = input.UserInputType
-		if t ~= Enum.UserInputType.MouseButton1 and t ~= Enum.UserInputType.Touch then
-			return
-		end
-		dragging = true
-		activeInput = input
-		local val = valueFromInput(input)
-		if val then
-			self:SetValue(val)
+		if t == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			activeInput = input
+			local val = valueFromInput(input)
+			if val then
+				self:SetValue(val)
+			end
+		elseif t == Enum.UserInputType.Touch then
+			-- Don't jump yet; wait to see if this is a tap or a drag.
+			touchPending = input
+			touchStartPos = input.Position
+			touchStartTime = os.clock()
 		end
 	end
 	self.Knob.InputBegan:Connect(beginDrag)
@@ -147,10 +154,20 @@ function Slider.new(parent, options, theme)
 		local isTouchDrag = activeInput
 			and activeInput.UserInputType == Enum.UserInputType.Touch
 			and input == activeInput
-		if dragging and (isMouseDrag or isTouchDrag) then
+		if isTouchDrag or (isMouseDrag and dragging) then
 			local val = valueFromInput(input)
 			if val then
 				self:SetValue(val)
+			end
+		elseif touchPending and input == touchPending then
+			if (input.Position - touchStartPos).Magnitude > 8 then
+				dragging = true
+				activeInput = input
+				touchPending = nil
+				local val = valueFromInput(input)
+				if val then
+					self:SetValue(val)
+				end
 			end
 		end
 	end)
@@ -159,11 +176,23 @@ function Slider.new(parent, options, theme)
 			dragging = false
 			activeInput = nil
 		end
+		if touchPending and input == touchPending then
+			touchPending = nil
+			-- Stationary tap: jump the value at release (short press, no drag).
+			if os.clock() - touchStartTime < 0.15 then
+				local val = valueFromInput(input)
+				if val then
+					self:SetValue(val)
+				end
+			end
+		end
 	end
 	self.Knob.InputEnded:Connect(endDrag)
 	-- Service-level InputEnded: catches mouse-up even when pointer is no longer over the knob
 	self._sliderEndCon = uis.InputEnded:Connect(function(input)
 		if input == activeInput or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			endDrag(input)
+		elseif input.UserInputType == Enum.UserInputType.Touch then
 			endDrag(input)
 		end
 	end)

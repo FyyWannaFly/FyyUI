@@ -370,7 +370,7 @@ function Menu.new(options, theme)
 		"FyyUI Menu: SafePadding must be a non-negative finite number"
 	)
 	self.SafePadding = safePadding
-	local touchTargetSize = options.TouchTargetSize == nil and 36 or options.TouchTargetSize
+	local touchTargetSize = options.TouchTargetSize == nil and 44 or options.TouchTargetSize
 	assert(
 		isFiniteNumber(touchTargetSize) and touchTargetSize >= 24,
 		"FyyUI Menu: TouchTargetSize must be a finite number of at least 24"

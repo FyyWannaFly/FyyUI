@@ -2717,6 +2717,9 @@ return (function()
 
 		local dragging = false
 		local activeInput = nil
+		-- Touch tap-vs-drag discrimination: a release with no meaningful movement
+		-- is a tap (jump value); movement past the deadzone becomes a drag.
+		local touchPending, touchStartPos, touchStartTime
 		local function valueFromInput(input)
 			local absPos = self.Track.AbsolutePosition.X
 			local size = self.Track.AbsoluteSize.X
@@ -2729,14 +2732,18 @@ return (function()
 		end
 		local function beginDrag(input)
 			local t = input.UserInputType
-			if t ~= Enum.UserInputType.MouseButton1 and t ~= Enum.UserInputType.Touch then
-				return
-			end
-			dragging = true
-			activeInput = input
-			local val = valueFromInput(input)
-			if val then
-				self:SetValue(val)
+			if t == Enum.UserInputType.MouseButton1 then
+				dragging = true
+				activeInput = input
+				local val = valueFromInput(input)
+				if val then
+					self:SetValue(val)
+				end
+			elseif t == Enum.UserInputType.Touch then
+				-- Don't jump yet; wait to see if this is a tap or a drag.
+				touchPending = input
+				touchStartPos = input.Position
+				touchStartTime = os.clock()
 			end
 		end
 		self.Knob.InputBegan:Connect(beginDrag)
@@ -2748,10 +2755,20 @@ return (function()
 			local isTouchDrag = activeInput
 				and activeInput.UserInputType == Enum.UserInputType.Touch
 				and input == activeInput
-			if dragging and (isMouseDrag or isTouchDrag) then
+			if isTouchDrag or (isMouseDrag and dragging) then
 				local val = valueFromInput(input)
 				if val then
 					self:SetValue(val)
+				end
+			elseif touchPending and input == touchPending then
+				if (input.Position - touchStartPos).Magnitude > 8 then
+					dragging = true
+					activeInput = input
+					touchPending = nil
+					local val = valueFromInput(input)
+					if val then
+						self:SetValue(val)
+					end
 				end
 			end
 		end)
@@ -2760,11 +2777,23 @@ return (function()
 				dragging = false
 				activeInput = nil
 			end
+			if touchPending and input == touchPending then
+				touchPending = nil
+				-- Stationary tap: jump the value at release (short press, no drag).
+				if os.clock() - touchStartTime < 0.15 then
+					local val = valueFromInput(input)
+					if val then
+						self:SetValue(val)
+					end
+				end
+			end
 		end
 		self.Knob.InputEnded:Connect(endDrag)
 		-- Service-level InputEnded: catches mouse-up even when pointer is no longer over the knob
 		self._sliderEndCon = uis.InputEnded:Connect(function(input)
 			if input == activeInput or input.UserInputType == Enum.UserInputType.MouseButton1 then
+				endDrag(input)
+			elseif input.UserInputType == Enum.UserInputType.Touch then
 				endDrag(input)
 			end
 		end)
@@ -6582,7 +6611,7 @@ return (function()
 			"FyyUI Menu: SafePadding must be a non-negative finite number"
 		)
 		self.SafePadding = safePadding
-		local touchTargetSize = options.TouchTargetSize == nil and 36 or options.TouchTargetSize
+		local touchTargetSize = options.TouchTargetSize == nil and 44 or options.TouchTargetSize
 		assert(
 			isFiniteNumber(touchTargetSize) and touchTargetSize >= 24,
 			"FyyUI Menu: TouchTargetSize must be a finite number of at least 24"
@@ -7735,20 +7764,48 @@ return (function()
 			game:GetService("GuiService").SelectedObject = firstOptionButton
 		end
 
-		-- Close on click outside (generation-guarded: stale invocations after a new popup are no-ops)
+		-- Close on click outside (generation-guarded: stale invocations after a new popup are no-ops).
+		-- Touch: a swipe that starts outside the popup is a scroll gesture, not a
+		-- dismiss — only a stationary tap (released within the deadzone) closes it.
 		local closeGen = self._popupGen
+		local touchPending, touchStartPos
 		self._popupUISCon = uis.InputBegan:Connect(function(input, gpe)
 			if gpe then
 				return
 			end
-			if
-				input.UserInputType == Enum.UserInputType.MouseButton1
-				or input.UserInputType == Enum.UserInputType.Touch
-			then
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				task.wait()
 				if closeGen ~= self._popupGen then
 					return
 				end -- popup was replaced while yielding
+				local activePopup = self._activePopupFrame
+				if not activePopup then
+					return
+				end
+				local point, popupPos, popupSize = input.Position, activePopup.AbsolutePosition, activePopup.AbsoluteSize
+				local insidePopup = point.X >= popupPos.X
+					and point.X <= popupPos.X + popupSize.X
+					and point.Y >= popupPos.Y
+					and point.Y <= popupPos.Y + popupSize.Y
+				if not insidePopup then
+					self:HideDropdownPopup()
+				end
+			elseif input.UserInputType == Enum.UserInputType.Touch then
+				touchPending = input
+				touchStartPos = input.Position
+			end
+		end)
+		self._popupTouchMoveCon = uis.InputChanged:Connect(function(input)
+			if touchPending and input == touchPending and (input.Position - touchStartPos).Magnitude > 10 then
+				touchPending = nil
+			end
+		end)
+		self._popupTouchEndCon = uis.InputEnded:Connect(function(input)
+			if touchPending and input == touchPending then
+				touchPending = nil
+				if closeGen ~= self._popupGen then
+					return
+				end
 				local activePopup = self._activePopupFrame
 				if not activePopup then
 					return
@@ -7770,6 +7827,14 @@ return (function()
 		if self._popupSearchCon then
 			self._popupSearchCon:Disconnect()
 			self._popupSearchCon = nil
+		end
+		if self._popupTouchMoveCon then
+			self._popupTouchMoveCon:Disconnect()
+			self._popupTouchMoveCon = nil
+		end
+		if self._popupTouchEndCon then
+			self._popupTouchEndCon:Disconnect()
+			self._popupTouchEndCon = nil
 		end
 		if self._popupUISCon then
 			self._popupUISCon:Disconnect()
@@ -9569,23 +9634,33 @@ return (function()
 			local t = input.UserInputType
 			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
 				self:HideDropdownPopup()
-				dragging = true
 				dragInput = input
 				ds = input.Position
 				sp = frame.Position
 				if t == Enum.UserInputType.Touch then
+					-- Touch: don't start dragging until the finger actually moves past
+					-- the deadzone. A tap on the header must NOT drag the window.
+					-- Capturing input now keeps us from losing the gesture.
+					dragging = false
 					self:_captureInput("WindowDrag", { Enum.UserInputType.Touch })
+				else
+					dragging = true
 				end
 			end
 		end)
 		self._dragInputCon = uis.InputChanged:Connect(function(input)
 			local t = input.UserInputType
 			local isMouseDrag = dragging and dragInput and dragInput.UserInputType == Enum.UserInputType.MouseButton1
-			local isTouchDrag = dragging
-				and dragInput
+			local isTouchActive = dragInput
 				and dragInput.UserInputType == Enum.UserInputType.Touch
 				and input == dragInput
-			if (isMouseDrag and t == Enum.UserInputType.MouseMovement) or isTouchDrag then
+			if t == Enum.UserInputType.MouseMovement and not isMouseDrag and isTouchActive then
+				-- Touch: promote to drag only after exceeding the deadzone.
+				if (input.Position - ds).Magnitude > 10 then
+					dragging = true
+				end
+			end
+			if (isMouseDrag and t == Enum.UserInputType.MouseMovement) or (dragging and isTouchActive) then
 				local delta = input.Position - ds
 				-- Clamp so at least CLAMP_MARGIN px of the frame stays visible in the viewport
 				local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
@@ -9989,10 +10064,12 @@ return (function()
 		grip.InputBegan:Connect(function(input)
 			local t = input.UserInputType
 			if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-				resizing = true
 				resizeInputObj = input
 				rs = input.Position
 				rsiz = frame.Size
+				-- Touch: promote to resize only after the finger moves past the
+				-- deadzone; a tap on the grip must NOT resize the window.
+				resizing = t ~= Enum.UserInputType.Touch
 			end
 		end)
 		self._resizeInputCon = uis.InputChanged:Connect(function(input, _)
@@ -10000,6 +10077,11 @@ return (function()
 			-- gpe guard removed: while actively resizing we must follow all mouse/touch movement.
 			-- For touch, only follow the specific initiating touch (not unrelated touches).
 			local isOurTouch = (t == Enum.UserInputType.Touch and input == resizeInputObj)
+			if isOurTouch and not resizing then
+				if (input.Position - rs).Magnitude > 10 then
+					resizing = true
+				end
+			end
 			if ((t == Enum.UserInputType.MouseMovement) or isOurTouch) and resizing then
 				local delta = input.Position - rs
 				local nw = math.max(200, rsiz.X.Offset + delta.X)

@@ -53,23 +53,33 @@ function Menu:_dragging()
 		local t = input.UserInputType
 		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
 			self:HideDropdownPopup()
-			dragging = true
 			dragInput = input
 			ds = input.Position
 			sp = frame.Position
 			if t == Enum.UserInputType.Touch then
+				-- Touch: don't start dragging until the finger actually moves past
+				-- the deadzone. A tap on the header must NOT drag the window.
+				-- Capturing input now keeps us from losing the gesture.
+				dragging = false
 				self:_captureInput("WindowDrag", { Enum.UserInputType.Touch })
+			else
+				dragging = true
 			end
 		end
 	end)
 	self._dragInputCon = uis.InputChanged:Connect(function(input)
 		local t = input.UserInputType
 		local isMouseDrag = dragging and dragInput and dragInput.UserInputType == Enum.UserInputType.MouseButton1
-		local isTouchDrag = dragging
-			and dragInput
+		local isTouchActive = dragInput
 			and dragInput.UserInputType == Enum.UserInputType.Touch
 			and input == dragInput
-		if (isMouseDrag and t == Enum.UserInputType.MouseMovement) or isTouchDrag then
+		if t == Enum.UserInputType.MouseMovement and not isMouseDrag and isTouchActive then
+			-- Touch: promote to drag only after exceeding the deadzone.
+			if (input.Position - ds).Magnitude > 10 then
+				dragging = true
+			end
+		end
+		if (isMouseDrag and t == Enum.UserInputType.MouseMovement) or (dragging and isTouchActive) then
 			local delta = input.Position - ds
 			-- Clamp so at least CLAMP_MARGIN px of the frame stays visible in the viewport
 			local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
@@ -473,10 +483,12 @@ function Menu:_resizable()
 	grip.InputBegan:Connect(function(input)
 		local t = input.UserInputType
 		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-			resizing = true
 			resizeInputObj = input
 			rs = input.Position
 			rsiz = frame.Size
+			-- Touch: promote to resize only after the finger moves past the
+			-- deadzone; a tap on the grip must NOT resize the window.
+			resizing = t ~= Enum.UserInputType.Touch
 		end
 	end)
 	self._resizeInputCon = uis.InputChanged:Connect(function(input, _)
@@ -484,6 +496,11 @@ function Menu:_resizable()
 		-- gpe guard removed: while actively resizing we must follow all mouse/touch movement.
 		-- For touch, only follow the specific initiating touch (not unrelated touches).
 		local isOurTouch = (t == Enum.UserInputType.Touch and input == resizeInputObj)
+		if isOurTouch and not resizing then
+			if (input.Position - rs).Magnitude > 10 then
+				resizing = true
+			end
+		end
 		if ((t == Enum.UserInputType.MouseMovement) or isOurTouch) and resizing then
 			local delta = input.Position - rs
 			local nw = math.max(200, rsiz.X.Offset + delta.X)
