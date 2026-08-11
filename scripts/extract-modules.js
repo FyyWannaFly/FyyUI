@@ -5,7 +5,7 @@ const path = require("node:path");
 
 const ROOT = path.resolve(__dirname, "..");
 const INPUT = process.argv.slice(2).find((argument) => !argument.startsWith("--"));
-const SOURCE_PATH = INPUT ? path.resolve(ROOT, INPUT) : path.join(ROOT, "fyyui.lua");
+const SOURCE_PATH = INPUT ? path.resolve(ROOT, INPUT) : path.join(ROOT, "FyyUI.lua");
 const FORCE = process.argv.includes("--force");
 
 if (!FORCE) {
@@ -55,4 +55,4 @@ for (const [relativePath, ...bounds] of modules) {
 	fs.writeFileSync(absolutePath, content, "utf8");
 }
 
-console.log(`Extracted ${modules.length} source files from fyyui.lua.`);
+console.log(`Extracted ${modules.length} source files from FyyUI.lua.`);

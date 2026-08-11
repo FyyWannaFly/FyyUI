@@ -11,7 +11,7 @@ A polished Roblox Luau interface library focused on responsive layouts, consiste
 - Register reusable components or mount one-off custom components without editing FyyUI source.
 - Fixed premium Overview for profile, game, server, and optional Discord support details.
 - Command palette, tooltips, notifications, theme switching, reduced motion, and JSON configuration APIs.
-- Modular development source compiled into one deterministic `fyyui.lua` bundle.
+- Modular development source compiled into one deterministic `FyyUI.lua` bundle.
 - Ordered Config Tab with saved profiles, JSON import/export, and optional autoload.
 
 ## Quick start
@@ -20,14 +20,14 @@ A polished Roblox Luau interface library focused on responsive layouts, consiste
 
 ```lua
 local source = game:HttpGet(
-	"https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/fyyui.lua"
+	"https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/FyyUI.lua"
 )
 local FyyUI = assert(loadstring(source))()
 ```
 
 ### Local ModuleScript
 
-Place `fyyui.lua` in a trusted ModuleScript named `FyyUI`, then require it:
+Place `FyyUI.lua` in a trusted ModuleScript named `FyyUI`, then require it:
 
 ```lua
 local FyyUI = require(script.Parent.FyyUI)
@@ -81,7 +81,7 @@ main:Dropdown({
 
 ## Development
 
-The 19 files under `src/` are the development source. Root `fyyui.lua` is the generated distribution consumed by remote loaders.
+The 19 files under `src/` are the development source. Root `FyyUI.lua` is the generated distribution consumed by remote loaders.
 
 ```bash
 # Generate the distribution bundle
@@ -94,7 +94,7 @@ node scripts/build.js --check
 node tests/verify-build.js
 ```
 
-Do not edit root `fyyui.lua` directly. Update `src/`, rebuild, and commit the source changes together with the generated bundle.
+Do not edit root `FyyUI.lua` directly. Update `src/`, rebuild, and commit the source changes together with the generated bundle.
 
 ## Requirements
 

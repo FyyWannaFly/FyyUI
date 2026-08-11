@@ -7,7 +7,7 @@ const path = require("node:path");
 const childProcess = require("node:child_process");
 
 const root = path.resolve(__dirname, "..");
-const bundlePath = path.join(root, "fyyui.lua");
+const bundlePath = path.join(root, "FyyUI.lua");
 
 function runBuild(...arguments_) {
 	const result = childProcess.spawnSync(process.execPath, [path.join(root, "scripts", "build.js"), ...arguments_], {

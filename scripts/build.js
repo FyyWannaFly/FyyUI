@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const ROOT = path.resolve(__dirname, "..");
-const OUTPUT = path.join(ROOT, "fyyui.lua");
+const OUTPUT = path.join(ROOT, "FyyUI.lua");
 const SOURCE_ROOT = path.join(ROOT, "src");
 const SOURCES = [
 	"src/bootstrap.lua",
@@ -108,11 +108,11 @@ const output = build();
 if (process.argv.includes("--check")) {
 	const current = fs.existsSync(OUTPUT) ? fs.readFileSync(OUTPUT, "utf8").replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n") : "";
 	if (current !== output) {
-		console.error("fyyui.lua is stale. Run: node scripts/build.js");
+		console.error("FyyUI.lua is stale. Run: node scripts/build.js");
 		process.exit(1);
 	}
-	console.log(`fyyui.lua is synchronized with ${SOURCES.length} source files.`);
+	console.log(`FyyUI.lua is synchronized with ${SOURCES.length} source files.`);
 } else {
 	fs.writeFileSync(OUTPUT, output, "utf8");
-	console.log(`Built fyyui.lua from ${SOURCES.length} source files.`);
+	console.log(`Built FyyUI.lua from ${SOURCES.length} source files.`);
 }

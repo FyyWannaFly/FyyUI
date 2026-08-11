@@ -1,6 +1,6 @@
 -- Roblox Studio / executor smoke harness.
 --
--- Load the local fyyui.lua into FyyUI, then run:
+-- Load the local FyyUI.lua into FyyUI, then run:
 --   require-or-load-this-file(FyyUI)
 -- The function deliberately uses only the public API except for checking that
 -- transient overlays were removed; those checks protect the lifecycle bug this

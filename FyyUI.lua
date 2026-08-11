@@ -7692,9 +7692,6 @@ return (function()
 					optionList.CanvasSize = UDim2.fromOffset(0, visible * OPT_H + math.max(0, visible - 1) * 2)
 					noResults.Visible = visible == 0
 				end)
-				task.defer(function()
-					if search.Parent then search:CaptureFocus() end
-				end)
 			end
 		else
 			-- Empty-state: centered in the panel area
