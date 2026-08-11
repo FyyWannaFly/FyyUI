@@ -9654,7 +9654,7 @@ return (function()
 			local isTouchActive = dragInput
 				and dragInput.UserInputType == Enum.UserInputType.Touch
 				and input == dragInput
-			if t == Enum.UserInputType.MouseMovement and not isMouseDrag and isTouchActive then
+			if t == Enum.UserInputType.Touch and isTouchActive and not dragging then
 				-- Touch: promote to drag only after exceeding the deadzone.
 				if (input.Position - ds).Magnitude > 10 then
 					dragging = true
