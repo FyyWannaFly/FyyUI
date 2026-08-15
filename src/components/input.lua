@@ -27,6 +27,7 @@ function TextInput.new(parent, options, theme)
 		BackgroundColor3 = theme.Element,
 		BackgroundTransparency = 0,
 		BorderSizePixel = 0,
+		ClipsDescendants = true,
 		Parent = parent,
 	})
 	U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
@@ -61,7 +62,8 @@ function TextInput.new(parent, options, theme)
 		TextColor3 = theme.TextPrimary,
 		PlaceholderColor3 = theme.TextMuted,
 		ClearTextOnFocus = self.ClearTextOnFocus,
-		TextXAlignment = Enum.TextXAlignment.Center,
+		MultiLine = false,
+		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = self.Container,
 	})
 	U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.TextBox })
@@ -82,6 +84,13 @@ function TextInput.new(parent, options, theme)
 	-- Focus gained
 	self.TextBox.Focused:Connect(function()
 		self.TextBox.BackgroundColor3 = theme.Element
+	end)
+
+	self.TextBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local normalized = self.TextBox.Text:gsub("[\r\n]+", " ")
+		if normalized ~= self.TextBox.Text then
+			self.TextBox.Text = normalized
+		end
 	end)
 
 	-- Focus lost: validate numeric, commit value
