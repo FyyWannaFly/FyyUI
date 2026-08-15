@@ -61,8 +61,9 @@ function TextInput.new(parent, options, theme)
 		TextSize = theme.FontSizeSmall,
 		TextColor3 = theme.TextPrimary,
 		PlaceholderColor3 = theme.TextMuted,
-		ClearTextOnFocus = self.ClearTextOnFocus,
+ClearTextOnFocus = self.ClearTextOnFocus,
 		MultiLine = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = self.Container,
 	})
