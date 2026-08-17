@@ -3869,7 +3869,7 @@ return (function()
 	ClearTextOnFocus = self.ClearTextOnFocus,
 			MultiLine = false,
 			TextTruncate = Enum.TextTruncate.AtEnd,
-			TextXAlignment = Enum.TextXAlignment.Left,
+			TextXAlignment = Enum.TextXAlignment.Center,
 			Parent = self.Container,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.TextBox })
