@@ -108,7 +108,12 @@ function Column:Input(opts)
 		return nil, "destroyed"
 	end
 	opts = opts or {}
-	return self:_mount(TextInput.new(self.Content, opts, self.Theme), opts)
+	local inputOpts = {}
+	for k, v in pairs(opts) do
+		inputOpts[k] = v
+	end
+	inputOpts._compactControl = true
+	return self:_mount(TextInput.new(self.Content, inputOpts, self.Theme), opts)
 end
 
 function Column:Custom(factory, opts)

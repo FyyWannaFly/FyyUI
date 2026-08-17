@@ -340,7 +340,12 @@ function Collapsible:Input(opts)
 		return nil, "destroyed"
 	end
 	opts = opts or {}
-	local c = TextInput.new(self.Content, opts, self.Theme)
+	local inputOpts = {}
+	for k, v in pairs(opts) do
+		inputOpts[k] = v
+	end
+	inputOpts._compactControl = true
+	local c = TextInput.new(self.Content, inputOpts, self.Theme)
 	table.insert(self.Components, c)
 	if c.Flag and self._menu then
 		self._menu:_trackFlagged(c)

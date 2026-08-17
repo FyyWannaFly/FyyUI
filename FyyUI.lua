@@ -3822,8 +3822,9 @@ return (function()
 
 		self.HasDesc = self.Description ~= nil and self.Description ~= ""
 		local h = self.HasDesc and theme.DescHeight or theme.ElementHeight
-		local textBoxW = 100
-		local textBoxOff = textBoxW + 12
+		-- Sama kayak dropdown: kotak kecil di kanan (compact 88 / normal 100)
+		local btnW = options._compactControl and 88 or 100
+		local textBoxOff = btnW + 12
 
 		self.Container = U.Create("Frame", {
 			Name = "TextInput",
@@ -3841,7 +3842,7 @@ return (function()
 		-- Label
 		self.Label = U.Create("TextLabel", {
 			Name = "Label",
-			Size = UDim2.new(1, -(textBoxW + 20), 0, 20),
+			Size = UDim2.new(1, -(btnW + 20), 0, 20),
 			Position = UDim2.fromOffset(10, self.HasDesc and 6 or (h + 6 - 20) / 2 + 1),
 			BackgroundTransparency = 1,
 			Text = self.Text,
@@ -3853,10 +3854,10 @@ return (function()
 			Parent = self.Container,
 		})
 
-		-- TextBox (right side)
+		-- TextBox (right side) — kotak kecil kayak SelectBtn dropdown, plus stroke accent
 		self.TextBox = U.Create("TextBox", {
 			Name = "TextBox",
-			Size = UDim2.fromOffset(textBoxW, 26),
+			Size = UDim2.fromOffset(btnW, 26),
 			Position = UDim2.new(1, -textBoxOff, 0.5, -13),
 			BackgroundColor3 = theme.ElementHover,
 			BackgroundTransparency = 0,
@@ -3873,6 +3874,12 @@ return (function()
 			Parent = self.Container,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.TextBox })
+		self._textBoxStroke = U.Create("UIStroke", {
+			Color = theme.Accent,
+			Thickness = 1,
+			Transparency = self._value and self._value ~= "" and 0.5 or 0.8,
+			Parent = self.TextBox,
+		})
 
 		-- Set default value
 		if options.Default ~= nil then
@@ -3920,6 +3927,9 @@ return (function()
 			else
 				self._value = self.TextBox.Text
 			end
+			if self._textBoxStroke then
+				self._textBoxStroke.Transparency = (self._value ~= "") and 0.5 or 0.8
+			end
 			task.spawn(function()
 				self.Callback(self._value, enterPressed)
 			end)
@@ -3929,7 +3939,7 @@ return (function()
 		if self.HasDesc then
 			U.Create("TextLabel", {
 				Name = "Description",
-				Size = UDim2.new(1, -(textBoxW + 20), 0, 16),
+				Size = UDim2.new(1, -(btnW + 20), 0, 16),
 				Position = UDim2.fromOffset(10, 28),
 				BackgroundTransparency = 1,
 				Text = self.Description,
@@ -3973,6 +3983,9 @@ return (function()
 			if self.TextBox then
 				self.TextBox.Text = self._value
 			end
+		end
+		if self._textBoxStroke then
+			self._textBoxStroke.Transparency = (self._value ~= "") and 0.5 or 0.8
 		end
 		if not noCallback then
 			task.spawn(function()
@@ -4033,6 +4046,9 @@ return (function()
 		self.TextBox.TextSize = theme.FontSizeSmall
 		self.TextBox.TextColor3 = theme.TextPrimary
 		self.TextBox.PlaceholderColor3 = theme.TextMuted
+		if self._textBoxStroke then
+			self._textBoxStroke.Color = theme.Accent
+		end
 	end
 	--[[ Checkbox ]]
 	local Checkbox = {}
@@ -4294,7 +4310,12 @@ return (function()
 			return nil, "destroyed"
 		end
 		opts = opts or {}
-		return self:_mount(TextInput.new(self.Content, opts, self.Theme), opts)
+		local inputOpts = {}
+		for k, v in pairs(opts) do
+			inputOpts[k] = v
+		end
+		inputOpts._compactControl = true
+		return self:_mount(TextInput.new(self.Content, inputOpts, self.Theme), opts)
 	end
 
 	function Column:Custom(factory, opts)
@@ -5204,7 +5225,12 @@ return (function()
 			return nil, "destroyed"
 		end
 		opts = opts or {}
-		local c = TextInput.new(self.Content, opts, self.Theme)
+		local inputOpts = {}
+		for k, v in pairs(opts) do
+			inputOpts[k] = v
+		end
+		inputOpts._compactControl = true
+		local c = TextInput.new(self.Content, inputOpts, self.Theme)
 		table.insert(self.Components, c)
 		if c.Flag and self._menu then
 			self._menu:_trackFlagged(c)
