@@ -3854,7 +3854,8 @@ return (function()
 			Parent = self.Container,
 		})
 
-		-- TextBox (right side) — kotak kecil kayak SelectBtn dropdown, plus stroke accent
+		-- TextBox (right side) — kotak kecil kayak SelectBtn dropdown, TANPA stroke
+		-- accent (biar normal, gak ada highlight)
 		self.TextBox = U.Create("TextBox", {
 			Name = "TextBox",
 			Size = UDim2.fromOffset(btnW, 26),
@@ -3874,12 +3875,6 @@ return (function()
 			Parent = self.Container,
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.TextBox })
-		self._textBoxStroke = U.Create("UIStroke", {
-			Color = theme.Accent,
-			Thickness = 1,
-			Transparency = self._value and self._value ~= "" and 0.5 or 0.8,
-			Parent = self.TextBox,
-		})
 
 		-- Set default value
 		if options.Default ~= nil then
@@ -3926,9 +3921,6 @@ return (function()
 				end
 			else
 				self._value = self.TextBox.Text
-			end
-			if self._textBoxStroke then
-				self._textBoxStroke.Transparency = (self._value ~= "") and 0.5 or 0.8
 			end
 			task.spawn(function()
 				self.Callback(self._value, enterPressed)
@@ -3983,9 +3975,6 @@ return (function()
 			if self.TextBox then
 				self.TextBox.Text = self._value
 			end
-		end
-		if self._textBoxStroke then
-			self._textBoxStroke.Transparency = (self._value ~= "") and 0.5 or 0.8
 		end
 		if not noCallback then
 			task.spawn(function()
@@ -4046,9 +4035,6 @@ return (function()
 		self.TextBox.TextSize = theme.FontSizeSmall
 		self.TextBox.TextColor3 = theme.TextPrimary
 		self.TextBox.PlaceholderColor3 = theme.TextMuted
-		if self._textBoxStroke then
-			self._textBoxStroke.Color = theme.Accent
-		end
 	end
 	--[[ Checkbox ]]
 	local Checkbox = {}
