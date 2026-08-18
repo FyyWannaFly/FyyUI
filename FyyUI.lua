@@ -7387,8 +7387,14 @@ return (function()
 		})
 		self._activeNotifs = {}
 
-		-- Floating minimize icon (only if Logo is set)
+		-- Floating minimize icon (only if Logo is set) — dedup GUI lama dulu biar
+		-- gak numpuk dari bundle lama yang gak ke-cleanup.
 		if _logoImage then
+			for _, existing in ipairs(self.GuiParent:GetChildren()) do
+				if existing:IsA("ScreenGui") and existing.Name == "FyyUI_Min" then
+					existing:Destroy()
+				end
+			end
 			self._minGui = U.Create("ScreenGui", {
 				Name = "FyyUI_Min",
 				DisplayOrder = 999,
