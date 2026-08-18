@@ -4218,6 +4218,11 @@ return (function()
 		self.Theme = theme
 		self._rows = {}
 		self._labels = {}
+		-- Card background: default ke (18,22,28) — sama kayak card info custom
+		-- yang udah proven (AutoSpearInfo/SnapFishingInfo) — lebih terang dari
+		-- theme.Element Amoled (13,13,18) yang hampir hitam. Bisa di-override
+		-- via options.Background.
+		local bgColor = options.Background or Color3.fromRGB(18, 22, 28)
 
 		local function computeHeight()
 			local n = #self._rows
@@ -4249,7 +4254,7 @@ return (function()
 			Name = "Description",
 			Size = UDim2.new(1, -12, 0, computeHeight()),
 			Position = UDim2.fromOffset(6, 0),
-			BackgroundColor3 = theme.Element,
+			BackgroundColor3 = bgColor,
 			BorderSizePixel = 0,
 			ClipsDescendants = true,
 			Parent = parent,
@@ -4339,7 +4344,7 @@ return (function()
 			if not self.Container then
 				return
 			end
-			self.Container.BackgroundColor3 = theme.Element
+			self.Container.BackgroundColor3 = bgColor
 			local stroke = self.Container:FindFirstChildOfClass("UIStroke")
 			if stroke then
 				stroke.Color = theme.ElementBorder
