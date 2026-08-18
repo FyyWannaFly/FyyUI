@@ -4349,8 +4349,6 @@ return (function()
 
 		return self
 	end
-
-	return Description
 	--[[ Columns Layout ]]
 	local Column = {}
 	Column.__index = Column
