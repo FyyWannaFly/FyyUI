@@ -6736,6 +6736,19 @@ return (function()
 	end
 
 	function Menu.new(options, theme)
+		-- DEDUP: destroy ScreenGui lama dengan nama sama (kalau ada) sebelum
+		-- bikin yang baru. Ini safety net kalau executor skip bundle lama (jadi
+		-- cleanup `v.destroy` dari bundle baru gak pernah kepanggil) — GUI lama
+		-- yang nyangkut di CoreGui bakal kehapus, gak numpuk menu dobel.
+		pcall(function()
+			local guiName = options.Title or "FyyUI"
+			local parent = options.Parent or game:GetService("CoreGui")
+			for _, existing in ipairs(parent:GetChildren()) do
+				if existing:IsA("ScreenGui") and existing.Name == guiName then
+					existing:Destroy()
+				end
+			end
+		end)
 		-- Resolve logo assets through the local named icon registry (entries in Icons.lua)
 		local titleLogoResolved = resolveIcon("fyyui-title-logo")
 		local defaultFloatingResolved = resolveIcon("fyyui-floating-logo")
