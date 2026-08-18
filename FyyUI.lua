@@ -7362,7 +7362,13 @@ return (function()
 			Parent = self.Frame,
 		})
 
-		-- Notification (screen-level, bottom-right)
+		-- Notification (screen-level, bottom-right) — dedup GUI lama dulu biar
+		-- notif stack gak numpuk dari bundle lama yang gak ke-cleanup.
+		for _, existing in ipairs(self.GuiParent:GetChildren()) do
+			if existing:IsA("ScreenGui") and existing.Name == "FyyUI_Notifs" then
+				existing:Destroy()
+			end
+		end
 		self._notifGui = U.Create("ScreenGui", {
 			Name = "FyyUI_Notifs",
 			DisplayOrder = 200,
