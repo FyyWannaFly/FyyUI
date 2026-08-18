@@ -19,8 +19,23 @@ function Menu:_positionActiveBar(tab, animate)
 	end
 
 	local scrollY = self.SidebarList and self.SidebarList.CanvasPosition.Y or 0
-	local position = UDim2.fromOffset(5, (tabIdx - 1) * 40 + 9 - scrollY)
-	self.ActiveBar.BackgroundTransparency = 0
+	local y = (tabIdx - 1) * 40 + 9 - scrollY
+	local position = UDim2.fromOffset(5, y)
+
+	-- Visibility/fade: bar hilang (transparency 1) kalau tab aktif ke-scroll
+	-- keluar viewport sidebar (atas/bawah), fade 8px di tepi biar halus.
+	-- Nyegah bar nyangkut di posisi aneh / tembus keluar sidebar pas scroll.
+	local barH = 20
+	local sbH = self.Sidebar and self.Sidebar.AbsoluteSize.Y or 0
+	local fade = 1
+	if sbH > 0 then
+		if y < 8 then
+			fade = math.max(y / 8, 0)
+		elseif y + barH > sbH - 8 then
+			fade = math.max((sbH - y) / 8, 0)
+		end
+	end
+	self.ActiveBar.BackgroundTransparency = 1 - fade
 	if animate then
 		local tween = self:_transition(self.ActiveBar, 0.22, { Position = position })
 		self._activeBarTween = tween
@@ -83,6 +98,23 @@ function Menu:SelectTab(tab)
 		local lbl = tab.TabButton:FindFirstChild("Label")
 		if lbl then
 			lbl.TextColor3 = self.Theme.SidebarTextActive
+		end
+
+		-- Auto-scroll sidebar biar tab aktif selalu keliatan (kalau user lagi
+		-- scroll jauh terus pindah tab lewat shortcut/palette, tab gak ke-scroll
+		-- keluar viewport — bar + highlight tetap kelihatan).
+		local btn = tab.TabButton
+		local list = self.SidebarList
+		if btn and list and btn.AbsoluteSize.Y > 0 then
+			local relY = btn.AbsolutePosition.Y - list.AbsolutePosition.Y
+			local listH = list.AbsoluteSize.Y
+			local btnH = btn.AbsoluteSize.Y
+			local canvasY = list.CanvasPosition.Y
+			if relY < 4 then
+				list.CanvasPosition = Vector2.new(0, math.max(canvasY + relY - 4, 0))
+			elseif relY + btnH > listH - 4 then
+				list.CanvasPosition = Vector2.new(0, canvasY + relY + btnH - listH + 4)
+			end
 		end
 	end
 end

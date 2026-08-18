@@ -761,6 +761,10 @@ function Menu.new(options, theme)
 		Position = UDim2.new(0, 2, 0, theme.TopbarHeight + 4),
 		BackgroundColor3 = theme.Sidebar,
 		BorderSizePixel = 0,
+		-- CLIP: biar ActiveBar (yang di-parent ke Sidebar biar gak kena
+		-- UIListLayout) gak bisa render keluar sidebar pas ke-scroll —
+		-- sebelumnya bar tembus ke topbar/area lain.
+		ClipsDescendants = true,
 		Parent = self.Frame,
 	})
 	U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Sidebar })
