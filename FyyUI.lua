@@ -4187,14 +4187,16 @@ return (function()
 		self.Box.BackgroundColor3 = self.Value and theme.Accent or theme.ElementHover
 	end
 	--[[ Description Card ]]
-	-- Compact info card (AutoSpearInfo-style): Title 13px bold / Description 11px /
-	-- Footer 10px / Status 11px accent. Any field left empty is skipped and the
-	-- card height adapts: 1 row = 42px, 2 rows = 54px, 3 rows = 74px, 4 rows = 98px.
+	-- Info card with optional Title / Description / Footer / Status fields.
+	-- Layout metrics replicate the proven AutoSpearInfo card: dark cardbox,
+	-- 9px corner, stroke 0.35, accent bar (theme.Accent) left, Title GothamBold
+	-- 13px at y=6, Description 11px at y=28, Footer 10px, Status 11px accent.
+	-- Height adapts: 1 row = 42px, 2 rows = 54px, 3 rows = 74px, 4 rows = 98px.
 	-- Runtime: SetTitle / SetInfo / SetFooter / SetStatus update text live.
 	local Description = {}
 	Description.__index = Description
 
-	local ROW_START = 6 -- y pertama
+	local ROW_START = 6 -- y pertama (sama kayak AutoSpearInfo)
 	local ROW_GAP = 22 -- jarak antar row
 	local PAD_BOTTOM = 10
 
@@ -4214,6 +4216,9 @@ return (function()
 			if n == 0 then
 				return theme.ElementHeight + 6
 			end
+			if n == 1 then
+				return theme.ElementHeight + 6
+			end
 			local rowHeight = n == 3 and 14 or 16 -- footer (row 3) lebih pendek
 			return rowY(n) + rowHeight + PAD_BOTTOM
 		end
@@ -4224,7 +4229,7 @@ return (function()
 			end
 			self.Container.Size = UDim2.new(1, -12, 0, computeHeight())
 			if self.Container.Accent then
-				self.Container.Accent.Size = UDim2.fromOffset(3, math.max(computeHeight() - 16, 8))
+				self.Container.Accent.Size = UDim2.fromOffset(3, math.min(computeHeight() - 16, 38))
 			end
 		end
 
@@ -4234,14 +4239,15 @@ return (function()
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = theme.Element,
 			BorderSizePixel = 0,
+			ClipsDescendants = true,
 			Parent = parent,
 		})
-		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.Container })
-		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = self.Container })
-		-- accent bar kiri (3px, ngikut theme.Accent)
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 9), Parent = self.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.35, Thickness = 1, Parent = self.Container })
+		-- accent bar kiri (3px, ngikut theme.Accent — BIRU)
 		U.Create("Frame", {
 			Name = "Accent",
-			Size = UDim2.fromOffset(3, math.max(computeHeight() - 16, 8)),
+			Size = UDim2.fromOffset(3, math.min(computeHeight() - 16, 38)),
 			Position = UDim2.fromOffset(10, 8),
 			BackgroundColor3 = theme.Accent,
 			BorderSizePixel = 0,
@@ -4250,7 +4256,7 @@ return (function()
 		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = self.Container.Accent })
 
 		-- Internal: ensure a row exists and return its label.
-		-- kind: "Title" (13px bold) | "Description" (11px) | "Footer" (10px) | "Status" (11px accent)
+		-- kind: "Title" (GothamBold 13) | "Description" (11) | "Footer" (10) | "Status" (11 accent)
 		local function ensureRow(kind, text, color)
 			if text == nil or text == "" then
 				return nil
@@ -4266,7 +4272,7 @@ return (function()
 					Size = UDim2.new(1, -34, 0, isFooter and 14 or 16),
 					Position = UDim2.fromOffset(22, rowY(idx)),
 					BackgroundTransparency = 1,
-					Font = isTitle and theme.FontBold or theme.Font,
+					Font = isTitle and Enum.Font.GothamBold or theme.Font,
 					Text = text,
 					TextSize = isTitle and 13 or (isFooter and 10 or 11),
 					TextColor3 = isStatus and (color or theme.Accent) or (isTitle and theme.TextPrimary or theme.TextMuted),
@@ -4333,7 +4339,7 @@ return (function()
 				local isTitle = kind == "Title"
 				local isStatus = kind == "Status"
 				if isTitle then
-					label.Font = theme.FontBold
+					label.Font = Enum.Font.GothamBold
 					label.TextColor3 = theme.TextPrimary
 				elseif isStatus then
 					label.Font = theme.Font
