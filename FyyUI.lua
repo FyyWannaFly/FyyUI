@@ -4203,6 +4203,8 @@ return (function()
 	local ROW_H = { 16, 16, 14, 16 } -- base height per row kind
 	local LINE_H = 14 -- extra height per wrapped line
 
+	local TextService = game:GetService("TextService")
+
 	local function lineCount(text)
 		local n = 1
 		local s = tostring(text or "")
@@ -4212,13 +4214,26 @@ return (function()
 		return n
 	end
 
-	local function rowHeight(kind, text)
+	-- Hitung tinggi row yang bener: gabung \n explicit + wrap otomatis dari
+	-- lebar label (TextService) — biar text panjang kayak RodShop gak ke-kanan
+	-- (clipped), tapi turun kebawah bikin card nambah tinggi sendiri.
+	local function rowHeight(kind, text, maxWidth, font)
 		local idx = kind == "Title" and 1 or kind == "Description" and 2 or kind == "Footer" and 3 or 4
 		local base = ROW_H[idx]
 		if kind == "Title" then
 			return base
 		end
-		return base + math.max(lineCount(text) - 1, 0) * LINE_H
+		local lines = lineCount(text)
+		if maxWidth and maxWidth > 20 then
+			local textSize = kind == "Footer" and 11 or 12
+			local ok, measured = pcall(function()
+				return TextService:GetTextSize(tostring(text), textSize, font, Vector2.new(maxWidth, 4096))
+			end)
+			if ok then
+				lines = math.max(lines, math.ceil(measured.Y / (textSize + 6)))
+			end
+		end
+		return base + math.max(lines - 1, 0) * LINE_H
 	end
 
 	function Description.new(parent, options, theme)
@@ -4240,10 +4255,11 @@ return (function()
 			-- posisi row: PAD_TOP + akumulasi (height row sebelumnya + gap)
 			-- → desc multi-line (lebih tinggi) otomatis dorong row berikutnya turun
 			local y = PAD_TOP
+			local maxW = self.Container.AbsoluteSize.X - 34 - 4
 			for i, kind in ipairs(self._rows) do
 				local label = self._labels[kind]
 				if label then
-					local h = rowHeight(kind, label.Text)
+					local h = rowHeight(kind, label.Text, maxW, theme.Font)
 					label.Size = UDim2.new(1, -34, 0, h)
 					label.Position = UDim2.fromOffset(22, y)
 					y = y + h + (ROW_GAPS[i] or 4)
