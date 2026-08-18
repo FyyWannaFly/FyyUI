@@ -457,6 +457,19 @@ function Column:Divider()
 	return div
 end
 
+-- Description: info card (Title / Description / Footer / Status, all optional)
+-- with runtime SetTitle/SetInfo/SetFooter/SetStatus — see src/components/description.lua
+function Column:Description(opts)
+	if destroyedFactoryResult(self) then
+		return nil, "destroyed"
+	end
+	opts = opts or {}
+	local card = Description.new(self.Content, opts, self.Theme)
+	table.insert(self.Components, card)
+	self._columns:_updateHeight()
+	return card
+end
+
 function Column:Destroy()
 	if self._destroyed then
 		return

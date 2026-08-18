@@ -14,6 +14,7 @@ const SOURCES = [
 	"src/components/keybind.lua",
 	"src/components/input.lua",
 	"src/components/checkbox.lua",
+	"src/components/description.lua",
 	"src/layout/columns.lua",
 	"src/layout/collapsible.lua",
 	"src/navigation/tab.lua",

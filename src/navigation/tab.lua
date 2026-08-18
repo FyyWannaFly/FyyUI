@@ -485,6 +485,18 @@ function Tab:Divider()
 	return div
 end
 
+-- Description: info card (Title / Description / Footer / Status, all optional)
+-- with runtime SetTitle/SetInfo/SetFooter/SetStatus — see src/components/description.lua
+function Tab:Description(opts)
+	if destroyedFactoryResult(self) then
+		return nil, "destroyed"
+	end
+	opts = opts or {}
+	local card = Description.new(self.Container, opts, self.Theme)
+	table.insert(self.Components, card)
+	return card
+end
+
 function Tab:Slider(options)
 	if destroyedFactoryResult(self) then
 		return nil, "destroyed"

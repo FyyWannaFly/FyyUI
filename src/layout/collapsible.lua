@@ -644,6 +644,19 @@ function Collapsible:Divider()
 	self:_updateSize()
 	return div
 end
+
+-- Description: info card (Title / Description / Footer / Status, all optional)
+-- with runtime SetTitle/SetInfo/SetFooter/SetStatus — see src/components/description.lua
+function Collapsible:Description(opts)
+	if destroyedFactoryResult(self) then
+		return nil, "destroyed"
+	end
+	opts = opts or {}
+	local card = Description.new(self.Content, opts, self.Theme)
+	table.insert(self.Components, card)
+	self:_updateSize()
+	return card
+end
 function Collapsible:Columns(opts)
 	if destroyedFactoryResult(self) then
 		return nil, "destroyed"
