@@ -4200,8 +4200,8 @@ return (function()
 	local PAD_TOP = 6
 	local PAD_BOTTOM = 10
 	local GAP = 22 -- antar row 1-2
-	local GAP_FOOTER = 18 -- row 3 (Footer)
-	local GAP_STATUS = 16 -- row 4 (Status)
+	local GAP_FOOTER = 16 -- row 3 (Footer)
+	local GAP_STATUS = 15 -- row 4 (Status)
 
 	local ROW_GAPS = { GAP, GAP, GAP_FOOTER, GAP_STATUS }
 	local function rowY(index)
@@ -4291,7 +4291,7 @@ return (function()
 					BackgroundTransparency = 1,
 					Font = isTitle and Enum.Font.GothamBold or theme.Font,
 					Text = text,
-					TextSize = isTitle and 13 or (isFooter and 10 or 11),
+					TextSize = isTitle and 13 or (isFooter and 11 or 12),
 					TextColor3 = isStatus and (color or theme.Accent) or (isTitle and theme.TextPrimary or theme.TextMuted),
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextTruncate = Enum.TextTruncate.AtEnd,
