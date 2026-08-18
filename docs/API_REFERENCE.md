@@ -111,6 +111,7 @@ tab:Input(options)
 tab:Button(options)
 tab:Label(options)
 tab:BoldLabel(options)
+tab:Description(options)
 tab:Divider()
 tab:Collapsible(title, options)
 ```
@@ -208,9 +209,19 @@ input:Focus()
 
 Numeric input uses `Numeric = true`; it accepts finite values or blank input. `IsEmpty()` distinguishes a blank numeric input from zero.
 
-### Button, labels, and divider
+### Button, labels, descriptions, and divider
 
 `Button` accepts `Text`, optional `Description`, `Icon`, `Color`, `Tooltip`, and `Callback`. `Label` and `BoldLabel` accept `Text`, optional `Description`, `Color`, and `TextSize`. `Divider()` takes no options.
+
+`Description` renders an info card with three optional fields — `Title`, `Description`, and `Footer`. Any field left empty is skipped and the card height adapts to fit:
+
+```lua
+tab:Description({
+	Title = "INFORMATION",
+	Description = "Stuck or bugged? Reset your character below.",
+	Footer = "Press F to pay respects",
+})
+```
 
 ## Themes and return conventions
 
