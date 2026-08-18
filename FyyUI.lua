@@ -4190,18 +4190,26 @@ return (function()
 	-- Info card with optional Title / Description / Footer / Status fields.
 	-- Layout metrics replicate the proven AutoSpearInfo card: dark cardbox,
 	-- 9px corner, stroke 0.35, accent bar (theme.Accent) left, Title GothamBold
-	-- 13px at y=6, Description 11px at y=28, Footer 10px, Status 11px accent.
-	-- Height adapts: 1 row = 42px, 2 rows = 54px, 3 rows = 74px, 4 rows = 98px.
+	-- 13px at y=6, Description 11px at y=28. Footer/Status rows sit tighter
+	-- (gap 18/16) so the card stays compact. Accent bar spans full card height.
+	-- Height adapts: 1 row = 42px, 2 rows = 54px, 3 rows = 70px, 4 rows = 88px.
 	-- Runtime: SetTitle / SetInfo / SetFooter / SetStatus update text live.
 	local Description = {}
 	Description.__index = Description
 
-	local ROW_START = 6 -- y pertama (sama kayak AutoSpearInfo)
-	local ROW_GAP = 22 -- jarak antar row
+	local PAD_TOP = 6
 	local PAD_BOTTOM = 10
+	local GAP = 22 -- antar row 1-2
+	local GAP_FOOTER = 18 -- row 3 (Footer)
+	local GAP_STATUS = 16 -- row 4 (Status)
 
+	local ROW_GAPS = { GAP, GAP, GAP_FOOTER, GAP_STATUS }
 	local function rowY(index)
-		return ROW_START + (index - 1) * ROW_GAP
+		local y = PAD_TOP
+		for i = 1, index - 1 do
+			y = y + ROW_GAPS[i]
+		end
+		return y
 	end
 
 	function Description.new(parent, options, theme)
@@ -4223,13 +4231,17 @@ return (function()
 			return rowY(n) + rowHeight + PAD_BOTTOM
 		end
 
+		local function accentHeight()
+			return math.max(computeHeight() - PAD_TOP - PAD_BOTTOM, 8)
+		end
+
 		local function updateSize()
 			if not self.Container then
 				return
 			end
 			self.Container.Size = UDim2.new(1, -12, 0, computeHeight())
 			if self.Container.Accent then
-				self.Container.Accent.Size = UDim2.fromOffset(3, math.min(computeHeight() - 16, 38))
+				self.Container.Accent.Size = UDim2.fromOffset(3, accentHeight())
 			end
 		end
 
@@ -4244,10 +4256,10 @@ return (function()
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 9), Parent = self.Container })
 		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.35, Thickness = 1, Parent = self.Container })
-		-- accent bar kiri (3px, ngikut theme.Accent — BIRU)
+		-- accent bar kiri (3px, full height, ngikut theme.Accent — BIRU)
 		U.Create("Frame", {
 			Name = "Accent",
-			Size = UDim2.fromOffset(3, math.min(computeHeight() - 16, 38)),
+			Size = UDim2.fromOffset(3, accentHeight()),
 			Position = UDim2.fromOffset(10, 8),
 			BackgroundColor3 = theme.Accent,
 			BorderSizePixel = 0,
