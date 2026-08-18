@@ -4199,7 +4199,7 @@ return (function()
 
 	local PAD_TOP = 6
 	local PAD_BOTTOM = 10
-	local ROW_GAPS = { 22, 22, 16, 15 } -- gap after row 1,2,3,4
+	local ROW_GAPS = { 6, 4, 4 } -- gap dari BOTTOM row-i ke TOP row berikutnya
 	local ROW_H = { 16, 16, 14, 16 } -- base height per row kind
 	local LINE_H = 14 -- extra height per wrapped line
 
@@ -4237,6 +4237,8 @@ return (function()
 			if not self.Container then
 				return
 			end
+			-- posisi row: PAD_TOP + akumulasi (height row sebelumnya + gap)
+			-- → desc multi-line (lebih tinggi) otomatis dorong row berikutnya turun
 			local y = PAD_TOP
 			for i, kind in ipairs(self._rows) do
 				local label = self._labels[kind]
@@ -4244,11 +4246,18 @@ return (function()
 					local h = rowHeight(kind, label.Text)
 					label.Size = UDim2.new(1, -34, 0, h)
 					label.Position = UDim2.fromOffset(22, y)
-					y = y + h + (ROW_GAPS[i] or 15)
+					y = y + h + (ROW_GAPS[i] or 4)
 				end
 			end
-			local total = y - (ROW_GAPS[#self._rows] or 15) + PAD_BOTTOM
-			self.Container.Size = UDim2.new(1, -12, 0, math.max(total, theme.ElementHeight + 6))
+			-- total = posisi bottom row terakhir + PAD_BOTTOM
+			local n = #self._rows
+			local total = y - (n > 0 and (ROW_GAPS[n] or 4) or 0) + PAD_BOTTOM
+			if n == 0 then
+				total = theme.ElementHeight + 6
+			elseif n == 1 then
+				total = math.max(total, theme.ElementHeight + 6)
+			end
+			self.Container.Size = UDim2.new(1, -12, 0, total)
 			if self.Container.Accent then
 				self.Container.Accent.Size = UDim2.fromOffset(3, math.max(self.Container.AbsoluteSize.Y - PAD_TOP - PAD_BOTTOM, 8))
 			end
