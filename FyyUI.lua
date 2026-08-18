@@ -4190,33 +4190,42 @@ return (function()
 	-- Info card with optional Title / Description / Footer / Status fields.
 	-- Layout metrics replicate the proven AutoSpearInfo card: dark cardbox,
 	-- 9px corner, stroke 0.35, accent bar (theme.Accent) left, Title GothamBold
-	-- 13px at y=6, Description 11px at y=28. Footer/Status rows sit tighter
-	-- (gap 18/16) so the card stays compact. Accent bar spans full card height.
-	-- Height adapts: 1 row = 42px, 2 rows = 54px, 3 rows = 70px, 4 rows = 88px.
-	-- Runtime: SetTitle / SetInfo / SetFooter / SetStatus update text live.
+	-- 13px. Rows lay out top-down; Description/Footer/Status support multi-line
+	-- text ("\n") and the card grows to fit. Accent bar spans full card height.
+	-- Runtime: SetTitle / SetInfo / SetFooter / SetStatus update text live and
+	-- trigger a full relayout so height/positions stay correct.
 	local Description = {}
 	Description.__index = Description
 
 	local PAD_TOP = 6
 	local PAD_BOTTOM = 10
-	local GAP = 22 -- antar row 1-2
-	local GAP_FOOTER = 16 -- row 3 (Footer)
-	local GAP_STATUS = 15 -- row 4 (Status)
+	local ROW_GAPS = { 22, 22, 16, 15 } -- gap after row 1,2,3,4
+	local ROW_H = { 16, 16, 14, 16 } -- base height per row kind
+	local LINE_H = 14 -- extra height per wrapped line
 
-	local ROW_GAPS = { GAP, GAP, GAP_FOOTER, GAP_STATUS }
-	local function rowY(index)
-		local y = PAD_TOP
-		for i = 1, index - 1 do
-			y = y + ROW_GAPS[i]
+	local function lineCount(text)
+		local n = 1
+		local s = tostring(text or "")
+		for _ in s:gmatch("\n") do
+			n = n + 1
 		end
-		return y
+		return n
+	end
+
+	local function rowHeight(kind, text)
+		local idx = kind == "Title" and 1 or kind == "Description" and 2 or kind == "Footer" and 3 or 4
+		local base = ROW_H[idx]
+		if kind == "Title" then
+			return base
+		end
+		return base + math.max(lineCount(text) - 1, 0) * LINE_H
 	end
 
 	function Description.new(parent, options, theme)
 		local self = setmetatable({}, Description)
 		options = options or {}
 		self.Theme = theme
-		self._rows = {}
+		self._rows = {} -- urutan kind yang aktif
 		self._labels = {}
 		-- Card background: default ke (18,22,28) — sama kayak card info custom
 		-- yang udah proven (AutoSpearInfo/SnapFishingInfo) — lebih terang dari
@@ -4224,35 +4233,30 @@ return (function()
 		-- via options.Background.
 		local bgColor = options.Background or Color3.fromRGB(18, 22, 28)
 
-		local function computeHeight()
-			local n = #self._rows
-			if n == 0 then
-				return theme.ElementHeight + 6
-			end
-			if n == 1 then
-				return theme.ElementHeight + 6
-			end
-			local rowHeight = n == 3 and 14 or 16 -- footer (row 3) lebih pendek
-			return rowY(n) + rowHeight + PAD_BOTTOM
-		end
-
-		local function accentHeight()
-			return math.max(computeHeight() - PAD_TOP - PAD_BOTTOM, 8)
-		end
-
-		local function updateSize()
+		local function relayout()
 			if not self.Container then
 				return
 			end
-			self.Container.Size = UDim2.new(1, -12, 0, computeHeight())
+			local y = PAD_TOP
+			for i, kind in ipairs(self._rows) do
+				local label = self._labels[kind]
+				if label then
+					local h = rowHeight(kind, label.Text)
+					label.Size = UDim2.new(1, -34, 0, h)
+					label.Position = UDim2.fromOffset(22, y)
+					y = y + h + (ROW_GAPS[i] or 15)
+				end
+			end
+			local total = y - (ROW_GAPS[#self._rows] or 15) + PAD_BOTTOM
+			self.Container.Size = UDim2.new(1, -12, 0, math.max(total, theme.ElementHeight + 6))
 			if self.Container.Accent then
-				self.Container.Accent.Size = UDim2.fromOffset(3, accentHeight())
+				self.Container.Accent.Size = UDim2.fromOffset(3, math.max(self.Container.AbsoluteSize.Y - PAD_TOP - PAD_BOTTOM, 8))
 			end
 		end
 
 		self.Container = U.Create("Frame", {
 			Name = "Description",
-			Size = UDim2.new(1, -12, 0, computeHeight()),
+			Size = UDim2.new(1, -12, 0, theme.ElementHeight + 6),
 			Position = UDim2.fromOffset(6, 0),
 			BackgroundColor3 = bgColor,
 			BorderSizePixel = 0,
@@ -4264,7 +4268,7 @@ return (function()
 		-- accent bar kiri (3px, full height, ngikut theme.Accent — BIRU)
 		U.Create("Frame", {
 			Name = "Accent",
-			Size = UDim2.fromOffset(3, accentHeight()),
+			Size = UDim2.fromOffset(3, 8),
 			Position = UDim2.fromOffset(10, 8),
 			BackgroundColor3 = theme.Accent,
 			BorderSizePixel = 0,
@@ -4272,9 +4276,8 @@ return (function()
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = self.Container.Accent })
 
-		-- Internal: ensure a row exists and return its label.
-		-- kind: "Title" (GothamBold 13) | "Description" (11) | "Footer" (10) | "Status" (11 accent)
-		local function ensureRow(kind, text, color)
+		-- Internal: ensure a row exists, set text, then relayout.
+		local function setRow(kind, text, color)
 			if text == nil or text == "" then
 				return nil
 			end
@@ -4282,61 +4285,71 @@ return (function()
 				local isTitle = kind == "Title"
 				local isStatus = kind == "Status"
 				local isFooter = kind == "Footer"
-				table.insert(self._rows, kind)
-				local idx = #self._rows
+				local idx = kind == "Title" and 1 or kind == "Description" and 2 or kind == "Footer" and 3 or 4
 				local label = U.Create("TextLabel", {
 					Name = kind,
-					Size = UDim2.new(1, -34, 0, isFooter and 14 or 16),
-					Position = UDim2.fromOffset(22, rowY(idx)),
+					Size = UDim2.new(1, -34, 0, ROW_H[idx]),
+					Position = UDim2.fromOffset(22, PAD_TOP),
 					BackgroundTransparency = 1,
 					Font = isTitle and Enum.Font.GothamBold or theme.Font,
 					Text = text,
 					TextSize = isTitle and 13 or (isFooter and 11 or 12),
 					TextColor3 = isStatus and (color or theme.Accent) or (isTitle and theme.TextPrimary or theme.TextMuted),
 					TextXAlignment = Enum.TextXAlignment.Left,
-					TextTruncate = Enum.TextTruncate.AtEnd,
+					TextWrapped = not isTitle,
+					TextTruncate = isTitle and Enum.TextTruncate.AtEnd or nil,
 					Parent = self.Container,
 				})
 				self._labels[kind] = label
-				updateSize()
+				-- insert keep order: Title, Description, Footer, Status
+				local order = { Title = 1, Description = 2, Footer = 3, Status = 4 }
+				local pos = #self._rows + 1
+				for i, existing in ipairs(self._rows) do
+					if order[existing] > order[kind] then
+						pos = i
+						break
+					end
+				end
+				table.insert(self._rows, pos, kind)
 			else
 				self._labels[kind].Text = text
 				if color then
 					self._labels[kind].TextColor3 = color
 				end
 			end
+			relayout()
 			return self._labels[kind]
 		end
 
 		-- Initial rows in order: Title, Description, Footer, Status
 		if options.Title ~= nil and options.Title ~= "" then
-			ensureRow("Title", options.Title)
+			setRow("Title", options.Title)
 		end
 		if options.Description ~= nil and options.Description ~= "" then
-			ensureRow("Description", options.Description)
+			setRow("Description", options.Description)
 		end
 		if options.Footer ~= nil and options.Footer ~= "" then
-			ensureRow("Footer", options.Footer)
+			setRow("Footer", options.Footer)
 		end
 		if options.Status ~= nil and options.Status ~= "" then
-			ensureRow("Status", options.Status)
+			setRow("Status", options.Status)
 		end
 
 		-- Runtime API
 		function self:SetTitle(text)
-			ensureRow("Title", text)
+			setRow("Title", text)
 		end
 
 		function self:SetInfo(text)
-			ensureRow("Description", text)
+			setRow("Description", text)
 		end
 
 		function self:SetFooter(text)
-			ensureRow("Footer", text)
+			setRow("Footer", text)
 		end
 
 		function self:SetStatus(text, color)
-			ensureRow("Status", text, color)
+			setRow("Status", text, color)
 		end
 
 		function self:ApplyTheme(newTheme)
