@@ -4645,6 +4645,131 @@ return (function()
 		return div
 	end
 
+	-- Description: info card with optional Title / Description / Footer.
+	-- Any field left empty is simply not rendered; height adapts to fit.
+	function Column:Description(opts)
+		if destroyedFactoryResult(self) then
+			return nil, "destroyed"
+		end
+		opts = opts or {}
+		local theme = self.Theme
+		local hasTitle = opts.Title ~= nil and opts.Title ~= ""
+		local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+		local hasFooter = opts.Footer ~= nil and opts.Footer ~= ""
+		local rows = (hasTitle and 1 or 0) + (hasDesc and 1 or 0) + (hasFooter and 1 or 0)
+		local h = rows <= 1 and (hasDesc or hasFooter) and theme.DescHeight + 6 or (rows == 2 and theme.DescHeight + 6 or theme.DescHeight + 24)
+		if rows == 0 then
+			h = theme.ElementHeight + 6
+		end
+		local card = {}
+		card.Container = U.Create("Frame", {
+			Name = "Description",
+			Size = UDim2.new(1, -12, 0, h),
+			Position = UDim2.fromOffset(6, 0),
+			BackgroundColor3 = theme.Element,
+			BorderSizePixel = 0,
+			Parent = self.Content,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = card.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = card.Container })
+		U.Create("Frame", {
+			Name = "Accent",
+			Size = UDim2.fromOffset(3, h - 16),
+			Position = UDim2.fromOffset(10, 8),
+			BackgroundColor3 = theme.Accent,
+			BorderSizePixel = 0,
+			Parent = card.Container,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = card.Container:FindFirstChild("Accent") })
+		local row = 0
+		if hasTitle then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Title",
+				Size = UDim2.new(1, -34, 0, 18),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.FontBold,
+				Text = opts.Title,
+				TextSize = theme.FontSizeTitle,
+				TextColor3 = theme.TextPrimary,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Parent = card.Container,
+			})
+		end
+		if hasDesc then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Description",
+				Size = UDim2.new(1, -34, 0, 18),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.Font,
+				Text = opts.Description,
+				TextSize = theme.FontSizeSmall,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextWrapped = true,
+				Parent = card.Container,
+			})
+		end
+		if hasFooter then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Footer",
+				Size = UDim2.new(1, -34, 0, 16),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.Font,
+				Text = opts.Footer,
+				TextSize = theme.FontSizeSmall - 2,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Parent = card.Container,
+			})
+		end
+		card.Destroy = function()
+			if card.Container then
+				card.Container:Destroy()
+			end
+		end
+		card.ApplyTheme = function(_, t)
+			t = t or _
+			if not card.Container then
+				return
+			end
+			card.Container.BackgroundColor3 = t.Element
+			local stroke = card.Container:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				stroke.Color = t.ElementBorder
+			end
+			local accent = card.Container:FindFirstChild("Accent")
+			if accent then
+				accent.BackgroundColor3 = t.Accent
+			end
+			local title = card.Container:FindFirstChild("Title")
+			if title then
+				title.Font = t.FontBold
+				title.TextColor3 = t.TextPrimary
+			end
+			local d = card.Container:FindFirstChild("Description")
+			if d then
+				d.Font = t.Font
+				d.TextColor3 = t.TextMuted
+			end
+			local f = card.Container:FindFirstChild("Footer")
+			if f then
+				f.Font = t.Font
+				f.TextColor3 = t.TextMuted
+			end
+		end
+		table.insert(self.Components, card)
+		self._columns:_updateHeight()
+		return card
+	end
+
 	function Column:Destroy()
 		if self._destroyed then
 			return
@@ -5515,6 +5640,137 @@ return (function()
 		self:_updateSize()
 		return div
 	end
+
+	-- Description: info card with optional Title / Description / Footer.
+	-- Any field left empty is simply not rendered; height adapts to fit.
+	function Collapsible:Description(opts)
+		if destroyedFactoryResult(self) then
+			return nil, "destroyed"
+		end
+		opts = opts or {}
+		local theme = self.Theme
+		local hasTitle = opts.Title ~= nil and opts.Title ~= ""
+		local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+		local hasFooter = opts.Footer ~= nil and opts.Footer ~= ""
+		-- Height formula (unified card layout):
+		--   Title only        -> ElementHeight + 6 = 42px
+		--   + Description     -> DescHeight + 6    = 58px
+		--   + Footer          -> DescHeight + 22 + 6 = 80px
+		--   Description only  -> DescHeight + 6
+		local rows = (hasTitle and 1 or 0) + (hasDesc and 1 or 0) + (hasFooter and 1 or 0)
+		local h = rows <= 1 and (hasDesc or hasFooter) and theme.DescHeight + 6 or (rows == 2 and theme.DescHeight + 6 or theme.DescHeight + 24)
+		if rows == 0 then
+			h = theme.ElementHeight + 6
+		end
+		local card = {}
+		card.Container = U.Create("Frame", {
+			Name = "Description",
+			Size = UDim2.new(1, -12, 0, h),
+			Position = UDim2.fromOffset(6, 0),
+			BackgroundColor3 = theme.Element,
+			BorderSizePixel = 0,
+			Parent = self.Content,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = card.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = card.Container })
+		-- accent bar kiri (3px, ngikut theme.Accent)
+		U.Create("Frame", {
+			Name = "Accent",
+			Size = UDim2.fromOffset(3, h - 16),
+			Position = UDim2.fromOffset(10, 8),
+			BackgroundColor3 = theme.Accent,
+			BorderSizePixel = 0,
+			Parent = card.Container,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = card.Container:FindFirstChild("Accent") })
+		local row = 0
+		if hasTitle then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Title",
+				Size = UDim2.new(1, -34, 0, 18),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.FontBold,
+				Text = opts.Title,
+				TextSize = theme.FontSizeTitle,
+				TextColor3 = theme.TextPrimary,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Parent = card.Container,
+			})
+		end
+		if hasDesc then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Description",
+				Size = UDim2.new(1, -34, 0, 18),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.Font,
+				Text = opts.Description,
+				TextSize = theme.FontSizeSmall,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextWrapped = true,
+				Parent = card.Container,
+			})
+		end
+		if hasFooter then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Footer",
+				Size = UDim2.new(1, -34, 0, 16),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.Font,
+				Text = opts.Footer,
+				TextSize = theme.FontSizeSmall - 2,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Parent = card.Container,
+			})
+		end
+		card.Destroy = function()
+			if card.Container then
+				card.Container:Destroy()
+			end
+		end
+		card.ApplyTheme = function(_, t)
+			t = t or _
+			if not card.Container then
+				return
+			end
+			card.Container.BackgroundColor3 = t.Element
+			local stroke = card.Container:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				stroke.Color = t.ElementBorder
+			end
+			local accent = card.Container:FindFirstChild("Accent")
+			if accent then
+				accent.BackgroundColor3 = t.Accent
+			end
+			local title = card.Container:FindFirstChild("Title")
+			if title then
+				title.Font = t.FontBold
+				title.TextColor3 = t.TextPrimary
+			end
+			local d = card.Container:FindFirstChild("Description")
+			if d then
+				d.Font = t.Font
+				d.TextColor3 = t.TextMuted
+			end
+			local f = card.Container:FindFirstChild("Footer")
+			if f then
+				f.Font = t.Font
+				f.TextColor3 = t.TextMuted
+			end
+		end
+		table.insert(self.Components, card)
+		self:_updateSize()
+		return card
+	end
 	function Collapsible:Columns(opts)
 		if destroyedFactoryResult(self) then
 			return nil, "destroyed"
@@ -6062,6 +6318,130 @@ return (function()
 		end
 		table.insert(self.Components, div)
 		return div
+	end
+
+	-- Description: info card with optional Title / Description / Footer.
+	-- Any field left empty is simply not rendered; height adapts to fit.
+	function Tab:Description(opts)
+		if destroyedFactoryResult(self) then
+			return nil, "destroyed"
+		end
+		opts = opts or {}
+		local theme = self.Theme
+		local hasTitle = opts.Title ~= nil and opts.Title ~= ""
+		local hasDesc = opts.Description ~= nil and opts.Description ~= ""
+		local hasFooter = opts.Footer ~= nil and opts.Footer ~= ""
+		local rows = (hasTitle and 1 or 0) + (hasDesc and 1 or 0) + (hasFooter and 1 or 0)
+		local h = rows <= 1 and (hasDesc or hasFooter) and theme.DescHeight + 6 or (rows == 2 and theme.DescHeight + 6 or theme.DescHeight + 24)
+		if rows == 0 then
+			h = theme.ElementHeight + 6
+		end
+		local card = {}
+		card.Container = U.Create("Frame", {
+			Name = "Description",
+			Size = UDim2.new(1, -12, 0, h),
+			Position = UDim2.fromOffset(6, 0),
+			BackgroundColor3 = theme.Element,
+			BorderSizePixel = 0,
+			Parent = self.Container,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = card.Container })
+		U.Create("UIStroke", { Color = theme.ElementBorder, Transparency = 0.6, Thickness = 1, Parent = card.Container })
+		U.Create("Frame", {
+			Name = "Accent",
+			Size = UDim2.fromOffset(3, h - 16),
+			Position = UDim2.fromOffset(10, 8),
+			BackgroundColor3 = theme.Accent,
+			BorderSizePixel = 0,
+			Parent = card.Container,
+		})
+		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = card.Container:FindFirstChild("Accent") })
+		local row = 0
+		if hasTitle then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Title",
+				Size = UDim2.new(1, -34, 0, 18),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.FontBold,
+				Text = opts.Title,
+				TextSize = theme.FontSizeTitle,
+				TextColor3 = theme.TextPrimary,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Parent = card.Container,
+			})
+		end
+		if hasDesc then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Description",
+				Size = UDim2.new(1, -34, 0, 18),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.Font,
+				Text = opts.Description,
+				TextSize = theme.FontSizeSmall,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextWrapped = true,
+				Parent = card.Container,
+			})
+		end
+		if hasFooter then
+			row = row + 1
+			U.Create("TextLabel", {
+				Name = "Footer",
+				Size = UDim2.new(1, -34, 0, 16),
+				Position = UDim2.fromOffset(22, 8 + (row - 1) * 24),
+				BackgroundTransparency = 1,
+				Font = theme.Font,
+				Text = opts.Footer,
+				TextSize = theme.FontSizeSmall - 2,
+				TextColor3 = theme.TextMuted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Parent = card.Container,
+			})
+		end
+		card.Destroy = function()
+			if card.Container then
+				card.Container:Destroy()
+			end
+		end
+		card.ApplyTheme = function(_, t)
+			t = t or _
+			if not card.Container then
+				return
+			end
+			card.Container.BackgroundColor3 = t.Element
+			local stroke = card.Container:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				stroke.Color = t.ElementBorder
+			end
+			local accent = card.Container:FindFirstChild("Accent")
+			if accent then
+				accent.BackgroundColor3 = t.Accent
+			end
+			local title = card.Container:FindFirstChild("Title")
+			if title then
+				title.Font = t.FontBold
+				title.TextColor3 = t.TextPrimary
+			end
+			local d = card.Container:FindFirstChild("Description")
+			if d then
+				d.Font = t.Font
+				d.TextColor3 = t.TextMuted
+			end
+			local f = card.Container:FindFirstChild("Footer")
+			if f then
+				f.Font = t.Font
+				f.TextColor3 = t.TextMuted
+			end
+		end
+		table.insert(self.Components, card)
+		return card
 	end
 
 	function Tab:Slider(options)
