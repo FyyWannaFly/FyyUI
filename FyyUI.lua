@@ -4187,14 +4187,19 @@ return (function()
 		self.Box.BackgroundColor3 = self.Value and theme.Accent or theme.ElementHover
 	end
 	--[[ Description Card ]]
-	-- Info card with optional Title / Description / Footer / Status fields.
-	-- Any field left empty is simply not rendered; height adapts to fit.
+	-- Compact info card (AutoSpearInfo-style): Title 13px bold / Description 11px /
+	-- Footer 10px / Status 11px accent. Any field left empty is skipped and the
+	-- card height adapts: 1 row = 42px, 2 rows = 54px, 3 rows = 74px, 4 rows = 98px.
 	-- Runtime: SetTitle / SetInfo / SetFooter / SetStatus update text live.
 	local Description = {}
 	Description.__index = Description
 
+	local ROW_START = 6 -- y pertama
+	local ROW_GAP = 22 -- jarak antar row
+	local PAD_BOTTOM = 10
+
 	local function rowY(index)
-		return 8 + (index - 1) * 24
+		return ROW_START + (index - 1) * ROW_GAP
 	end
 
 	function Description.new(parent, options, theme)
@@ -4204,21 +4209,23 @@ return (function()
 		self._rows = {}
 		self._labels = {}
 
-		local hasTitle = options.Title ~= nil and options.Title ~= ""
-		local hasDesc = options.Description ~= nil and options.Description ~= ""
-		local hasFooter = options.Footer ~= nil and options.Footer ~= ""
-		local hasStatus = options.Status ~= nil and options.Status ~= ""
-		local rows = (hasTitle and 1 or 0) + (hasDesc and 1 or 0) + (hasFooter and 1 or 0) + (hasStatus and 1 or 0)
-
 		local function computeHeight()
 			local n = #self._rows
 			if n == 0 then
 				return theme.ElementHeight + 6
 			end
-			if n == 1 then
-				return theme.DescHeight + 6
+			local rowHeight = n == 3 and 14 or 16 -- footer (row 3) lebih pendek
+			return rowY(n) + rowHeight + PAD_BOTTOM
+		end
+
+		local function updateSize()
+			if not self.Container then
+				return
 			end
-			return theme.DescHeight + (n - 1) * 20
+			self.Container.Size = UDim2.new(1, -12, 0, computeHeight())
+			if self.Container.Accent then
+				self.Container.Accent.Size = UDim2.fromOffset(3, math.max(computeHeight() - 16, 8))
+			end
 		end
 
 		self.Container = U.Create("Frame", {
@@ -4234,7 +4241,7 @@ return (function()
 		-- accent bar kiri (3px, ngikut theme.Accent)
 		U.Create("Frame", {
 			Name = "Accent",
-			Size = UDim2.fromOffset(3, 0),
+			Size = UDim2.fromOffset(3, math.max(computeHeight() - 16, 8)),
 			Position = UDim2.fromOffset(10, 8),
 			BackgroundColor3 = theme.Accent,
 			BorderSizePixel = 0,
@@ -4243,7 +4250,7 @@ return (function()
 		U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = self.Container.Accent })
 
 		-- Internal: ensure a row exists and return its label.
-		-- kind: "Title" (bold) | "Description" (wrapped) | "Footer" (small) | "Status" (accent)
+		-- kind: "Title" (13px bold) | "Description" (11px) | "Footer" (10px) | "Status" (11px accent)
 		local function ensureRow(kind, text, color)
 			if text == nil or text == "" then
 				return nil
@@ -4256,22 +4263,19 @@ return (function()
 				local idx = #self._rows
 				local label = U.Create("TextLabel", {
 					Name = kind,
-					Size = UDim2.new(1, -34, 0, isFooter and 16 or 18),
+					Size = UDim2.new(1, -34, 0, isFooter and 14 or 16),
 					Position = UDim2.fromOffset(22, rowY(idx)),
 					BackgroundTransparency = 1,
 					Font = isTitle and theme.FontBold or theme.Font,
 					Text = text,
-					TextSize = isTitle and theme.FontSizeTitle or (isFooter and theme.FontSizeSmall - 2 or theme.FontSizeSmall),
+					TextSize = isTitle and 13 or (isFooter and 10 or 11),
 					TextColor3 = isStatus and (color or theme.Accent) or (isTitle and theme.TextPrimary or theme.TextMuted),
 					TextXAlignment = Enum.TextXAlignment.Left,
-					TextWrapped = not isTitle and not isFooter,
-					TextTruncate = isTitle and Enum.TextTruncate.AtEnd or (isFooter and Enum.TextTruncate.AtEnd or nil),
+					TextTruncate = Enum.TextTruncate.AtEnd,
 					Parent = self.Container,
 				})
 				self._labels[kind] = label
-				-- update accent bar height + container height
-				self.Container.Accent.Size = UDim2.fromOffset(3, math.max(computeHeight() - 16, 8))
-				self.Container.Size = UDim2.new(1, -12, 0, computeHeight())
+				updateSize()
 			else
 				self._labels[kind].Text = text
 				if color then
@@ -4282,16 +4286,16 @@ return (function()
 		end
 
 		-- Initial rows in order: Title, Description, Footer, Status
-		if hasTitle then
+		if options.Title ~= nil and options.Title ~= "" then
 			ensureRow("Title", options.Title)
 		end
-		if hasDesc then
+		if options.Description ~= nil and options.Description ~= "" then
 			ensureRow("Description", options.Description)
 		end
-		if hasFooter then
+		if options.Footer ~= nil and options.Footer ~= "" then
 			ensureRow("Footer", options.Footer)
 		end
-		if hasStatus then
+		if options.Status ~= nil and options.Status ~= "" then
 			ensureRow("Status", options.Status)
 		end
 
