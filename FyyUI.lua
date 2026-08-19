@@ -4275,7 +4275,10 @@ return (function()
 			end
 			self.Container.Size = UDim2.new(1, -12, 0, total)
 			if self.Container.Accent then
-				self.Container.Accent.Size = UDim2.fromOffset(3, math.max(self.Container.AbsoluteSize.Y - PAD_TOP - PAD_BOTTOM, 8))
+				-- AbsoluteSize may still contain the previous frame height immediately
+				-- after Size changes. Use the final computed layout height so runtime
+				-- SetInfo growth always stretches the accent in the same relayout.
+				self.Container.Accent.Size = UDim2.fromOffset(3, math.max(total - PAD_TOP - PAD_BOTTOM, 8))
 			end
 		end
 
