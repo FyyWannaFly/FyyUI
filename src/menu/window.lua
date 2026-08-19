@@ -219,6 +219,15 @@ function Menu:_refreshRestoredLayout()
 	end
 end
 
+-- Deteksi GUI menu yang di-destroy dari luar (mis. dedup re-inject yang
+-- menghapus ScreenGui lama: FyyCommunity / FyyUI_Min). Instance yang sudah
+-- Destroy punya Parent nil dan properti terkunci — menyentuhnya bikin error
+-- "The Parent property of ... is locked". Menu lama yang masih hidup (closure
+-- bundle lama) harus berhenti mutasi GUI kalau sudah begini.
+local function menuGuiAlive(self)
+	return self.Gui ~= nil and self.Gui.Parent ~= nil
+end
+
 function Menu:_minimize()
 	if self._destroyed then
 		return
@@ -245,7 +254,10 @@ function Menu:_minimize()
 		if pending > 0 then
 			return
 		end
-		if self._destroyed or self._minimizeToken ~= minimizeToken or not self.Minimized or not self.Visible then
+		if self._destroyed or not menuGuiAlive(self) then
+			return
+		end
+		if self._minimizeToken ~= minimizeToken or not self.Minimized or not self.Visible then
 			if self._minimizeToken == minimizeToken then
 				self:_setInternalsVisible(true)
 				self:_setMenuTransitionVisual(self.Scale, self._baseBackgroundTransparency, 0.55, 0.25)
@@ -253,23 +265,27 @@ function Menu:_minimize()
 			return
 		end
 		if self._minGui then
-			self._minFrame.Position = self._minSavedPos or self._minInitialPos
-			self._minFrame.Active = true
-			self._minFrame.BackgroundTransparency = 0
-			if self._minScale then
-				self._minScale.Scale = 1
-			end
-			self:_setMinIconTransparency(0)
-			self._minGui.Enabled = true
-			self._minGui.Parent = self.GuiParent
-			self.Gui.Enabled = false
+			pcall(function()
+				self._minFrame.Position = self._minSavedPos or self._minInitialPos
+				self._minFrame.Active = true
+				self._minFrame.BackgroundTransparency = 0
+				if self._minScale then
+					self._minScale.Scale = 1
+				end
+				self:_setMinIconTransparency(0)
+				self._minGui.Enabled = true
+				self._minGui.Parent = self.GuiParent
+				self.Gui.Enabled = false
+			end)
 		elseif self._noLogoRestoreGui then
-			if self._noLogoRestoreBtn and self._noLogoSavedPos then
-				self._noLogoRestoreBtn.Position = self._noLogoSavedPos
-			end
-			self._noLogoRestoreGui.Enabled = true
-			self._noLogoRestoreGui.Parent = self.GuiParent
-			self.Gui.Enabled = false
+			pcall(function()
+				if self._noLogoRestoreBtn and self._noLogoSavedPos then
+					self._noLogoRestoreBtn.Position = self._noLogoSavedPos
+				end
+				self._noLogoRestoreGui.Enabled = true
+				self._noLogoRestoreGui.Parent = self.GuiParent
+				self.Gui.Enabled = false
+			end)
 		end
 	end
 	self:_transition(self.Frame, 0.22, {
@@ -290,7 +306,7 @@ function Menu:_minimize()
 end
 
 function Menu:_restore()
-	if self._destroyed or self._restoring or not self.Minimized then
+	if self._destroyed or not menuGuiAlive(self) or self._restoring or not self.Minimized then
 		return
 	end
 	self:_resetWinHover()
@@ -322,7 +338,7 @@ function Menu:_restore()
 		end
 		self:_setMinIconTransparency(1, 0.1)
 		local function hideMinimizeGui()
-			if self._destroyed or self._minimizeToken ~= restoreToken then
+			if self._destroyed or not menuGuiAlive(self) or self._minimizeToken ~= restoreToken then
 				return
 			end
 			self._minGui.Enabled = false
@@ -340,8 +356,8 @@ function Menu:_restore()
 	local function finishRestore()
 		pending -= 1
 		if pending <= 0 then
-			if self._destroyed or self._minimizeToken ~= restoreToken then
-				if not self._destroyed then
+			if self._destroyed or not menuGuiAlive(self) or self._minimizeToken ~= restoreToken then
+				if not self._destroyed and menuGuiAlive(self) then
 					self.Minimized = true
 					self.Gui.Enabled = guiWasEnabled
 					if self._minGui then
@@ -403,7 +419,7 @@ function Menu:_restore()
 end
 
 function Menu:_toggleMaximize()
-	if self._destroyed or self._maximizing then
+	if self._destroyed or not menuGuiAlive(self) or self._maximizing then
 		return
 	end
 	self._maximizing = true
@@ -553,11 +569,15 @@ function Menu:SetVisible(v)
 		if self.Minimized then
 			self.Gui.Enabled = false
 			if self._minGui then
-				self._minGui.Enabled = true
-				self._minGui.Parent = self.GuiParent
+				pcall(function()
+					self._minGui.Enabled = true
+					self._minGui.Parent = self.GuiParent
+				end)
 			elseif self._noLogoRestoreGui then
-				self._noLogoRestoreGui.Enabled = true
-				self._noLogoRestoreGui.Parent = self.GuiParent
+				pcall(function()
+					self._noLogoRestoreGui.Enabled = true
+					self._noLogoRestoreGui.Parent = self.GuiParent
+				end)
 			end
 		else
 			self.Gui.Enabled = true
@@ -572,16 +592,18 @@ function Menu:SetVisible(v)
 		self:_releaseInput("OverviewWheel")
 		self:_releaseInput("WindowDrag")
 		self:_closeTransientUi()
-		if self._minGui then
-			self._minGui.Enabled = false
-		end
-		if self._noLogoRestoreGui then
-			self._noLogoRestoreGui.Enabled = false
-		end
-		if self._notifGui then
-			self._notifGui.Enabled = false
-		end
-		self.Gui.Enabled = false
+		pcall(function()
+			if self._minGui then
+				self._minGui.Enabled = false
+			end
+			if self._noLogoRestoreGui then
+				self._noLogoRestoreGui.Enabled = false
+			end
+			if self._notifGui then
+				self._notifGui.Enabled = false
+			end
+			self.Gui.Enabled = false
+		end)
 	end
 	return true
 end
