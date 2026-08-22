@@ -1,3 +1,25 @@
+local function applyConfigValue(ctrl, value, noCallbacks)
+	local setter = ctrl.SetValue or ctrl.SetKey
+	if not setter then
+		return false, "controller has no config setter"
+	end
+
+	-- A single-select dropdown treats selecting its active value as a user click
+	-- that clears the selection when AllowNone=true. Config restore is an
+	-- assignment, not a click: preserve an already-matching saved value.
+	if ctrl.Options and not ctrl.Multi and ctrl.GetValue and ctrl:GetValue() == value then
+		if not noCallbacks and type(ctrl.Callback) == "function" then
+			task.spawn(ctrl.Callback, value)
+		end
+		return true
+	end
+
+	if ctrl._setValueNoCallbackPosition == 3 then
+		return setter(ctrl, value, false, noCallbacks)
+	end
+	return setter(ctrl, value, noCallbacks)
+end
+
 function Menu:_trackFlagged(ctrl)
 	if ctrl.Flag then
 		ctrl._menu = self
@@ -7,12 +29,9 @@ function Menu:_trackFlagged(ctrl)
 		self._flagRegistry[ctrl.Flag] = ctrl
 		local pending = self._pendingConfigValues and self._pendingConfigValues[ctrl.Flag]
 		if pending then
-			local setter = ctrl.SetValue or ctrl.SetKey
-			if setter then
-				local ok = pcall(setter, ctrl, pending.Value, pending.NoCallbacks)
-				if ok then
-					self._pendingConfigValues[ctrl.Flag] = nil
-				end
+			local ok, applied = pcall(applyConfigValue, ctrl, pending.Value, pending.NoCallbacks)
+			if ok and applied ~= false then
+				self._pendingConfigValues[ctrl.Flag] = nil
 			end
 		end
 	end
@@ -241,11 +260,7 @@ function Menu:ImportConfig(snapshot, options)
 					end
 					return true
 				else
-					if ctrl._setValueNoCallbackPosition == 3 then
-						return ctrl:SetValue(value, false, noCallbacks)
-					else
-						return ctrl:SetValue(value, noCallbacks)
-					end
+					return applyConfigValue(ctrl, value, noCallbacks)
 				end
 			end)
 			if ok and applied ~= false then

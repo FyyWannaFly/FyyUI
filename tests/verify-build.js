@@ -30,7 +30,7 @@ for (const directory of ["components", "layout", "navigation", "menu"]) {
 	}
 }
 sources.push(path.join(root, "src", "bootstrap.lua"), path.join(root, "src", "export.lua"));
-assert.equal(sources.length, 19, "the modular architecture must contain exactly 19 Luau source files");
+assert.equal(sources.length, 20, "the modular architecture must contain exactly 20 Luau source files");
 
 runBuild("--check");
 const before = hashBundle();

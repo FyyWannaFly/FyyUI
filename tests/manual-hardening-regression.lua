@@ -31,7 +31,7 @@ return function(FyyUI)
 		FyyUI.GetIconModule() == originalIconModule,
 		"failed remote icon loading must preserve the active icon module"
 	)
-	local callbacks = { toggle = 0, checkbox = 0, multi = 0, options = 0 }
+	local callbacks = { toggle = 0, checkbox = 0, multi = 0, options = 0, single = 0 }
 	local menu = FyyUI.Menu({
 		Title = "FyyUI hardening regression",
 		Stats = false,
@@ -49,6 +49,26 @@ return function(FyyUI)
 	assert(searchable.Searchbar, "searchable dropdown must retain Searchbar option")
 	local plain = customTab:Dropdown({ Text = "Plain", Options = { "Alpha" } })
 	assert(not plain.Searchbar, "dropdown search must remain opt-in")
+	local single = customTab:Dropdown({
+		Text = "Single config regression",
+		Options = { "Normal", "Fast" },
+		Default = "Fast",
+		Flag = "singleConfigRegression",
+		Callback = function(value)
+			callbacks.single = callbacks.single + 1
+			assert(value == "Fast", "single-select config callback must retain the saved value")
+		end,
+	})
+	assert(single:GetValue() == "Fast", "single-select regression must begin on its default")
+	local loadedSingle, singleDetails = menu:ImportConfig({
+		Schema = "FyyUI.Config.v1",
+		Version = FyyUI.Version,
+		Values = { singleConfigRegression = "Fast" },
+	})
+	assert(loadedSingle, tostring(singleDetails))
+	task.wait()
+	assert(single:GetValue() == "Fast", "loading an identical single-select value must not clear it")
+	assert(callbacks.single == 1, "loading an identical single-select value must still run its callback")
 	local memoryFiles = {}
 	local storage = {
 		List = function()
