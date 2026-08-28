@@ -9188,6 +9188,188 @@ return (function()
 		return storage
 	end
 
+	local TELEPORT_QUEUE_STATE_KEY = "__FYY_TELEPORT_LOADER_QUEUE"
+
+	local function resolveTeleportQueue()
+		local env = configEnvironment()
+		local synTable = rawget(env, "syn")
+		return rawget(env, "queue_on_teleport")
+			or rawget(env, "queueonteleport")
+			or (type(synTable) == "table" and synTable.queue_on_teleport)
+	end
+
+	local function teleportPreferenceFunctions()
+		local env = configEnvironment()
+		local functions = {}
+		for _, name in ipairs({ "isfolder", "makefolder", "isfile", "readfile", "writefile" }) do
+			functions[name] = rawget(env, name)
+			if type(functions[name]) ~= "function" then
+				return nil
+			end
+		end
+		return functions
+	end
+
+	local function ensurePreferenceFolder(functions, path)
+		local folder = path:match("^(.*)/[^/]+$")
+		if folder and folder ~= "" and not functions.isfolder(folder) then
+			functions.makefolder(folder)
+		end
+	end
+
+	local function readTeleportPreference(path)
+		local functions = teleportPreferenceFunctions()
+		if not functions then return false, false end
+		local ok, enabledOrError = pcall(function()
+			ensurePreferenceFolder(functions, path)
+			if not functions.isfile(path) then return false end
+			local httpService = game:GetService("HttpService")
+			local decoded = httpService:JSONDecode(functions.readfile(path))
+			return type(decoded) == "table" and decoded.Version == 1 and decoded.Enabled == true
+		end)
+		if not ok then return false, true, tostring(enabledOrError) end
+		return enabledOrError == true, true
+	end
+
+	local function writeTeleportPreference(path, enabled)
+		local functions = teleportPreferenceFunctions()
+		if not functions then return false, "persistent storage is unavailable" end
+		local ok, err = pcall(function()
+			ensurePreferenceFolder(functions, path)
+			local httpService = game:GetService("HttpService")
+			functions.writefile(path, httpService:JSONEncode({ Version = 1, Enabled = enabled == true }))
+		end)
+		return ok, ok and nil or tostring(err)
+	end
+
+	local function buildTeleportBootstrap(loaderUrl, preferencePath, persistent)
+		local lines = {
+			"if not game:IsLoaded() then game.Loaded:Wait() end",
+			"local env = type(getgenv) == 'function' and getgenv() or _G",
+		}
+		if persistent then
+			table.insert(lines, "local isfileFn = rawget(env, 'isfile')")
+			table.insert(lines, "local readfileFn = rawget(env, 'readfile')")
+			table.insert(lines, "if type(isfileFn) ~= 'function' or type(readfileFn) ~= 'function' then return end")
+			table.insert(lines, "local preferencePath = " .. string.format("%q", preferencePath))
+			table.insert(lines, "if not isfileFn(preferencePath) then return end")
+			table.insert(lines, "local okPreference, enabled = pcall(function()")
+			table.insert(lines, "  local decoded = game:GetService('HttpService'):JSONDecode(readfileFn(preferencePath))")
+			table.insert(lines, "  return type(decoded) == 'table' and decoded.Version == 1 and decoded.Enabled == true")
+			table.insert(lines, "end)")
+			table.insert(lines, "if not okPreference or not enabled then return end")
+		end
+		table.insert(lines, "if rawget(env, '__FYY_TELEPORT_LOADER_BOOTING') then return end")
+		table.insert(lines, "env.__FYY_TELEPORT_LOADER_BOOTING = true")
+		table.insert(lines, "local ok, err = pcall(function()")
+		table.insert(lines, "  local source = game:HttpGet(" .. string.format("%q", loaderUrl) .. ")")
+		table.insert(lines, "  local chunk, compileError = loadstring(source, '@FyyTeleportLoader')")
+		table.insert(lines, "  if not chunk then error(compileError) end")
+		table.insert(lines, "  chunk()")
+		table.insert(lines, "end)")
+		table.insert(lines, "if not ok then env.__FYY_TELEPORT_LOADER_BOOTING = nil; warn('[FyyUI Teleport Loader] ' .. tostring(err)) end")
+		return table.concat(lines, "\n")
+	end
+
+	function ConfigTabController:_setTeleportStatus(text)
+		if self.TeleportStatus and self.TeleportStatus.TextLabel then
+			self.TeleportStatus.TextLabel.Text = text
+		end
+	end
+
+	function ConfigTabController:_queueTeleportLoader(persistent)
+		local queue = resolveTeleportQueue()
+		if type(queue) ~= "function" then return false, "unsupported" end
+		local bootstrap = buildTeleportBootstrap(
+			self.TeleportPersistence.LoaderUrl,
+			self.TeleportPersistence.PreferencePath,
+			persistent
+		)
+		local env = configEnvironment()
+		if rawget(env, TELEPORT_QUEUE_STATE_KEY) == bootstrap then
+			return true, "already queued"
+		end
+		local ok, err = pcall(queue, bootstrap)
+		if not ok then return false, tostring(err) end
+		rawset(env, TELEPORT_QUEUE_STATE_KEY, bootstrap)
+		return true, persistent and "queued" or "queued once"
+	end
+
+	function ConfigTabController:_setTeleportPersistence(enabled)
+		if self._teleportBusy then return end
+		self._teleportBusy = true
+		self.TeleportToggle:SetEnabled(false)
+		if enabled then
+			self:_setTeleportStatus("Preparing loader queue...")
+			local persisted = self.TeleportStorageAvailable
+			if persisted then
+				local saved, saveError = writeTeleportPreference(self.TeleportPersistence.PreferencePath, true)
+				if not saved then
+					self.TeleportToggle:SetValue(false, true, true)
+					self:_setTeleportStatus("Could not save teleport preference")
+					self:_notify("Teleport Queue Failed", tostring(saveError), "Error")
+					self.TeleportToggle:SetEnabled(true)
+					self._teleportBusy = false
+					return
+				end
+			end
+			local queued, queueStatus = self:_queueTeleportLoader(persisted)
+			if queued then
+				self:_setTeleportStatus(persisted and "Loader queued for the next teleport" or "Queued once — setting is not persistent")
+			else
+				if persisted then writeTeleportPreference(self.TeleportPersistence.PreferencePath, false) end
+				self.TeleportToggle:SetValue(false, true, true)
+				self:_setTeleportStatus(queueStatus == "unsupported" and "Unsupported by this executor" or "Could not queue the loader")
+				self:_notify("Teleport Queue Failed", queueStatus == "unsupported" and "This executor does not provide a teleport queue." or tostring(queueStatus), "Error")
+			end
+		else
+			if self.TeleportStorageAvailable then
+				local saved, saveError = writeTeleportPreference(self.TeleportPersistence.PreferencePath, false)
+				if not saved then
+					self.TeleportToggle:SetValue(true, true, true)
+					self:_setTeleportStatus("Could not disable teleport persistence")
+					self:_notify("Teleport Setting Failed", tostring(saveError), "Error")
+					self.TeleportToggle:SetEnabled(true)
+					self._teleportBusy = false
+					return
+				end
+				self:_setTeleportStatus("Disabled — queued loader is blocked")
+			else
+				self:_setTeleportStatus("Disabled — an existing one-time queue may still run")
+			end
+		end
+		self.TeleportToggle:SetEnabled(true)
+		self._teleportBusy = false
+	end
+
+	function ConfigTabController:_initializeTeleportPersistence()
+		if type(resolveTeleportQueue()) ~= "function" then
+			self.TeleportToggle:SetValue(false, true, true)
+			self.TeleportToggle:SetEnabled(false)
+			self:_setTeleportStatus("Unsupported by this executor")
+			return
+		end
+		local enabled, persistent, readError = readTeleportPreference(self.TeleportPersistence.PreferencePath)
+		self.TeleportStorageAvailable = persistent
+		self.TeleportToggle:SetValue(enabled, true, true)
+		if readError then
+			self:_setTeleportStatus("Preference unreadable — session-only queue available")
+		elseif enabled then
+			local queued = self:_queueTeleportLoader(true)
+			if queued then
+				self:_setTeleportStatus("Loader queued for the next teleport")
+			else
+				writeTeleportPreference(self.TeleportPersistence.PreferencePath, false)
+				self.TeleportToggle:SetValue(false, true, true)
+				self:_setTeleportStatus("Could not queue the loader")
+			end
+		elseif persistent then
+			self:_setTeleportStatus("Disabled")
+		else
+			self:_setTeleportStatus("Disabled — setting will apply to this session only")
+		end
+	end
+
 	function ConfigTabController:_notify(title, content, kind)
 		self.Menu:Notify({ Title = title, Content = content, Type = kind or "Info", Duration = 3 })
 	end
@@ -9365,6 +9547,24 @@ return (function()
 		assert(type(options) == "table", "FyyUI ConfigTab: options must be a table")
 		local folder = options.Folder or "FyyUI/Configs"
 		assert(type(folder) == "string" and folder ~= "" and not folder:find("%.%."), "FyyUI ConfigTab: invalid Folder")
+		assert(
+			options.TeleportPersistence == nil or type(options.TeleportPersistence) == "table",
+			"FyyUI ConfigTab: TeleportPersistence must be a table"
+		)
+		local teleportOptions = options.TeleportPersistence
+		if teleportOptions then
+			assert(
+				type(teleportOptions.LoaderUrl) == "string" and teleportOptions.LoaderUrl:match("^https://") ~= nil,
+				"FyyUI ConfigTab: TeleportPersistence.LoaderUrl must be an HTTPS URL"
+			)
+			assert(
+				teleportOptions.PreferencePath == nil
+					or (type(teleportOptions.PreferencePath) == "string"
+						and teleportOptions.PreferencePath ~= ""
+						and not teleportOptions.PreferencePath:find("%.%.")),
+				"FyyUI ConfigTab: invalid TeleportPersistence.PreferencePath"
+			)
+		end
 		local storage, storageError = normalizeStorage(options.Storage, folder)
 		local controller = setmetatable({
 			Menu = self,
@@ -9375,6 +9575,11 @@ return (function()
 			LoadCallbacks = options.LoadCallbacks == true,
 			AllowDelete = options.AllowDelete ~= false,
 			AllowImportExport = options.AllowImportExport ~= false,
+			TeleportPersistence = teleportOptions and {
+				LoaderUrl = teleportOptions.LoaderUrl,
+				PreferencePath = teleportOptions.PreferencePath or "FyyCommunity/teleport_persistence.json",
+				Text = teleportOptions.Text or "Re-execute Loader on Teleport",
+			} or nil,
 			Profiles = {},
 		}, ConfigTabController)
 		local tab = self:Tab({ Text = options.Text or "Config", Icon = options.Icon or "settings-2" })
@@ -9490,6 +9695,19 @@ return (function()
 			end,
 		})
 
+		if controller.TeleportPersistence then
+			local teleport = tab:Collapsible("Teleport Persistence", { DefaultOpen = true })
+			controller.TeleportToggle = teleport:Toggle({
+				Text = controller.TeleportPersistence.Text,
+				Description = "Runs the latest FyyCommunity loader after changing servers.",
+				Default = false,
+				Callback = function(enabled)
+					controller:_setTeleportPersistence(enabled)
+				end,
+			})
+			controller.TeleportStatus = teleport:Label({ Text = "Checking executor support..." })
+		end
+
 		if controller.AllowImportExport then
 			local transfer = tab:Collapsible("Import & Export", { DefaultOpen = true })
 			controller.JsonInput =
@@ -9533,6 +9751,9 @@ return (function()
 
 		controller:Refresh()
 		controller:_readAutoload()
+		if controller.TeleportPersistence then
+			controller:_initializeTeleportPersistence()
+		end
 		if options.AutoLoad ~= false and controller.AutoloadEnabled and controller.AutoloadProfile then
 			local ok, err = controller:Load(controller.AutoloadProfile)
 			if not ok then
