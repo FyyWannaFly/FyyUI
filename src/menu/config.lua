@@ -4,6 +4,39 @@ local function applyConfigValue(ctrl, value, noCallbacks)
 		return false, "controller has no config setter"
 	end
 
+	-- Multi-dropdown SetValue toggles one option at a time. Config restore is an
+	-- authoritative full selection, including when an autoloaded value was
+	-- deferred until a late-mounted control registered its flag.
+	if ctrl.Multi then
+		if type(value) ~= "table" then return false, "expected options table" end
+		local targetSet = {}
+		local count, maxIndex = 0, 0
+		for index, option in pairs(value) do
+			if type(index) ~= "number" or index < 1 or index % 1 ~= 0 then
+				return false, "expected dense options array"
+			end
+			count += 1
+			maxIndex = math.max(maxIndex, index)
+			if not ctrl:_optIndex(ctrl.Options, option) then return false, "unknown option" end
+			targetSet[option] = true
+		end
+		if count ~= maxIndex then return false, "expected dense options array" end
+
+		for _, option in ipairs(ctrl.Options) do
+			local selected = ctrl._selected[option] == true
+			local wanted = targetSet[option] == true
+			if selected ~= wanted then
+				local changed, changeError = setter(ctrl, option, true)
+				if changed == false then return false, changeError end
+			end
+		end
+		if not noCallbacks and type(ctrl.Callback) == "function" then
+			local snapshot = ctrl:GetValue()
+			task.spawn(ctrl.Callback, snapshot)
+		end
+		return true
+	end
+
 	-- A single-select dropdown treats selecting its active value as a user click
 	-- that clears the selection when AllowNone=true. Config restore is an
 	-- assignment, not a click: preserve an already-matching saved value.
@@ -243,28 +276,7 @@ function Menu:ImportConfig(snapshot, options)
 		local ctrl = self._flagRegistry[flag]
 		if ctrl then
 			local ok, applied, err = pcall(function()
-				if ctrl.Multi then
-					-- Multi-select dropdown: toggle via public SetValue API
-					local targetSet = {}
-					if type(value) == "table" then
-						for _, opt in ipairs(value) do
-							targetSet[opt] = true
-						end
-					end
-					for _, opt in ipairs(ctrl.Options) do
-						local isSelected = ctrl._selected[opt] == true
-						local shouldSelect = targetSet[opt] == true
-						if isSelected ~= shouldSelect then
-							local changed, changeErr = ctrl:SetValue(opt, noCallbacks)
-							if changed == false then
-								return false, changeErr
-							end
-						end
-					end
-					return true
-				else
-					return applyConfigValue(ctrl, value, noCallbacks)
-				end
+				return applyConfigValue(ctrl, value, noCallbacks)
 			end)
 			if ok and applied ~= false then
 				table.insert(details.Applied, flag)

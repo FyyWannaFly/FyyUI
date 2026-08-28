@@ -119,6 +119,37 @@ return function(FyyUI)
 	assert(deferredOk and #deferredDetails.Pending == 1, "unknown autoload flags must be deferred")
 	local lateToggle = afterConfig:Toggle({ Text = "Late Toggle", Flag = "late_flag", Default = false })
 	assert(lateToggle:GetValue() == true, "deferred config values must apply when late controls register")
+	local deferredMultiOk, deferredMultiDetails = menu:ImportConfig({
+		Schema = "FyyUI.Config.v1",
+		Version = FyyUI.Version,
+		Values = { late_rarities = { "Secret", "Eternal", "Divine" } },
+	}, { DeferUnknown = true })
+	assert(deferredMultiOk and #deferredMultiDetails.Pending == 1, "unknown multi-dropdown values must be deferred")
+	local lateMultiCallbacks = 0
+	local lateRarities = afterConfig:Dropdown({
+		Text = "Late Rarities",
+		Options = { "Common", "Secret", "Eternal", "Divine" },
+		Default = { "Common" },
+		Multi = true,
+		Flag = "late_rarities",
+		Callback = function(values)
+			lateMultiCallbacks = lateMultiCallbacks + 1
+			assert(
+				#values == 3 and values[1] == "Secret" and values[2] == "Eternal" and values[3] == "Divine",
+				"deferred multi-dropdown callback must receive only the final saved selection"
+			)
+		end,
+	})
+	task.wait()
+	local restoredRarities = lateRarities:GetValue()
+	assert(
+		#restoredRarities == 3
+			and restoredRarities[1] == "Secret"
+			and restoredRarities[2] == "Eternal"
+			and restoredRarities[3] == "Divine",
+		"deferred multi-dropdown config must replace its defaults"
+	)
+	assert(lateMultiCallbacks == 1, "deferred multi-dropdown config must invoke its callback exactly once")
 	configController:Destroy()
 	assert(configController._destroyed and #menu._configTabs == 0, "destroying Config Tab must clean its menu registry")
 	assert(menu:GetScale() == 1.35, "constructor scale must be clamped")
