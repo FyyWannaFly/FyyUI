@@ -4,6 +4,7 @@ TextInput.__index = TextInput
 
 function TextInput.new(parent, options, theme)
 	local self = setmetatable({}, TextInput)
+	self._supportsDefaultCallback = true
 	self.Text = options.Text or "Input"
 	self.Description = options.Description
 	self.Placeholder = options.Placeholder or ""

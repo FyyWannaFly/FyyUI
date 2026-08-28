@@ -37,6 +37,7 @@ local FyyUI = require(script.Parent.FyyUI)
 | `SafePadding` | number | 12 | Viewport edge spacing. |
 | `TouchTargetSize` | number | 36 | Minimum dropdown target; at least 24. Use 44 for touch-first UI. |
 | `ReducedMotion` | boolean | false | Makes menu-owned transitions immediate. |
+| `InvokeDefaultCallbacks` | boolean | false | Calls compatible state-control callbacks once after mount with their resolved default/current value. |
 | `Scale` | number | 1 | Clamped to 0.75–1.35. |
 | `Visible` | boolean | true | Initial visibility. |
 | `Topbar` | table | `{}` | `ButtonsType` (`"Default"`/`"Mac"`) and `TitleAlignment`. |
@@ -132,6 +133,8 @@ right:Dropdown({ Text = "Target", Options = { "Coins", "Gems" } })
 Columns use independent vertical flows on desktop, so Collapsibles keep their natural content heights instead of being forced equal. Compact layouts stack columns vertically in creation order. `Column()` exposes the standard component factories, including nested `Collapsible` and `Columns`.
 
 All controls accept `Tooltip`. Flagged controls also accept `Flag` and participate in configuration export/import.
+
+Set `InvokeDefaultCallbacks = true` on the menu when runtime state must immediately mirror mounted control defaults. It initializes Toggle, Checkbox, Slider, Dropdown, and Input callbacks once; multi-dropdown callbacks receive an ordered snapshot array. Existing menus remain unchanged by default. A compatible control can override the menu with `InvokeDefaultCallback = true` or `false`. Keybind callbacks are excluded because they represent activation state rather than the selected key.
 
 ## Controllers
 

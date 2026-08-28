@@ -237,6 +237,7 @@ function Collapsible:Toggle(opts)
 	if c.Flag and self._menu then
 		self._menu:_trackFlagged(c)
 	end
+	invokeDefaultCallback(self._menu, c, opts)
 	if opts.Tooltip and self._menu then
 		self._menu:BindTooltip(c.Container, opts.Tooltip)
 	end
@@ -253,6 +254,7 @@ function Collapsible:Checkbox(opts)
 	if c.Flag and self._menu then
 		self._menu:_trackFlagged(c)
 	end
+	invokeDefaultCallback(self._menu, c, opts)
 	if opts.Tooltip and self._menu then
 		self._menu:BindTooltip(c.Container, opts.Tooltip)
 	end
@@ -277,6 +279,7 @@ function Collapsible:Slider(opts)
 	if c.Flag and self._menu then
 		self._menu:_trackFlagged(c)
 	end
+	invokeDefaultCallback(self._menu, c, opts)
 	if opts.Tooltip and self._menu then
 		self._menu:BindTooltip(c.Container, opts.Tooltip)
 	end
@@ -298,6 +301,7 @@ function Collapsible:Dropdown(opts)
 	if c.Flag and self._menu then
 		self._menu:_trackFlagged(c)
 	end
+	invokeDefaultCallback(self._menu, c, opts)
 	if opts.Tooltip and self._menu then
 		self._menu:BindTooltip(c.Container, opts.Tooltip)
 	end
@@ -350,6 +354,7 @@ function Collapsible:Input(opts)
 	if c.Flag and self._menu then
 		self._menu:_trackFlagged(c)
 	end
+	invokeDefaultCallback(self._menu, c, opts)
 	if opts.Tooltip and self._menu then
 		self._menu:BindTooltip(c.Container, opts.Tooltip)
 	end

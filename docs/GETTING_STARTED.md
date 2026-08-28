@@ -34,6 +34,8 @@ local menu = FyyUI.Menu({
 	SafePadding = 12,
 	TouchTargetSize = 44,
 	ReducedMotion = false,
+	-- Opt in when callbacks must initialize runtime state from control defaults.
+	InvokeDefaultCallbacks = true,
 	Stats = {
 		Enabled = true,
 		TabName = "Overview",
@@ -76,7 +78,7 @@ settings:Dropdown({
 settings:Input({ Text = "Display name", Placeholder = "Optional", Flag = "displayName" })
 ```
 
-`Flag` registers a control for `ExportConfig` and `ImportConfig`. Keep flags unique inside a menu.
+`Flag` registers a control for `ExportConfig` and `ImportConfig`. Keep flags unique inside a menu. With `InvokeDefaultCallbacks = true`, supported state controls call their callbacks once after mounting, so runtime configuration immediately matches the displayed defaults.
 
 ## Organize a larger menu
 

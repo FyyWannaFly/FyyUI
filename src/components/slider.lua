@@ -4,6 +4,7 @@ Slider.__index = Slider
 
 function Slider.new(parent, options, theme)
 	local self = setmetatable({}, Slider)
+	self._supportsDefaultCallback = true
 	self.Text = options.Text or "Slider"
 	self.Description = options.Description
 	self.Min = options.Min == nil and 0 or options.Min

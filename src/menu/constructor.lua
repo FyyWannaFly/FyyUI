@@ -262,6 +262,11 @@ function Menu.new(options, theme)
 	self.Options = options
 	self.Theme = theme
 	assert(
+		options.InvokeDefaultCallbacks == nil or type(options.InvokeDefaultCallbacks) == "boolean",
+		"FyyUI Menu: InvokeDefaultCallbacks must be a boolean"
+	)
+	self.InvokeDefaultCallbacks = options.InvokeDefaultCallbacks == true
+	assert(
 		options.Stats == nil or type(options.Stats) == "boolean" or type(options.Stats) == "table",
 		"FyyUI Menu: Stats must be a boolean or table"
 	)

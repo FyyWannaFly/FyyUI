@@ -5,6 +5,7 @@ Checkbox.__index = Checkbox
 function Checkbox.new(parent, options, theme)
 	local self = setmetatable({}, Checkbox)
 	self._setValueNoCallbackPosition = 3
+	self._supportsDefaultCallback = true
 	self.Text = options.Text or "Checkbox"
 	self.Value = options.Default or false
 	self.Callback = options.Callback or function() end

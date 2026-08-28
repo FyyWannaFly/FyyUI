@@ -538,6 +538,26 @@ return (function()
 		return renderIcon(parent, icon, extra)
 	end
 
+	local function invokeDefaultCallback(menu, controller, options)
+		options = options or {}
+		assert(
+			options.InvokeDefaultCallback == nil or type(options.InvokeDefaultCallback) == "boolean",
+			"FyyUI control: InvokeDefaultCallback must be a boolean"
+		)
+		local enabled = options.InvokeDefaultCallback
+		if enabled == nil then
+			enabled = menu ~= nil and menu.InvokeDefaultCallbacks == true
+		end
+		if not enabled or controller._defaultCallbackInvoked then return end
+		if controller._supportsDefaultCallback ~= true then return end
+		if type(controller.Callback) ~= "function" or type(controller.GetValue) ~= "function" then return end
+		local ok, value = pcall(controller.GetValue, controller)
+		if not ok then return end
+		if type(value) == "table" then value = table.clone(value) end
+		controller._defaultCallbackInvoked = true
+		task.spawn(controller.Callback, value)
+	end
+
 	local function cleanupController(controller)
 		if controller._destroyed then
 			return
@@ -2409,6 +2429,7 @@ return (function()
 	function Toggle.new(parent, options, theme)
 		local self = setmetatable({}, Toggle)
 		self._setValueNoCallbackPosition = 3
+		self._supportsDefaultCallback = true
 		self.Text = options.Text or "Toggle"
 		self.Description = options.Description
 		self.Value = options.Default or false
@@ -2605,6 +2626,7 @@ return (function()
 
 	function Slider.new(parent, options, theme)
 		local self = setmetatable({}, Slider)
+		self._supportsDefaultCallback = true
 		self.Text = options.Text or "Slider"
 		self.Description = options.Description
 		self.Min = options.Min == nil and 0 or options.Min
@@ -2904,6 +2926,7 @@ return (function()
 
 	function Dropdown.new(parent, options, theme, menuRef)
 		local self = setmetatable({}, Dropdown)
+		self._supportsDefaultCallback = true
 		self._menu = menuRef
 		self.Text = options.Text or "Dropdown"
 		self.Description = options.Description
@@ -3809,6 +3832,7 @@ return (function()
 
 	function TextInput.new(parent, options, theme)
 		local self = setmetatable({}, TextInput)
+		self._supportsDefaultCallback = true
 		self.Text = options.Text or "Input"
 		self.Description = options.Description
 		self.Placeholder = options.Placeholder or ""
@@ -4043,6 +4067,7 @@ return (function()
 	function Checkbox.new(parent, options, theme)
 		local self = setmetatable({}, Checkbox)
 		self._setValueNoCallbackPosition = 3
+		self._supportsDefaultCallback = true
 		self.Text = options.Text or "Checkbox"
 		self.Value = options.Default or false
 		self.Callback = options.Callback or function() end
@@ -4430,6 +4455,7 @@ return (function()
 		if c.Flag and self._menu then
 			self._menu:_trackFlagged(c)
 		end
+		invokeDefaultCallback(self._menu, c, opts)
 		if opts.Tooltip and self._menu and c.Container then
 			self._menu:BindTooltip(c.Container, opts.Tooltip)
 		end
@@ -5352,6 +5378,7 @@ return (function()
 		if c.Flag and self._menu then
 			self._menu:_trackFlagged(c)
 		end
+		invokeDefaultCallback(self._menu, c, opts)
 		if opts.Tooltip and self._menu then
 			self._menu:BindTooltip(c.Container, opts.Tooltip)
 		end
@@ -5368,6 +5395,7 @@ return (function()
 		if c.Flag and self._menu then
 			self._menu:_trackFlagged(c)
 		end
+		invokeDefaultCallback(self._menu, c, opts)
 		if opts.Tooltip and self._menu then
 			self._menu:BindTooltip(c.Container, opts.Tooltip)
 		end
@@ -5392,6 +5420,7 @@ return (function()
 		if c.Flag and self._menu then
 			self._menu:_trackFlagged(c)
 		end
+		invokeDefaultCallback(self._menu, c, opts)
 		if opts.Tooltip and self._menu then
 			self._menu:BindTooltip(c.Container, opts.Tooltip)
 		end
@@ -5413,6 +5442,7 @@ return (function()
 		if c.Flag and self._menu then
 			self._menu:_trackFlagged(c)
 		end
+		invokeDefaultCallback(self._menu, c, opts)
 		if opts.Tooltip and self._menu then
 			self._menu:BindTooltip(c.Container, opts.Tooltip)
 		end
@@ -5465,6 +5495,7 @@ return (function()
 		if c.Flag and self._menu then
 			self._menu:_trackFlagged(c)
 		end
+		invokeDefaultCallback(self._menu, c, opts)
 		if opts.Tooltip and self._menu then
 			self._menu:BindTooltip(c.Container, opts.Tooltip)
 		end
@@ -5967,6 +5998,7 @@ return (function()
 		if toggle.Flag then
 			self.Menu:_trackFlagged(toggle)
 		end
+		invokeDefaultCallback(self.Menu, toggle, options)
 		if options.Tooltip and self.Menu then
 			self.Menu:BindTooltip(toggle.Container, options.Tooltip)
 		end
@@ -6343,6 +6375,7 @@ return (function()
 		if slider.Flag then
 			self.Menu:_trackFlagged(slider)
 		end
+		invokeDefaultCallback(self.Menu, slider, options)
 		if options.Tooltip and self.Menu then
 			self.Menu:BindTooltip(slider.Container, options.Tooltip)
 		end
@@ -6359,6 +6392,7 @@ return (function()
 		if dd.Flag then
 			self.Menu:_trackFlagged(dd)
 		end
+		invokeDefaultCallback(self.Menu, dd, options)
 		if options.Tooltip and self.Menu then
 			self.Menu:BindTooltip(dd.Container, options.Tooltip)
 		end
@@ -6406,6 +6440,7 @@ return (function()
 		if ti.Flag then
 			self.Menu:_trackFlagged(ti)
 		end
+		invokeDefaultCallback(self.Menu, ti, options)
 		if options.Tooltip and self.Menu then
 			self.Menu:BindTooltip(ti.Container, options.Tooltip)
 		end
@@ -6424,6 +6459,7 @@ return (function()
 		if c.Flag then
 			self.Menu:_trackFlagged(c)
 		end
+		invokeDefaultCallback(self.Menu, c, options)
 		if options.Tooltip and self.Menu then
 			self.Menu:BindTooltip(c.Container, options.Tooltip)
 		end
@@ -6793,6 +6829,11 @@ return (function()
 		local self = setmetatable({}, Menu)
 		self.Options = options
 		self.Theme = theme
+		assert(
+			options.InvokeDefaultCallbacks == nil or type(options.InvokeDefaultCallbacks) == "boolean",
+			"FyyUI Menu: InvokeDefaultCallbacks must be a boolean"
+		)
+		self.InvokeDefaultCallbacks = options.InvokeDefaultCallbacks == true
 		assert(
 			options.Stats == nil or type(options.Stats) == "boolean" or type(options.Stats) == "table",
 			"FyyUI Menu: Stats must be a boolean or table"
@@ -8759,6 +8800,9 @@ return (function()
 			if pending then
 				local ok, applied = pcall(applyConfigValue, ctrl, pending.Value, pending.NoCallbacks)
 				if ok and applied ~= false then
+					-- Pending config is authoritative initialization. Whether callbacks
+					-- were requested or suppressed, never follow it with a default callback.
+					ctrl._defaultCallbackInvoked = true
 					self._pendingConfigValues[ctrl.Flag] = nil
 				end
 			end

@@ -5,6 +5,7 @@ Toggle.__index = Toggle
 function Toggle.new(parent, options, theme)
 	local self = setmetatable({}, Toggle)
 	self._setValueNoCallbackPosition = 3
+	self._supportsDefaultCallback = true
 	self.Text = options.Text or "Toggle"
 	self.Description = options.Description
 	self.Value = options.Default or false

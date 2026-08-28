@@ -131,6 +131,7 @@ function Tab:Toggle(options)
 	if toggle.Flag then
 		self.Menu:_trackFlagged(toggle)
 	end
+	invokeDefaultCallback(self.Menu, toggle, options)
 	if options.Tooltip and self.Menu then
 		self.Menu:BindTooltip(toggle.Container, options.Tooltip)
 	end
@@ -507,6 +508,7 @@ function Tab:Slider(options)
 	if slider.Flag then
 		self.Menu:_trackFlagged(slider)
 	end
+	invokeDefaultCallback(self.Menu, slider, options)
 	if options.Tooltip and self.Menu then
 		self.Menu:BindTooltip(slider.Container, options.Tooltip)
 	end
@@ -523,6 +525,7 @@ function Tab:Dropdown(options)
 	if dd.Flag then
 		self.Menu:_trackFlagged(dd)
 	end
+	invokeDefaultCallback(self.Menu, dd, options)
 	if options.Tooltip and self.Menu then
 		self.Menu:BindTooltip(dd.Container, options.Tooltip)
 	end
@@ -570,6 +573,7 @@ function Tab:Input(options)
 	if ti.Flag then
 		self.Menu:_trackFlagged(ti)
 	end
+	invokeDefaultCallback(self.Menu, ti, options)
 	if options.Tooltip and self.Menu then
 		self.Menu:BindTooltip(ti.Container, options.Tooltip)
 	end
@@ -588,6 +592,7 @@ function Tab:Checkbox(options)
 	if c.Flag then
 		self.Menu:_trackFlagged(c)
 	end
+	invokeDefaultCallback(self.Menu, c, options)
 	if options.Tooltip and self.Menu then
 		self.Menu:BindTooltip(c.Container, options.Tooltip)
 	end

@@ -529,6 +529,26 @@ local function updateRenderedIcon(label, icon, parent, extra)
 	return renderIcon(parent, icon, extra)
 end
 
+local function invokeDefaultCallback(menu, controller, options)
+	options = options or {}
+	assert(
+		options.InvokeDefaultCallback == nil or type(options.InvokeDefaultCallback) == "boolean",
+		"FyyUI control: InvokeDefaultCallback must be a boolean"
+	)
+	local enabled = options.InvokeDefaultCallback
+	if enabled == nil then
+		enabled = menu ~= nil and menu.InvokeDefaultCallbacks == true
+	end
+	if not enabled or controller._defaultCallbackInvoked then return end
+	if controller._supportsDefaultCallback ~= true then return end
+	if type(controller.Callback) ~= "function" or type(controller.GetValue) ~= "function" then return end
+	local ok, value = pcall(controller.GetValue, controller)
+	if not ok then return end
+	if type(value) == "table" then value = table.clone(value) end
+	controller._defaultCallbackInvoked = true
+	task.spawn(controller.Callback, value)
+end
+
 local function cleanupController(controller)
 	if controller._destroyed then
 		return

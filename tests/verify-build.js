@@ -43,5 +43,11 @@ assert.match(bundle, /Copyright \(c\) 2026 FyyWannaFly\. All rights reserved\./,
 assert.match(bundle, /Unauthorized copying, modification, or redistribution is prohibited\./, "bundle must retain license notice");
 assert.match(bundle, /^return \(function\(\)/m, "bundle must preserve the shared private closure");
 assert.match(bundle, /\n\s*return FyyUI\nend\)\(\)\n$/, "bundle must preserve the public export and final closure");
+assert.match(bundle, /options\.InvokeDefaultCallbacks == nil or type\(options\.InvokeDefaultCallbacks\) == "boolean"/, "menu must validate default callback opt-in");
+assert.match(bundle, /self\.InvokeDefaultCallbacks = options\.InvokeDefaultCallbacks == true/, "default callbacks must remain menu opt-in");
+assert.match(bundle, /controller\._supportsDefaultCallback ~= true/, "only compatible value controllers may initialize callbacks");
+assert.match(bundle, /if type\(value\) == "table" then value = table\.clone\(value\) end/, "multi-dropdown defaults must use a callback snapshot");
+assert.match(bundle, /ctrl\._defaultCallbackInvoked = true[\s\S]*self\._pendingConfigValues\[ctrl\.Flag\] = nil/, "pending config must suppress duplicate default initialization");
+assert.doesNotMatch(fs.readFileSync(path.join(root, "src", "components", "keybind.lua"), "utf8"), /_supportsDefaultCallback = true/, "keybind activation callbacks must not receive key defaults");
 
 console.log(`Verified deterministic one-file bundle from ${sources.length} source files (${after.slice(0, 12)}).`);

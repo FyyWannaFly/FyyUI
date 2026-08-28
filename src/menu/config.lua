@@ -31,6 +31,9 @@ function Menu:_trackFlagged(ctrl)
 		if pending then
 			local ok, applied = pcall(applyConfigValue, ctrl, pending.Value, pending.NoCallbacks)
 			if ok and applied ~= false then
+				-- Pending config is authoritative initialization. Whether callbacks
+				-- were requested or suppressed, never follow it with a default callback.
+				ctrl._defaultCallbackInvoked = true
 				self._pendingConfigValues[ctrl.Flag] = nil
 			end
 		end

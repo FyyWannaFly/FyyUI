@@ -11,6 +11,7 @@ function Column:_mount(c, opts)
 	if c.Flag and self._menu then
 		self._menu:_trackFlagged(c)
 	end
+	invokeDefaultCallback(self._menu, c, opts)
 	if opts.Tooltip and self._menu and c.Container then
 		self._menu:BindTooltip(c.Container, opts.Tooltip)
 	end

@@ -4,6 +4,7 @@ Dropdown.__index = Dropdown
 
 function Dropdown.new(parent, options, theme, menuRef)
 	local self = setmetatable({}, Dropdown)
+	self._supportsDefaultCallback = true
 	self._menu = menuRef
 	self.Text = options.Text or "Dropdown"
 	self.Description = options.Description
