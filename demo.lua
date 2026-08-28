@@ -1,4 +1,4 @@
-local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/FyyUI.lua?v=0.19.0")
+local source = game:HttpGet("https://raw.githubusercontent.com/FyyWannaFly/FyyUI/main/FyyUIKeyService.lua")
 local chunk, compileError = loadstring(source)
 assert(chunk, "FyyUI compile error: " .. tostring(compileError))
 local FyyUI = chunk()
@@ -36,6 +36,241 @@ local function notify(title, content, kind)
 		Duration = 3,
 	})
 end
+
+-- Real portable Key Service adapter. Runtime ownership intentionally stays in
+-- this main/demo script, not inside FyyUIKeyService.lua.
+local HttpService = game:GetService("HttpService")
+local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
+local API_ORIGIN = "https://lounge-marketplace-newark-operated.trycloudflare.com"
+local UINT32 = 4294967296
+local accessSession = nil
+local accessSequence = 0
+local accessHeartbeatToken = 0
+
+local function environment()
+	local ok, value = pcall(function() return getgenv and getgenv() or _G end)
+	return ok and type(value) == "table" and value or _G
+end
+
+local function requestFunction()
+	local env = environment()
+	local synTable = rawget(env, "syn")
+	local httpTable = rawget(env, "http")
+	return rawget(env, "request")
+		or rawget(env, "http_request")
+		or (type(synTable) == "table" and synTable.request)
+		or (type(httpTable) == "table" and httpTable.request)
+end
+
+local function currentHwid()
+	local env = environment()
+	for _, resolver in ipairs({
+		function() return type(rawget(env, "gethwid")) == "function" and env.gethwid() or nil end,
+		function() return type(gethwid) == "function" and gethwid() or nil end,
+		function() return RbxAnalyticsService:GetClientId() end,
+	}) do
+		local ok, value = pcall(resolver)
+		if ok and type(value) == "string" and value:match("%S") then return value end
+	end
+	return nil
+end
+
+local function requestJson(path, method, body)
+	local requester = requestFunction()
+	if type(requester) ~= "function" then return nil, "HTTP_UNSUPPORTED" end
+	local options = {
+		Url = API_ORIGIN .. path,
+		Method = method,
+		Headers = { ["Accept"] = "application/json", ["Cache-Control"] = "no-store" },
+	}
+	if body ~= nil then
+		options.Headers["Content-Type"] = "application/json"
+		options.Body = HttpService:JSONEncode(body)
+	end
+	local ok, response = pcall(requester, options)
+	if not ok or type(response) ~= "table" then return nil, "REQUEST_FAILED" end
+	local status = tonumber(response.StatusCode or response.Status or response.status_code) or 0
+	local rawBody = response.Body or response.body or response.Response
+	local decoded
+	if type(rawBody) == "string" then pcall(function() decoded = HttpService:JSONDecode(rawBody) end) end
+	if type(decoded) ~= "table" then return nil, status > 0 and "HTTP_" .. tostring(status) or "INVALID_RESPONSE" end
+	if status < 200 or status >= 300 or decoded.status ~= "ok" then
+		return nil, tostring(decoded.code or decoded.reasonCode or (status > 0 and "HTTP_" .. status) or "REQUEST_REJECTED"), decoded
+	end
+	return decoded, nil
+end
+
+local function toHex(value)
+	return (value:gsub(".", function(character) return string.format("%02x", string.byte(character)) end))
+end
+local function fromHex(value)
+	if type(value) ~= "string" or #value % 2 ~= 0 or value:find("[^%da-fA-F]") then return nil end
+	return (value:gsub("..", function(byte) return string.char(tonumber(byte, 16)) end))
+end
+local function readU32LE(value, offset)
+	local a, b, c, d = string.byte(value, offset, offset + 3)
+	return (a or 0) + (b or 0) * 256 + (c or 0) * 65536 + (d or 0) * 16777216
+end
+local function writeU32LE(value)
+	value = value % UINT32
+	return string.char(value % 256, math.floor(value / 256) % 256, math.floor(value / 65536) % 256, math.floor(value / 16777216) % 256)
+end
+local function xteaBlock(v0, v1, key)
+	local sum = 0
+	for _ = 1, 32 do
+		v0 = (v0 + bit32.bxor((bit32.lshift(v1, 4) + key[1]) % UINT32, (v1 + sum) % UINT32, bit32.rshift(v1, 5) + key[2])) % UINT32
+		sum = (sum + 2654435769) % UINT32
+		v1 = (v1 + bit32.bxor((bit32.lshift(v0, 4) + key[3]) % UINT32, (v0 + sum) % UINT32, bit32.rshift(v0, 5) + key[4])) % UINT32
+	end
+	return v0, v1
+end
+local function xteaCtr(value, nonce, keyBytes)
+	local key = { readU32LE(keyBytes, 1), readU32LE(keyBytes, 5), readU32LE(keyBytes, 9), readU32LE(keyBytes, 13) }
+	local nonceLow, nonceHigh = readU32LE(nonce, 1), readU32LE(nonce, 5)
+	local output = table.create(math.ceil(#value / 8))
+	for offset = 1, #value, 8 do
+		local block = math.floor((offset - 1) / 8)
+		local stream0, stream1 = xteaBlock(nonceLow, (nonceHigh + block) % UINT32, key)
+		local stream = writeU32LE(stream0) .. writeU32LE(stream1)
+		local chunk = table.create(math.min(8, #value - offset + 1))
+		for index = 1, math.min(8, #value - offset + 1) do
+			chunk[index] = string.char(bit32.bxor(string.byte(value, offset + index - 1), string.byte(stream, index)))
+		end
+		output[#output + 1] = table.concat(chunk)
+	end
+	return table.concat(output)
+end
+local function xteaMac(value, keyBytes)
+	local key = { readU32LE(keyBytes, 1), readU32LE(keyBytes, 5), readU32LE(keyBytes, 9), readU32LE(keyBytes, 13) }
+	local framed = writeU32LE(#value) .. writeU32LE(0) .. value
+	local padding = (#framed % 8 == 0) and 0 or (8 - #framed % 8)
+	framed = framed .. string.rep("\0", padding)
+	local left, right = 0, 0
+	for offset = 1, #framed, 8 do
+		left = bit32.bxor(left, readU32LE(framed, offset))
+		right = bit32.bxor(right, readU32LE(framed, offset + 4))
+		left, right = xteaBlock(left, right, key)
+	end
+	return writeU32LE(left) .. writeU32LE(right)
+end
+local function portableNonce()
+	local bytes = fromHex(HttpService:GenerateGUID(false):gsub("-", ""):sub(1, 16))
+	return bytes or string.char(math.random(0, 255), math.random(0, 255), math.random(0, 255), math.random(0, 255), math.random(0, 255), math.random(0, 255), math.random(0, 255), math.random(0, 255))
+end
+
+local function authorizeRealKey(rawKey)
+	local hwid = currentHwid()
+	if not hwid then return { Success = false, State = "error", Message = "Device identity is unavailable in this executor." } end
+	local challenge, challengeError = requestJson("/api/v1/check/challenge", "GET")
+	if not challenge then return { Success = false, State = "error", Message = "Challenge failed: " .. tostring(challengeError) } end
+	if challenge.algorithm ~= "XTEA-CTR+XTEA-CBC-MAC" then return { Success = false, State = "error", Message = "Unsupported server transport profile." } end
+	local transportKey = fromHex(challenge.transportKey)
+	if type(transportKey) ~= "string" or #transportKey ~= 32 then return { Success = false, State = "error", Message = "Invalid server challenge." } end
+	local nonce = portableNonce()
+	local plaintext = HttpService:JSONEncode({ licenseKey = rawKey, hwid = hwid })
+	local ciphertext = xteaCtr(plaintext, nonce, transportKey:sub(1, 16))
+	local tag = xteaMac(nonce .. ciphertext, transportKey:sub(17, 32))
+	plaintext, transportKey, hwid = nil, nil, nil
+	local response, responseError = requestJson("/api/v1/check", "POST", {
+		challengeId = challenge.challengeId,
+		nonce = toHex(nonce),
+		data = toHex(ciphertext),
+		tag = toHex(tag),
+	})
+	ciphertext, tag, nonce = nil, nil, nil
+	if not response then
+		local messages = {
+			INVALID_KEY = "This license key is invalid.",
+			BLACKLISTED = "This license is blocked.",
+			EXPIRED = "This license has expired.",
+			LICENSE_NOT_ACTIVE = "This license is not active.",
+			HWID_BLACKLISTED = "This device is blocked.",
+			HWID_MISMATCH = "This premium license is bound to another device.",
+		}
+		return { Success = false, State = "invalid", Message = messages[responseError] or ("Authorization failed: " .. tostring(responseError)) }
+	end
+	return {
+		Success = true,
+		State = "authorized",
+		Message = response.licenseType == "trial" and "Trial access granted. Heartbeat session started." or "Premium access granted. Heartbeat session started.",
+		Metadata = response,
+	}
+end
+
+local function stopAccessHeartbeat()
+	accessHeartbeatToken += 1
+	local session = accessSession
+	accessSession = nil
+	if session then
+		accessSequence += 1
+		task.spawn(function()
+			pcall(requestJson, "/api/v1/check/heartbeat", "POST", {
+				sessionId = session.sessionId,
+				sessionToken = session.sessionToken,
+				sequence = accessSequence,
+				clientState = "stopping",
+			})
+		end)
+	end
+end
+
+local function startAccessHeartbeat(session)
+	stopAccessHeartbeat()
+	accessSession = session
+	accessSequence = 0
+	accessHeartbeatToken += 1
+	local token = accessHeartbeatToken
+	task.spawn(function()
+		while accessSession == session and accessHeartbeatToken == token do
+			task.wait(math.max(5, tonumber(session.nextHeartbeatSeconds) or 30))
+			if accessSession ~= session or accessHeartbeatToken ~= token then break end
+			accessSequence += 1
+			local heartbeat, heartbeatError = requestJson("/api/v1/check/heartbeat", "POST", {
+				sessionId = session.sessionId,
+				sessionToken = session.sessionToken,
+				sequence = accessSequence,
+				clientState = "running",
+			})
+			if not heartbeat or heartbeat.state ~= "active" then
+				local reason = heartbeat and heartbeat.reasonCode or heartbeatError or "SESSION_ENDED"
+				accessSession = nil
+				notify("Access Ended", tostring(reason), "Error")
+				break
+			end
+			session.nextHeartbeatSeconds = heartbeat.nextHeartbeatSeconds or 30
+		end
+	end)
+end
+
+local keyService = menu:KeyService({
+	Mode = "Embedded",
+	Enabled = true,
+	TabName = "Access",
+	TabIcon = "key-round",
+	Title = "Fyy License Access",
+	Description = "Validate a real premium or trial license through the live tunnel.",
+	CardTitle = "LIVE KEY SERVICE",
+	CardDescription = "Premium uses HWID binding. Trial remains device-unbound and supports concurrent sessions.",
+	CardFooter = "Key and HWID are sent only inside a one-time portable envelope.",
+	Placeholder = "FYY-PREMIUM-... or TRIAL-...",
+	Validate = authorizeRealKey,
+	GetKey = function(service)
+		local url = API_ORIGIN .. "/free"
+		local copied = false
+		pcall(function()
+			if type(setclipboard) == "function" then setclipboard(url); copied = true end
+		end)
+		service.Menu:Notify({ Title = "Get Key", Content = copied and "Free key URL copied." or url, Type = "Info", Duration = 3 })
+	end,
+	OnAuthorized = function(result)
+		local response = result.Metadata
+		assert(type(response) == "table" and type(response.session) == "table", "Missing heartbeat session")
+		startAccessHeartbeat(response.session)
+		notify("Access Granted", string.format("%s · %s", tostring(response.licenseType), tostring(response.devicePolicy)), "Success")
+	end,
+})
+assert(keyService, "Key Service failed to mount")
+menu:OnDestroy(stopAccessHeartbeat)
 
 -- Combat
 local combatTab = menu:Tab({ Text = "Combat", Icon = "crosshair", Tooltip = "Combat controls" })
