@@ -184,6 +184,7 @@ local function authorizeRealKey(rawKey)
 			BLACKLISTED = "This license is blocked.",
 			EXPIRED = "This license has expired.",
 			LICENSE_NOT_ACTIVE = "This license is not active.",
+			REDEEM_REQUIRED = "Redeem this premium license from the Fyy Discord panel before using Key Service.",
 			HWID_BLACKLISTED = "This device is blocked.",
 			HWID_MISMATCH = "This premium license is bound to another device.",
 		}
