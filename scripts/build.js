@@ -6,8 +6,14 @@ const path = require("node:path");
 const ROOT = path.resolve(__dirname, "..");
 const STABLE_OUTPUT = path.join(ROOT, "FyyUI.lua");
 const SECONDARY_OUTPUT = path.join(ROOT, "FyyUISec.lua");
+const KEY_SERVICE_OUTPUT = path.join(ROOT, "FyyUIKeyService.lua");
+const KEY_SERVICE_SOURCE = path.join(ROOT, "experiments/key-service.lua");
 const BUILD_SECONDARY = process.argv.includes("--sec");
-const OUTPUT = BUILD_SECONDARY ? SECONDARY_OUTPUT : STABLE_OUTPUT;
+const BUILD_KEY_SERVICE = process.argv.includes("--key-service");
+if (BUILD_SECONDARY && BUILD_KEY_SERVICE) {
+	throw new Error("Choose either --sec or --key-service");
+}
+const OUTPUT = BUILD_KEY_SERVICE ? KEY_SERVICE_OUTPUT : BUILD_SECONDARY ? SECONDARY_OUTPUT : STABLE_OUTPUT;
 const SOURCE_ROOT = path.join(ROOT, "src");
 const SOURCES = [
 	"src/bootstrap.lua",
@@ -90,6 +96,13 @@ function build() {
 	// Inject vendored icon registry after bootstrap.lua (index 0)
 	const registryChunk = buildRegistryChunk();
 	chunks.splice(1, 0, indent(registryChunk));
+	if (BUILD_KEY_SERVICE) {
+		if (!fs.existsSync(KEY_SERVICE_SOURCE)) {
+			throw new Error("Missing experimental source: experiments/key-service.lua");
+		}
+		// Insert after all Menu modules and immediately before the public export.
+		chunks.splice(chunks.length - 1, 0, indent(fs.readFileSync(KEY_SERVICE_SOURCE, "utf8")));
+	}
 	return `${HEADER}${chunks.join("\n")}\nend)()\n`;
 }
 
