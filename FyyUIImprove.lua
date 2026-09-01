@@ -6730,13 +6730,13 @@ return (function()
 			end
 			if self.DiscordCard then
 				local compactSupport = sidebarWidth <= 90
-				if self.DiscordIcon then
-					self.DiscordIcon.Visible = not compactSupport
-				end
-				self.DiscordTitle.Position = compactSupport and UDim2.fromOffset(6, 0) or UDim2.fromOffset(32, 6)
-				self.DiscordTitle.Size = compactSupport and UDim2.new(1, -12, 1, 0) or UDim2.new(1, -40, 0, 18)
+				local inset = compactSupport and 6 or 10
+				self.DiscordTitle.Position = UDim2.fromOffset(inset, 5)
+				self.DiscordTitle.Size = UDim2.new(1, -(inset * 2), 0, 17)
 				self.DiscordTitle.TextXAlignment = compactSupport and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left
-				self.DiscordDetail.Visible = not compactSupport
+				self.DiscordDetail.Position = UDim2.fromOffset(inset, 23)
+				self.DiscordDetail.Size = UDim2.new(1, -(inset * 2), 0, 14)
+				self.DiscordDetail.TextXAlignment = compactSupport and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left
 			end
 		end
 		if self._layoutTopbarInfo then
@@ -6881,18 +6881,19 @@ return (function()
 			)
 		end
 		local supportOptions = options.Support or {}
-		for _, key in ipairs({ "Title", "Description", "ButtonText", "Discord" }) do
+		for _, key in ipairs({ "Title", "Description", "ButtonText", "Discord", "InviteCode" }) do
 			assert(
 				supportOptions[key] == nil or type(supportOptions[key]) == "string",
 				("FyyUI Menu: Support.%s must be a string"):format(key)
 			)
 		end
 		assert(
-			supportOptions.ButtonIcon == nil
-				or type(supportOptions.ButtonIcon) == "string"
-				or type(supportOptions.ButtonIcon) == "number"
-				or type(supportOptions.ButtonIcon) == "table",
-			"FyyUI Menu: Support.ButtonIcon must be a supported icon value"
+			supportOptions.FetchServerInfo == nil or type(supportOptions.FetchServerInfo) == "boolean",
+			"FyyUI Menu: Support.FetchServerInfo must be a boolean"
+		)
+		assert(
+			supportOptions.Request == nil or type(supportOptions.Request) == "function",
+			"FyyUI Menu: Support.Request must be a function"
 		)
 		assert(
 			supportOptions.Callback == nil or type(supportOptions.Callback) == "function",
@@ -7260,12 +7261,12 @@ return (function()
 		local titleRightInset = btnType == "Mac" and 10 or 140
 		if self.TopbarInfoConfig.Enabled then
 			local infoRightInset = btnType == "Mac" and 10 or 140
-			local fullGameWidth, accessWidth, cardGap = 108, 76, 6
+			local fullGameWidth, accessWidth, cardGap, cardHeight = 92, 66, 5, 24
 			local fullWidth = fullGameWidth + accessWidth + cardGap
 			self.TopbarInfoHolder = U.Create("Frame", {
 				Name = "TopbarInfo",
-				Size = UDim2.fromOffset(fullWidth, 28),
-				Position = UDim2.new(1, -(infoRightInset + fullWidth), 0.5, -14),
+				Size = UDim2.fromOffset(fullWidth, cardHeight),
+				Position = UDim2.new(1, -(infoRightInset + fullWidth), 0.5, -(cardHeight / 2)),
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
 				ZIndex = 3,
@@ -7274,14 +7275,14 @@ return (function()
 			local function infoCard(name, width, x)
 				local card = U.Create("Frame", {
 					Name = name,
-					Size = UDim2.fromOffset(width, 28),
+					Size = UDim2.fromOffset(width, cardHeight),
 					Position = UDim2.fromOffset(x, 0),
 					BackgroundColor3 = theme.Element,
 					BorderSizePixel = 0,
 					ZIndex = 3,
 					Parent = self.TopbarInfoHolder,
 				})
-				U.Create("UICorner", { CornerRadius = UDim.new(0, 7), Parent = card })
+				U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = card })
 				local stroke = U.Create("UIStroke", {
 					Color = theme.ElementBorder,
 					Transparency = 0.55,
@@ -7298,7 +7299,7 @@ return (function()
 				BackgroundTransparency = 1,
 				Text = string.upper(self.TopbarInfoConfig.Game),
 				Font = theme.FontBold,
-				TextSize = 12,
+				TextSize = 11,
 				TextColor3 = theme.TextPrimary,
 				TextTruncate = Enum.TextTruncate.AtEnd,
 				ZIndex = 4,
@@ -7312,7 +7313,7 @@ return (function()
 				BackgroundTransparency = 1,
 				Text = self.TopbarInfoConfig.Access,
 				Font = theme.FontBold,
-				TextSize = 11,
+				TextSize = 10,
 				ZIndex = 4,
 				Parent = self.AccessInfoCard,
 			})
@@ -7329,8 +7330,8 @@ return (function()
 				local holderWidth = compact and accessWidth or fullWidth
 				self.GameInfoCard.Visible = not compact
 				self.AccessInfoCard.Position = UDim2.fromOffset(compact and 0 or (fullGameWidth + cardGap), 0)
-				self.TopbarInfoHolder.Size = UDim2.fromOffset(holderWidth, 28)
-				self.TopbarInfoHolder.Position = UDim2.new(1, -(infoRightInset + holderWidth), 0.5, -14)
+				self.TopbarInfoHolder.Size = UDim2.fromOffset(holderWidth, cardHeight)
+				self.TopbarInfoHolder.Position = UDim2.new(1, -(infoRightInset + holderWidth), 0.5, -(cardHeight / 2))
 				titleRightInset = infoRightInset + holderWidth + 8
 				if self._refreshTitle then
 					self._refreshTitle()
@@ -7455,14 +7456,23 @@ return (function()
 		})
 		U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Sidebar })
 
-		local hasDiscordSupport = (type(supportOptions.Discord) == "string" and supportOptions.Discord ~= "")
+		local inviteCode = supportOptions.InviteCode
+		if not inviteCode and type(supportOptions.Discord) == "string" then
+			inviteCode = supportOptions.Discord:match("discord%.gg/([^/?#]+)")
+				or supportOptions.Discord:match("discord%.com/invite/([^/?#]+)")
+		end
+		local inviteUrl = supportOptions.Discord
+		if (not inviteUrl or inviteUrl == "") and inviteCode then
+			inviteUrl = "https://discord.gg/" .. inviteCode
+		end
+		local hasDiscordSupport = (type(inviteUrl) == "string" and inviteUrl ~= "")
 			or type(supportOptions.Callback) == "function"
-		local supportReserve = hasDiscordSupport and 64 or 0
+		local supportReserve = hasDiscordSupport and 56 or 0
 		if hasDiscordSupport then
 			self.DiscordCard = U.Create("ImageButton", {
 				Name = "DiscordCard",
-				Size = UDim2.new(1, -12, 0, 50),
-				Position = UDim2.new(0, 6, 1, -56),
+				Size = UDim2.new(1, -12, 0, 44),
+				Position = UDim2.new(0, 6, 1, -50),
 				BackgroundColor3 = theme.Element,
 				BorderSizePixel = 0,
 				AutoButtonColor = false,
@@ -7473,26 +7483,18 @@ return (function()
 			U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.DiscordCard })
 			self.DiscordStroke = U.Create("UIStroke", {
 				Color = theme.ElementBorder,
-				Transparency = 0.55,
+				Transparency = 0.65,
 				Thickness = 1,
 				Parent = self.DiscordCard,
 			})
-			local discordIconName = type(supportOptions.ButtonIcon) == "string" and supportOptions.ButtonIcon or "message-circle"
-			self.DiscordIcon = renderIcon(self.DiscordCard, discordIconName, {
-				Name = "Icon",
-				Size = UDim2.fromOffset(16, 16),
-				Position = UDim2.fromOffset(10, 17),
-				ImageColor3 = theme.Accent,
-				ZIndex = 4,
-			})
 			self.DiscordTitle = U.Create("TextLabel", {
 				Name = "Title",
-				Size = UDim2.new(1, -40, 0, 18),
-				Position = UDim2.fromOffset(32, 6),
+				Size = UDim2.new(1, -20, 0, 17),
+				Position = UDim2.fromOffset(10, 5),
 				BackgroundTransparency = 1,
-				Text = "Discord",
+				Text = supportOptions.Title or "Discord",
 				Font = theme.FontBold,
-				TextSize = 13,
+				TextSize = 12,
 				TextColor3 = theme.TextPrimary,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				TextTruncate = Enum.TextTruncate.AtEnd,
@@ -7501,10 +7503,10 @@ return (function()
 			})
 			self.DiscordDetail = U.Create("TextLabel", {
 				Name = "Detail",
-				Size = UDim2.new(1, -40, 0, 15),
-				Position = UDim2.fromOffset(32, 25),
+				Size = UDim2.new(1, -20, 0, 14),
+				Position = UDim2.fromOffset(10, 23),
 				BackgroundTransparency = 1,
-				Text = supportOptions.ButtonText or "Copy Invite",
+				Text = inviteCode and "Loading online..." or "Invite ready",
 				Font = theme.Font,
 				TextSize = 11,
 				TextColor3 = theme.TextMuted,
@@ -7515,26 +7517,82 @@ return (function()
 			})
 			self.DiscordCard.MouseEnter:Connect(function()
 				self:_transition(self.DiscordCard, 0.16, { BackgroundColor3 = self.Theme.ElementHover })
-				self:_transition(self.DiscordStroke, 0.16, { Color = self.Theme.Accent, Transparency = 0.35 })
+				self:_transition(self.DiscordStroke, 0.16, { Color = self.Theme.Accent, Transparency = 0.45 })
 			end)
 			self.DiscordCard.MouseLeave:Connect(function()
 				self:_transition(self.DiscordCard, 0.16, { BackgroundColor3 = self.Theme.Element })
-				self:_transition(self.DiscordStroke, 0.16, { Color = self.Theme.ElementBorder, Transparency = 0.55 })
+				self:_transition(self.DiscordStroke, 0.16, { Color = self.Theme.ElementBorder, Transparency = 0.65 })
 			end)
 			self.DiscordCard.Activated:Connect(function()
-				local url = supportOptions.Discord
 				if type(supportOptions.Callback) == "function" then
-					task.spawn(supportOptions.Callback, url)
+					task.spawn(supportOptions.Callback, inviteUrl)
 					return
 				end
 				local env = type(getgenv) == "function" and getgenv() or _G
 				local clipboard = type(env) == "table" and rawget(env, "setclipboard") or nil
-				if type(clipboard) == "function" and url and pcall(clipboard, url) then
+				if type(clipboard) == "function" and inviteUrl and pcall(clipboard, inviteUrl) then
 					self:Notify({ Title = "Discord Copied", Content = "Invite link copied to clipboard.", Type = "Success" })
-				elseif url then
-					self:Notify({ Title = "Discord", Content = url, Type = "Info" })
+				elseif inviteUrl then
+					self:Notify({ Title = "Discord", Content = inviteUrl, Type = "Info" })
 				end
 			end)
+
+			if inviteCode and supportOptions.FetchServerInfo ~= false then
+				task.spawn(function()
+					local apiUrl = "https://discord.com/api/v10/invites/"
+						.. inviteCode
+						.. "?with_counts=true&with_expiration=true"
+					local rawResponse
+					local requestFunction = supportOptions.Request
+					if type(requestFunction) ~= "function" then
+						local env = type(getgenv) == "function" and getgenv() or _G
+						local synTable = type(env) == "table" and rawget(env, "syn") or nil
+						local httpTable = type(env) == "table" and rawget(env, "http") or nil
+						requestFunction = type(env) == "table" and (
+							rawget(env, "request")
+							or rawget(env, "http_request")
+							or (type(synTable) == "table" and synTable.request)
+							or (type(httpTable) == "table" and httpTable.request)
+						) or nil
+					end
+					if type(requestFunction) == "function" then
+						local ok, response = pcall(requestFunction, {
+							Url = apiUrl,
+							Method = "GET",
+							Headers = { ["Accept"] = "application/json" },
+						})
+						if ok and type(response) == "table" then
+							rawResponse = response.Body or response.body or response.Response
+						elseif ok and type(response) == "string" then
+							rawResponse = response
+						end
+					end
+					if not rawResponse then
+						pcall(function()
+							rawResponse = game:HttpGet(apiUrl)
+						end)
+					end
+					local decoded
+					if type(rawResponse) == "string" then
+						pcall(function()
+							decoded = game:GetService("HttpService"):JSONDecode(rawResponse)
+						end)
+					end
+					if not self.DiscordCard or not self.DiscordCard.Parent then
+						return
+					end
+					if type(decoded) == "table" and type(decoded.guild) == "table" then
+						self.DiscordTitle.Text = tostring(decoded.guild.name or "Discord")
+						local online = tonumber(decoded.approximate_presence_count) or 0
+						self.DiscordDetail.Text = ("● %s online"):format(tostring(online))
+						self.DiscordDetail.TextColor3 = Color3.fromRGB(70, 220, 120)
+					else
+						self.DiscordTitle.Text = supportOptions.Title or "Discord"
+						self.DiscordDetail.Text = "Status unavailable"
+						self.DiscordDetail.TextColor3 = self.Theme.TextMuted
+					end
+				end)
+			end
 		end
 
 		self.SidebarList = U.Create("ScrollingFrame", {
@@ -11656,13 +11714,8 @@ return (function()
 			self.DiscordTitle.Font = theme.FontBold
 			self.DiscordTitle.TextColor3 = theme.TextPrimary
 			self.DiscordDetail.Font = theme.Font
-			self.DiscordDetail.TextColor3 = theme.TextMuted
-			if self.DiscordIcon then
-				if self.DiscordIcon:IsA("ImageLabel") then
-					self.DiscordIcon.ImageColor3 = theme.Accent
-				elseif self.DiscordIcon:IsA("TextLabel") then
-					self.DiscordIcon.TextColor3 = theme.Accent
-				end
+			if not self.DiscordDetail.Text:find("●", 1, true) then
+				self.DiscordDetail.TextColor3 = theme.TextMuted
 			end
 		end
 
