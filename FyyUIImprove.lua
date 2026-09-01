@@ -7258,6 +7258,94 @@ return (function()
 			end, -132, Color3.fromRGB(45, 45, 55))
 		end
 
+		local function createMaterialCard(parent, name, cardSize, cardPosition, semantic, tintStrength, interactive, zIndex)
+			zIndex = zIndex or 3
+			local shadow = U.Create("Frame", {
+				Name = name .. "Shadow",
+				Size = cardSize,
+				Position = cardPosition + UDim2.fromOffset(0, 2),
+				BackgroundColor3 = theme.Shadow,
+				BackgroundTransparency = 0.72,
+				BorderSizePixel = 0,
+				ZIndex = zIndex - 1,
+				Parent = parent,
+			})
+			U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = shadow })
+			local properties = {
+				Name = name,
+				Size = cardSize,
+				Position = cardPosition,
+				BackgroundColor3 = theme.Element,
+				BorderSizePixel = 0,
+				ClipsDescendants = true,
+				ZIndex = zIndex,
+				Parent = parent,
+			}
+			if interactive then
+				properties.AutoButtonColor = false
+			end
+			local surface = U.Create(interactive and "ImageButton" or "Frame", properties)
+			U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = surface })
+			local gradient = U.Create("UIGradient", { Rotation = 90, Parent = surface })
+			local stroke = U.Create("UIStroke", {
+				Thickness = 1,
+				Transparency = 0.78,
+				Parent = surface,
+			})
+			local rail = U.Create("Frame", {
+				Name = "AccentRail",
+				Size = UDim2.new(0, 2, 1, -10),
+				Position = UDim2.fromOffset(4, 5),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 0.1,
+				ZIndex = zIndex + 1,
+				Parent = surface,
+			})
+			U.Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = rail })
+			local highlight = U.Create("Frame", {
+				Name = "TopHighlight",
+				Size = UDim2.new(1, -16, 0, 1),
+				Position = UDim2.fromOffset(8, 3),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 0.86,
+				ZIndex = zIndex + 1,
+				Parent = surface,
+			})
+			local hoverTint = U.Create("Frame", {
+				Name = "HoverTint",
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				ZIndex = zIndex,
+				Parent = surface,
+			})
+			local material = {
+				Surface = surface,
+				Shadow = shadow,
+				Gradient = gradient,
+				Stroke = stroke,
+				Rail = rail,
+				Highlight = highlight,
+				HoverTint = hoverTint,
+				TintStrength = tintStrength or 0.05,
+			}
+			function material:ApplyTheme(activeTheme, semanticColor)
+				semanticColor = semanticColor or activeTheme.Accent
+				self.Surface.BackgroundColor3 = activeTheme.Element
+				self.Shadow.BackgroundColor3 = activeTheme.Shadow
+				self.Stroke.Color = semanticColor:Lerp(activeTheme.ElementBorder, 0.5)
+				self.Rail.BackgroundColor3 = semanticColor
+				self.Highlight.BackgroundColor3 = semanticColor:Lerp(activeTheme.TextPrimary, 0.58)
+				self.HoverTint.BackgroundColor3 = semanticColor
+				self.Gradient.Color = ColorSequence.new(
+					activeTheme.ElementHover:Lerp(semanticColor, self.TintStrength),
+					activeTheme.Element:Lerp(activeTheme.Background, 0.34)
+				)
+			end
+			material:ApplyTheme(theme, semantic)
+			return material
+		end
+
 		local titleRightInset = btnType == "Mac" and 10 or 140
 		if self.TopbarInfoConfig.Enabled then
 			local infoRightInset = btnType == "Mac" and 10 or 140
@@ -7272,64 +7360,69 @@ return (function()
 				ZIndex = 3,
 				Parent = self.Topbar,
 			})
-			local function infoCard(name, width, x)
-				local card = U.Create("Frame", {
-					Name = name,
-					Size = UDim2.fromOffset(width, cardHeight),
-					Position = UDim2.fromOffset(x, 0),
-					BackgroundColor3 = theme.Element,
-					BorderSizePixel = 0,
-					ZIndex = 3,
-					Parent = self.TopbarInfoHolder,
-				})
-				U.Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = card })
-				local stroke = U.Create("UIStroke", {
-					Color = theme.ElementBorder,
-					Transparency = 0.55,
-					Thickness = 1,
-					Parent = card,
-				})
-				return card, stroke
-			end
-			self.GameInfoCard, self.GameInfoStroke = infoCard("GameCard", fullGameWidth, 0)
+			self.GameInfoMaterial = createMaterialCard(
+				self.TopbarInfoHolder,
+				"GameCard",
+				UDim2.fromOffset(fullGameWidth, cardHeight),
+				UDim2.fromOffset(0, 0),
+				theme.Accent,
+				0.035,
+				false,
+				3
+			)
+			self.GameInfoCard = self.GameInfoMaterial.Surface
+			self.GameInfoStroke = self.GameInfoMaterial.Stroke
 			self.GameInfoLabel = U.Create("TextLabel", {
 				Name = "Label",
-				Size = UDim2.new(1, -16, 1, 0),
-				Position = UDim2.fromOffset(8, 0),
+				Size = UDim2.new(1, -20, 1, 0),
+				Position = UDim2.fromOffset(11, 0),
 				BackgroundTransparency = 1,
 				Text = string.upper(self.TopbarInfoConfig.Game),
 				Font = theme.FontBold,
 				TextSize = 11,
 				TextColor3 = theme.TextPrimary,
 				TextTruncate = Enum.TextTruncate.AtEnd,
-				ZIndex = 4,
+				ZIndex = 5,
 				Parent = self.GameInfoCard,
 			})
-			self.AccessInfoCard, self.AccessInfoStroke = infoCard("AccessCard", accessWidth, fullGameWidth + cardGap)
+			self.AccessInfoMaterial = createMaterialCard(
+				self.TopbarInfoHolder,
+				"AccessCard",
+				UDim2.fromOffset(accessWidth, cardHeight),
+				UDim2.fromOffset(fullGameWidth + cardGap, 0),
+				theme.Accent,
+				0.11,
+				false,
+				3
+			)
+			self.AccessInfoCard = self.AccessInfoMaterial.Surface
+			self.AccessInfoStroke = self.AccessInfoMaterial.Stroke
 			self.AccessInfoLabel = U.Create("TextLabel", {
 				Name = "Label",
-				Size = UDim2.new(1, -12, 1, 0),
-				Position = UDim2.fromOffset(6, 0),
+				Size = UDim2.new(1, -16, 1, 0),
+				Position = UDim2.fromOffset(9, 0),
 				BackgroundTransparency = 1,
 				Text = self.TopbarInfoConfig.Access,
 				Font = theme.FontBold,
 				TextSize = 10,
-				ZIndex = 4,
+				ZIndex = 5,
 				Parent = self.AccessInfoCard,
 			})
 			self._refreshAccessCard = function()
 				local premium = self.TopbarInfoConfig.Access == "PREMIUM"
 				local semantic = premium and self.Theme.Accent or Color3.fromRGB(235, 174, 74)
-				self.AccessInfoCard.BackgroundColor3 = self.Theme.Element
-				self.AccessInfoStroke.Color = semantic
-				self.AccessInfoLabel.TextColor3 = semantic
+				self.AccessInfoMaterial:ApplyTheme(self.Theme, semantic)
+				self.AccessInfoLabel.TextColor3 = semantic:Lerp(self.Theme.TextPrimary, 0.18)
 				self.AccessInfoLabel.Text = self.TopbarInfoConfig.Access
 			end
 			self._refreshAccessCard()
 			self._layoutTopbarInfo = function(compact)
 				local holderWidth = compact and accessWidth or fullWidth
 				self.GameInfoCard.Visible = not compact
-				self.AccessInfoCard.Position = UDim2.fromOffset(compact and 0 or (fullGameWidth + cardGap), 0)
+				self.GameInfoMaterial.Shadow.Visible = not compact
+				local accessX = compact and 0 or (fullGameWidth + cardGap)
+				self.AccessInfoCard.Position = UDim2.fromOffset(accessX, 0)
+				self.AccessInfoMaterial.Shadow.Position = UDim2.fromOffset(accessX, 2)
 				self.TopbarInfoHolder.Size = UDim2.fromOffset(holderWidth, cardHeight)
 				self.TopbarInfoHolder.Position = UDim2.new(1, -(infoRightInset + holderWidth), 0.5, -(cardHeight / 2))
 				titleRightInset = infoRightInset + holderWidth + 8
@@ -7469,24 +7562,19 @@ return (function()
 			or type(supportOptions.Callback) == "function"
 		local supportReserve = hasDiscordSupport and 56 or 0
 		if hasDiscordSupport then
-			self.DiscordCard = U.Create("ImageButton", {
-				Name = "DiscordCard",
-				Size = UDim2.new(1, -12, 0, 44),
-				Position = UDim2.new(0, 6, 1, -50),
-				BackgroundColor3 = theme.Element,
-				BorderSizePixel = 0,
-				AutoButtonColor = false,
-				ZIndex = 3,
-				Parent = self.Sidebar,
-			})
+			self.DiscordMaterial = createMaterialCard(
+				self.Sidebar,
+				"DiscordCard",
+				UDim2.new(1, -12, 0, 44),
+				UDim2.new(0, 6, 1, -50),
+				theme.Accent,
+				0.06,
+				true,
+				3
+			)
+			self.DiscordCard = self.DiscordMaterial.Surface
+			self.DiscordStroke = self.DiscordMaterial.Stroke
 			self:_makeSelectable(self.DiscordCard)
-			U.Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = self.DiscordCard })
-			self.DiscordStroke = U.Create("UIStroke", {
-				Color = theme.ElementBorder,
-				Transparency = 0.65,
-				Thickness = 1,
-				Parent = self.DiscordCard,
-			})
 			self.DiscordTitle = U.Create("TextLabel", {
 				Name = "Title",
 				Size = UDim2.new(1, -20, 0, 17),
@@ -7516,12 +7604,14 @@ return (function()
 				Parent = self.DiscordCard,
 			})
 			self.DiscordCard.MouseEnter:Connect(function()
-				self:_transition(self.DiscordCard, 0.16, { BackgroundColor3 = self.Theme.ElementHover })
-				self:_transition(self.DiscordStroke, 0.16, { Color = self.Theme.Accent, Transparency = 0.45 })
+				self:_transition(self.DiscordMaterial.HoverTint, 0.16, { BackgroundTransparency = 0.91 })
+				self:_transition(self.DiscordMaterial.Rail, 0.16, { BackgroundTransparency = 0 })
+				self:_transition(self.DiscordStroke, 0.16, { Transparency = 0.58 })
 			end)
 			self.DiscordCard.MouseLeave:Connect(function()
-				self:_transition(self.DiscordCard, 0.16, { BackgroundColor3 = self.Theme.Element })
-				self:_transition(self.DiscordStroke, 0.16, { Color = self.Theme.ElementBorder, Transparency = 0.65 })
+				self:_transition(self.DiscordMaterial.HoverTint, 0.16, { BackgroundTransparency = 1 })
+				self:_transition(self.DiscordMaterial.Rail, 0.16, { BackgroundTransparency = 0.1 })
+				self:_transition(self.DiscordStroke, 0.16, { Transparency = 0.78 })
 			end)
 			self.DiscordCard.Activated:Connect(function()
 				if type(supportOptions.Callback) == "function" then
@@ -7584,8 +7674,9 @@ return (function()
 					if type(decoded) == "table" and type(decoded.guild) == "table" then
 						self.DiscordTitle.Text = tostring(decoded.guild.name or "Discord")
 						local online = tonumber(decoded.approximate_presence_count) or 0
-						self.DiscordDetail.Text = ("● %s online"):format(tostring(online))
-						self.DiscordDetail.TextColor3 = Color3.fromRGB(70, 220, 120)
+						self.DiscordDetail.RichText = true
+						self.DiscordDetail.Text = ('<font color="#46DC78">●</font> %s online'):format(tostring(online))
+						self.DiscordDetail.TextColor3 = self.Theme.TextMuted
 					else
 						self.DiscordTitle.Text = supportOptions.Title or "Discord"
 						self.DiscordDetail.Text = "Status unavailable"
@@ -11698,25 +11789,21 @@ return (function()
 
 		-- Sidebar
 		self.Sidebar.BackgroundColor3 = theme.Sidebar
-		if self.GameInfoCard then
-			self.GameInfoCard.BackgroundColor3 = theme.Element
-			self.GameInfoStroke.Color = theme.ElementBorder
+		if self.GameInfoMaterial then
+			self.GameInfoMaterial:ApplyTheme(theme, theme.Accent)
 			self.GameInfoLabel.Font = theme.FontBold
 			self.GameInfoLabel.TextColor3 = theme.TextPrimary
 		end
-		if self.AccessInfoCard then
+		if self.AccessInfoMaterial then
 			self.AccessInfoLabel.Font = theme.FontBold
 			self._refreshAccessCard()
 		end
-		if self.DiscordCard then
-			self.DiscordCard.BackgroundColor3 = theme.Element
-			self.DiscordStroke.Color = theme.ElementBorder
+		if self.DiscordMaterial then
+			self.DiscordMaterial:ApplyTheme(theme, theme.Accent)
 			self.DiscordTitle.Font = theme.FontBold
 			self.DiscordTitle.TextColor3 = theme.TextPrimary
 			self.DiscordDetail.Font = theme.Font
-			if not self.DiscordDetail.Text:find("●", 1, true) then
-				self.DiscordDetail.TextColor3 = theme.TextMuted
-			end
+			self.DiscordDetail.TextColor3 = theme.TextMuted
 		end
 
 		-- ActiveBar
